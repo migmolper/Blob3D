@@ -1,0 +1,11 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${prefix}/@CMAKE_INSTALL_LIBDIR@
+includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
+
+Name: blob3D
+Description: BLOB3D blob particle method library (static)
+Version: @PROJECT_VERSION@
+Libs: -L${libdir} -lblob3D
+Cflags: -I${includedir}/BLOB3D@BLOB3D_PC_CFLAGS@
+Requires: @BLOB3D_PC_REQUIRES@

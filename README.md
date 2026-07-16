@@ -1,52 +1,37 @@
-# SOLERA
+# Blob3D
 
-<p align="center">
-  <img src="Logo.png" alt="My Logo" width="300"/>
-</p>
+**Blob3D** is a C++ implementation of the *blob* (finite-particle) method for mass diffusion based on optimal transport. Mass is carried by finite-width particles whose motion follows from a time-discrete incremental variational principle that balances entropy and the Wasserstein cost of transport.
 
-SOLERA (soh-leh-rah) is a Diffusive Molecular Dynamics code designed to bridge atomistic and continuum time scales by transforming fast atomic vibrations into effective diffusive motions governed by stochastic dynamics. It enables the simulation of long-term phenomena such as phase transformations, defect migration, and hydrogen diffusion in metals while preserving atomic resolution and energy fidelity. Built on top of the PETSc library, SOLERA is fully parallelized using MPI and optimized for modern HPC architectures. Its modular design allows for flexible coupling between atomic interactions, continuum fields, and external driving forces, making it a powerful research tool for exploring microstructural evolution and multiscale transport phenomena in complex materials systems. This code is used as the basis for subsequent DMD developments by [TEP972](https://investigacion.us.es/sisius/sis_depgrupos.php?ct=&cs=&seltext=TEP-972&selfield=CodPAI).
+The formulation and algorithms implemented here follow:
 
-## What means SOLERA?
-A method of producing [sherry wine](https://en.m.wiktionary.org/wiki/sherry) in which small amounts of younger wines stored in an upper tier of casks are systematically blended with the more mature wine in the casks below. 
+- [Pandolfi, Stainier & Ortiz (2023)](https://arxiv.org/abs/2305.05315) — *An optimal-transport finite-particle method for mass diffusion* ([arXiv:2305.05315](https://arxiv.org/abs/2305.05315))
+- [Pandolfi, Romero & Ortiz (2025)](https://doi.org/10.1016/j.cma.2025.118013) — *An optimal-transport finite-particle method for driven mass diffusion* ([CaltechAUTHORS](https://authors.library.caltech.edu/records/jyr2m-rtx05))
+
+The method is meshless in any spatial dimension, can redistribute particles and track their evolution in time, and enforces general flux / mixed boundary conditions (including via an adsorption/depletion layer at the boundary). Built on [PETSc](https://petsc.org), Blob3D is parallelized with MPI and targets modern HPC systems.
 
 ## Documentation
 
-Please refer to [our wiki](https://github.com/migmolper/DMD/wiki) for information on compiling, and running the code.
+For building **Blob3D as an installable library** and linking it from another C++ project, see [LIBRARY_BUILD.md](LIBRARY_BUILD.md).
 
-For building **SOLERA as an installable library** and **linking it from another C++ project**, see [LIBRARY_BUILD.md](LIBRARY_BUILD.md) (copy under [docs/LIBRARY_BUILD.md](docs/LIBRARY_BUILD.md)).
+Machine-specific configure scripts live under [`configs/`](configs/). An example application is available in [`examples/sphere/`](examples/sphere/).
 
-For a **Spack-based** workflow (dependencies + install on clusters or laptops), see [SPACK.md](SPACK.md) (copy under [docs/SPACK.md](docs/SPACK.md)).
+## Contributors
 
-## Contributors 
 * [Miguel Molinos](https://github.com/migmolper) (Asst. Prof.). Universidad Politécnica de Madrid, Spain. Main developer.
-* [Jose Manuel Recio-López](https://github.com/jrecio1) (PhD. Student). Universidad de Sevilla, Spain. Al-Cu system.
 
-Advised by
-* [Pilar Ariza](https://github.com/mpariza) (Prof.). Universidad de Sevilla, Spain. 
-* [Michael Ortiz](https://github.com/mortizcaltech) (Prof.). California Institute of Technology, USA.
+See also [AUTHORS.md](AUTHORS.md).
 
-## Additional context
-- [Atomistic long-term simulation of heat and mass transport](https://www.sciencedirect.com/science/article/pii/S002250961400194X)
-- [Acceleration of diffusive molecular dynamics simulations through mean field approximation and subcycling time integration](https://www.sciencedirect.com/science/article/pii/S0021999117306502)
-- [Atomistic Simulation of Hydrogen Diffusion in Palladium Nanoparticles Using a Diffusive Molecular Dynamics Method](https://asmedigitalcollection.asme.org/IMECE/proceedings-abstract/IMECE2017/V009T12A026/261885)
-- [Long-term atomistic simulation of hydrogen diffusion in metals](https://www.sciencedirect.com/science/article/pii/S0360319915001780)
+## References
+
+- A. Pandolfi, L. Stainier, M. Ortiz. *An optimal-transport finite-particle method for mass diffusion*. [arXiv:2305.05315](https://arxiv.org/abs/2305.05315), 2023.
+- A. Pandolfi, I. Romero, M. Ortiz. *An optimal-transport finite-particle method for driven mass diffusion*. *Computer Methods in Applied Mechanics and Engineering*, 442:118013, 2025. [doi:10.1016/j.cma.2025.118013](https://doi.org/10.1016/j.cma.2025.118013)
+
+Related open-source finite-particle code by the authors of the 2025 paper: [gitlab.com/ignacio.romero/finite-particles](https://gitlab.com/ignacio.romero/finite-particles).
 
 ## Useful links and software
-* [Crystallography Open Database](http://www.crystallography.net/cod/search.html)
-* [NIST Interatomic potentials](https://www.ctcms.nist.gov/potentials/)
-* [Atomsk (preprocessor)](https://atomsk.univ-lille.fr)
-* [Ovito (preprocessor/postprocessor)](https://www.ovito.org)
-* [Paraview (postprocessor)](https://www.paraview.org)
 
+* [Ovito](https://www.ovito.org) (postprocessor)
+* [ParaView](https://www.paraview.org) (postprocessor)
+* [PETSc](https://petsc.org)
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/migmolper/DMD/blob/main/license.md)
-[![User docs](https://img.shields.io/badge/user-docs-blue.svg)](https://github.com/migmolper/DMD/wiki)
-<!---
-[![CircleCI](https://circleci.com/gh/geomechanics/mpm.svg?style=svg)](https://circleci.com/gh/geomechanics/mpm)
-[![codecov](https://codecov.io/gh/geomechanics/mpm/branch/master/graph/badge.svg)](https://codecov.io/gh/geomechanics/mpm)
-[![](https://img.shields.io/github/issues-raw/geomechanics/mpm.svg)](https://github.com/geomechanics/mpm/issues)
-[![Coverity](https://scan.coverity.com/projects/14389/badge.svg)](https://scan.coverity.com/projects/14389/badge.svg)
-[![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/cb-geo/mpm.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/cb-geo/mpm/context:cpp)
-[![Project management](https://img.shields.io/badge/projects-view-ff69b4.svg)](https://github.com/geomechanics/mpm/projects/1)
--->
-
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](license.md)
