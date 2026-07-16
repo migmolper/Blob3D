@@ -25,7 +25,6 @@
 #endif
 #include "Blobs/Blob-Function.hpp"
 #include "Blobs/Blobs.hpp"
-#include "Blobs/Topology.hpp"
 #include "Macros.hpp"
 #include "Mesh/Boundary-Conditions.hpp"
 

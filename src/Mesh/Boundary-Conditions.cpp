@@ -63,7 +63,7 @@ PetscErrorCode get_mesh_boundary_condition(DMBoundaryType* bcc, DM* da) {
 
 /************************************************************************/
 
-PetscErrorCode DMSwarmEnforceAtomsPeriodic(Simulation& simulation,
+PetscErrorCode DMSwarmEnforceBlobsPeriodic(Simulation& simulation,
                                            double buffer_width) {
 
   PetscFunctionBeginUser;
@@ -150,7 +150,7 @@ PetscErrorCode DMSwarmEnforceAtomsPeriodic(Simulation& simulation,
         found_local_ptr[site_i] = 1;
       } else {
         PetscCall(PetscError(
-            PETSC_COMM_SELF, __LINE__, "DMSwarmEnforceAtomsPeriodic", __FILE__,
+            PETSC_COMM_SELF, __LINE__, "DMSwarmEnforceBlobsPeriodic", __FILE__,
             PETSC_ERR_RETURN, PETSC_ERROR_INITIAL,
             "Atom %" PetscInt_FMT
             " at (%g, %g, %g), box [%g,%g] x [%g,%g] x [%g,%g], "
@@ -181,7 +181,7 @@ PetscErrorCode DMSwarmEnforceAtomsPeriodic(Simulation& simulation,
 
 /********************************************************************************/
 
-PetscErrorCode DMSwarmEnforceGhostAtomsPeriodic(Simulation& simulation) {
+PetscErrorCode DMSwarmEnforceGhostBlobsPeriodic(Simulation& simulation) {
 
   PetscFunctionBeginUser;
 
@@ -284,7 +284,7 @@ PetscErrorCode DMSwarmEnforceGhostAtomsPeriodic(Simulation& simulation) {
 
 /************************************************************************/
 
-PetscErrorCode VecEnforceGhostAtomsPeriodic(Vec mean_q,
+PetscErrorCode VecEnforceGhostBlobsPeriodic(Vec mean_q,
                                             const PetscInt* box_idx_ptr,
                                             DM background_mesh) {
 
@@ -536,7 +536,7 @@ PetscErrorCode DMSwarmApplyDisplacement(Simulation& simulation, PetscInt FixLabe
   PetscCall(VecGhostUpdateBegin(X_mean_q, INSERT_VALUES, SCATTER_FORWARD));
   PetscCall(VecGhostUpdateEnd(X_mean_q, INSERT_VALUES, SCATTER_FORWARD));
   PetscCall(
-      VecEnforceGhostAtomsPeriodic(X_mean_q, box_idx_ptr, background_mesh));
+      VecEnforceGhostBlobsPeriodic(X_mean_q, box_idx_ptr, background_mesh));
   PetscCall(VecDestroy(&X_mean_q));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -632,133 +632,6 @@ PetscErrorCode VecFixMeanPositionRHS(Vec RHS, Vec mean_q, Vec mean_q_ref,
   PetscCall(VecGhostRestoreLocalForm(RHS, &RHS_loc));
   PetscCall(VecGhostRestoreLocalForm(mean_q, &mean_q_loc));
   PetscCall(VecGhostRestoreLocalForm(mean_q_ref, &mean_q_ref_loc));
-
-  PetscFunctionReturn(PETSC_SUCCESS);
-}
-
-/************************************************************************/
-
-PetscErrorCode DMSwarmFixStdvPositionBox(Simulation& simulation, PetscInt FixLabel,
-                                         const PetscScalar box_coords[6]) {
-
-  PetscFunctionBeginUser;
-
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    Get auxiliar data.
-   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  if (FixLabel == 0) {
-    PetscCall(PetscError(PETSC_COMM_SELF, __LINE__, "DMSwarmFixStdvPositionBox",
-                         __FILE__, PETSC_ERR_RETURN, PETSC_ERROR_INITIAL,
-                         "Wrong FixLabel value"));
-    PetscFunctionReturn(PETSC_ERR_RETURN);
-  }
-
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    Get auxiliar data.
-   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  unsigned int dim = NumberDimensions;
-
-  //! Number of local physical sites
-  PetscInt n_sites_local = simulation.n_sites_local();
-
-  //! Get atomistic coordinates
-  PetscScalar* mean_q_ptr;
-  PetscCall(DMSwarmGetField(simulation.dm(), "mean-q", NULL, NULL,
-                            (void**)&mean_q_ptr));
-
-  //! Get fix-stdv-q index field
-  PetscInt* idx_bcc_stdv_q_ptr;
-  PetscCall(DMSwarmGetField(simulation.dm(), "idx-bcc-stdv-q", NULL,
-                            NULL, (void**)&idx_bcc_stdv_q_ptr));
-
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   Loop over atoms
-   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-#pragma omp parallel for schedule(runtime)
-  for (int site_i = 0; site_i < n_sites_local; site_i++) {
-
-    //! Get site position
-    Eigen::Vector3d mean_q_i;
-    mean_q_i << mean_q_ptr[site_i * dim + 0], mean_q_ptr[site_i * dim + 1],
-        mean_q_ptr[site_i * dim + 2];
-
-    // Check if inside domain
-    if (In_Out_Mesh_Closed(mean_q_i, box_coords) == true) {
-      idx_bcc_stdv_q_ptr[site_i] = FixLabel;
-    }
-  }
-
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    Restore auxiliar data.
-   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-q", NULL,
-                                NULL, (void**)&mean_q_ptr));
-
-  PetscCall(DMSwarmRestoreField(simulation.dm(), "idx-bcc-stdv-q",
-                                NULL, NULL, (void**)&idx_bcc_stdv_q_ptr));
-
-  PetscFunctionReturn(PETSC_SUCCESS);
-}
-
-/************************************************************************/
-
-PetscErrorCode VecFixStdvPositionRHS(Vec RHS, Vec stdv_q, Vec stdv_q_ref,
-                                     const PetscInt* idx_bcc_stdv_q) {
-
-  PetscFunctionBeginUser;
-
-  //! @brief Auxiliar atomistic variables
-  unsigned int dim = NumberDimensions;
-
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    Get local size
-  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscInt n_sites;
-  PetscCall(VecGetLocalSize(stdv_q, &n_sites));
-
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    Acces to the local version of the vectors
-  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  Vec RHS_loc, stdv_q_loc, stdv_q_ref_loc;
-  PetscCall(VecGhostGetLocalForm(RHS, &RHS_loc));
-  PetscCall(VecGhostGetLocalForm(stdv_q, &stdv_q_loc));
-  PetscCall(VecGhostGetLocalForm(stdv_q_ref, &stdv_q_ref_loc));
-
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    Acces to raw data from PETSc vec
-  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscScalar* RHS_ptr;
-  PetscCall(VecGetArray(RHS_loc, &RHS_ptr));
-
-  const PetscScalar* stdv_q_ptr;
-  PetscCall(VecGetArrayRead(stdv_q_loc, &stdv_q_ptr));
-
-  const PetscScalar* stdv_q_ref_ptr;
-  PetscCall(VecGetArrayRead(stdv_q_ref_loc, &stdv_q_ref_ptr));
-
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   Loop over atoms
-   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-#pragma omp parallel for schedule(runtime)
-  for (int site_i = 0; site_i < n_sites; site_i++) {
-    if (idx_bcc_stdv_q[site_i] != 0) {
-      RHS_ptr[site_i] = stdv_q_ptr[site_i] - stdv_q_ref_ptr[site_i];
-    }
-  }
-
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   Restore raw data to PETSc vector
-   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(VecRestoreArray(RHS_loc, &RHS_ptr));
-  PetscCall(VecRestoreArrayRead(stdv_q_loc, &stdv_q_ptr));
-  PetscCall(VecRestoreArrayRead(stdv_q_ref_loc, &stdv_q_ref_ptr));
-
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    Restore local version of the vectors
-   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(VecGhostRestoreLocalForm(RHS, &RHS_loc));
-  PetscCall(VecGhostRestoreLocalForm(stdv_q, &stdv_q_loc));
-  PetscCall(VecGhostRestoreLocalForm(stdv_q_ref, &stdv_q_ref_loc));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }

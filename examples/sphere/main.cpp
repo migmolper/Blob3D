@@ -14,7 +14,6 @@
 #include "Blobs/IO/dump-inputs.hpp"
 #include "Blobs/IO/vtk-outputs.hpp"
 #include "Blobs/Neighbors.hpp"
-#include "Blobs/Topology.hpp"
 #include "Macros.hpp"
 #include "Mesh/Boundary-Conditions.hpp"
 #include "Potentials/Advection-Diff-OpenMP.hpp"
@@ -107,9 +106,8 @@ int main(int argc, char **argv) {
     Initialize atomistic simulation
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   Simulation simulation;
-  PetscCall(simulation.initialize(Simulation_dump_data,
-                                  BackgroundMeshType::DMPLEX_mesh,
-                                  r_cutoff_ADP_MgHx));
+  PetscCall(simulation.initialize(
+      Simulation_dump_data, BackgroundMeshType::DMDA_mesh, r_cutoff_default));
   PetscCall(
       DMSwarmSetMigrateType(simulation.dm(), DMSWARM_MIGRATE_DMCELLNSCATTER));
   PetscCall(DMSwarmMigrate(simulation.dm(), PETSC_TRUE));
@@ -153,7 +151,7 @@ int main(int argc, char **argv) {
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    Create ghost atoms and topology
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmGenerateBlobsTopology(simulation, Delta_r));
+  PetscCall(simulation.generate_topology(Delta_r));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Initialize  equations
@@ -191,7 +189,7 @@ int main(int argc, char **argv) {
                                                 system_equations));
 
     //! Update simulation topology
-    PetscCall(DMSwarmRegenerateBlobsTopology(simulation, Delta_r));
+    PetscCall(simulation.regenerate_topology(Delta_r));
 
     //! Output
     snprintf(OutputFile, MAXC, "%s/Mg-hcp-sphere-R-20-%i.vtp", OutputFolder, i);
@@ -199,7 +197,7 @@ int main(int argc, char **argv) {
   }
 
   //! Destroy list of neighbors and other important information
-  PetscCall(DMSwarmDestroyBlobsTopology(simulation));
+  PetscCall(simulation.destroy_topology());
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   Finalice HPC libs
@@ -213,7 +211,7 @@ int main(int argc, char **argv) {
 
 //! Finalize MPI
 #ifdef USE_MPI
-  PetscCall(MPI_Finalize());
+  MPI_Finalize();
 #endif
 }
 

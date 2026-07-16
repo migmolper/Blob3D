@@ -190,7 +190,7 @@ PetscErrorCode get_mesh_boundary_condition(DMBoundaryType* bcc, DM* da);
  * @param Simulation Simulation object
  * @return PetscErrorCode
  */
-PetscErrorCode DMSwarmEnforceAtomsPeriodic(Simulation& simulation,
+PetscErrorCode DMSwarmEnforceBlobsPeriodic(Simulation& simulation,
                                            double r_cutoff);
 
 /**
@@ -199,7 +199,7 @@ PetscErrorCode DMSwarmEnforceAtomsPeriodic(Simulation& simulation,
  * @param simulation
  * @return PetscErrorCode
  */
-PetscErrorCode DMSwarmEnforceGhostAtomsPeriodic(Simulation& simulation);
+PetscErrorCode DMSwarmEnforceGhostBlobsPeriodic(Simulation& simulation);
 
 /**
  * @brief
@@ -209,7 +209,7 @@ PetscErrorCode DMSwarmEnforceGhostAtomsPeriodic(Simulation& simulation);
  * @param background_mesh
  * @return PetscErrorCode
  */
-PetscErrorCode VecEnforceGhostAtomsPeriodic(Vec mean_q,
+PetscErrorCode VecEnforceGhostBlobsPeriodic(Vec mean_q,
                                             const PetscInt* box_idx_ptr,
                                             DM background_mesh);
 
@@ -225,13 +225,6 @@ PetscErrorCode DMSwarmApplyDisplacement(Simulation& simulation,
 
 PetscErrorCode VecFixMeanPositionRHS(Vec RHS, Vec mean_q, Vec mean_q_ref,
                                      const PetscInt* idx_bcc_mean_q);
-
-PetscErrorCode DMSwarmFixStdvPositionBox(Simulation& simulation,
-                                         PetscInt FixLabel,
-                                         const PetscScalar box_coords[6]);
-
-PetscErrorCode VecFixStdvPositionRHS(Vec RHS, Vec stdv_q, Vec stdv_q_ref,
-                                     const PetscInt* idx_bcc_stdv_q);
 
 PetscErrorCode DMSwarmFixChemicalMultiplierBox(Simulation& simulation,
                                                const PetscScalar box_coords[6]);

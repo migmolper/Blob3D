@@ -334,34 +334,9 @@ class ShapeFunction {
 #define BufferLenght 100
 
 //! Angular dependant potential cutoff
-#define r_cutoff_ADP_MgHx 6.29867867868
-#define r_cutoff_Angular_ADP_MgHx 4.0
-#define r_cutoff_ADP_AlCu 6.2872100000
-#define r_cutoff_EAM_FS_FeHx 5.3001060021200423  //
-#define r_cutoff_Eb 3.0                          // 3.2 //
-
-//! Virtual indenter (rigid body) repulsive pair parameters
-#define r_cutoff_Indenter_default 4.5
-#define sigma_Indenter_default 1.5
-#define epsilon_Indenter_default 0.1
+#define r_cutoff_default 6
 
 #define maxneigh 500
-#define max_chemical_neighs 250
-
-//! This values has been computed in a MgHx hcp cell and they
-//! are the values which warraty the stability of the system. If the occupancy
-//! is below this value do not compute the equilibrium Zero value for the
-//! occupancy
-#define max_occupancy 0.9999
-#define min_occupancy 0.0001
-#define min_occupancy_mean_q 1e-4
-#define min_occupancy_stdv_q 1e-2
-#define min_occupancy_diff 1e-3
-#define min_stdv_q 0.001
-#define max_stdv_q 3.0
-
-// Define default min value for the energy barrier eV
-#define min_Energy_barrier_default 0.2
 
 /*
   Math macros

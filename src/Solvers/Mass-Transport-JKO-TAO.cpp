@@ -24,7 +24,6 @@
 #include "Blobs/Blobs.hpp"
 #include "Blobs/Ghosts.hpp"
 #include "Blobs/Neighbors.hpp"
-#include "Blobs/Topology.hpp"
 #include "Macros.hpp"
 #include "Mesh/Boundary-Conditions.hpp"
 #include "petscdm.h"
@@ -71,7 +70,7 @@ struct JKO_ctx {
   Vec mass;
 
   /*! @param system_equations Definition of the equation (non-owning) */
-  GoverningEquations* system_equations;
+  GoverningEquations *system_equations;
 
   /*! @param Delta_t: Time-step */
   PetscScalar Delta_t;
@@ -80,11 +79,11 @@ struct JKO_ctx {
   DM background_mesh;
 };
 
-static PetscErrorCode Advection(PetscReal dt, Simulation& simulation,
-                                GoverningEquations& system_equations);
+static PetscErrorCode Advection(PetscReal dt, Simulation &simulation,
+                                GoverningEquations &system_equations);
 
-static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation& simulation,
-                                    GoverningEquations& system_equations);
+static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation &simulation,
+                                    GoverningEquations &system_equations);
 
 static PetscErrorCode compute_F0_and_RHS(Tao tao, Vec X_k1, PetscReal *F0,
                                          Vec D_JKO_Dx, void *ctx);
@@ -94,8 +93,8 @@ static PetscErrorCode compute_RHS(Tao tao, Vec X_k1, Vec D_JKO_Dx, void *ctx);
 /************************************************************************/
 
 PetscErrorCode
-Mass_Trasport_Advection_Diffusion(PetscReal dt, Simulation& simulation,
-                                  GoverningEquations& system_equations) {
+Mass_Trasport_Advection_Diffusion(PetscReal dt, Simulation &simulation,
+                                  GoverningEquations &system_equations) {
 
   PetscFunctionBeginUser;
 
@@ -109,7 +108,7 @@ Mass_Trasport_Advection_Diffusion(PetscReal dt, Simulation& simulation,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Source step: adjust the number of particles to account for sources
   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRegenerateBlobsTopology(simulation, Delta_r));
+  PetscCall(simulation.regenerate_topology(Delta_r));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Unconstrained diffusion step: update the particle position
@@ -121,8 +120,8 @@ Mass_Trasport_Advection_Diffusion(PetscReal dt, Simulation& simulation,
 
 /************************************************************************/
 
-static PetscErrorCode Advection(PetscReal dt, Simulation& simulation,
-                                GoverningEquations& system_equations) {
+static PetscErrorCode Advection(PetscReal dt, Simulation &simulation,
+                                GoverningEquations &system_equations) {
 
   PetscFunctionBeginUser;
   (void)system_equations;
@@ -136,8 +135,7 @@ static PetscErrorCode Advection(PetscReal dt, Simulation& simulation,
 
   //! Get local number of sites in the simulation (with ghost)
   PetscInt n_sites_local_ghosted;
-  PetscCall(
-      DMSwarmGetLocalSize(simulation.dm(), &n_sites_local_ghosted));
+  PetscCall(DMSwarmGetLocalSize(simulation.dm(), &n_sites_local_ghosted));
 
   //! Get number of ghost particles
   PetscInt n_sites_ghost = n_sites_local_ghosted - n_sites_local;
@@ -165,8 +163,8 @@ static PetscErrorCode Advection(PetscReal dt, Simulation& simulation,
      Get index of the particles
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscInt *idx_q_ptr;
-  PetscCall(DMSwarmGetField(simulation.dm(), "idx", NULL, NULL,
-                            (void **)&idx_q_ptr));
+  PetscCall(
+      DMSwarmGetField(simulation.dm(), "idx", NULL, NULL, (void **)&idx_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Get index for the ghost particles
@@ -190,8 +188,8 @@ static PetscErrorCode Advection(PetscReal dt, Simulation& simulation,
     Get mean position vector
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscScalar *mean_q_ptr; //! Mean position pointer
-  PetscCall(DMSwarmGetField(simulation.dm(), DMSwarmPICField_coor,
-                            NULL, NULL, (void **)&mean_q_ptr));
+  PetscCall(DMSwarmGetField(simulation.dm(), "mean-q", NULL, NULL,
+                            (void **)&mean_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get momentum vector
@@ -204,8 +202,8 @@ static PetscErrorCode Advection(PetscReal dt, Simulation& simulation,
     Get mass
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscScalar *mass_ptr; //! Mass pointer
-  PetscCall(DMSwarmGetField(simulation.dm(), "mass", NULL, NULL,
-                            (void **)&mass_ptr));
+  PetscCall(
+      DMSwarmGetField(simulation.dm(), "mass", NULL, NULL, (void **)&mass_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Compute advection
@@ -232,18 +230,17 @@ static PetscErrorCode Advection(PetscReal dt, Simulation& simulation,
   PetscCall(VecGhostUpdateEnd(X, INSERT_VALUES, SCATTER_FORWARD));
 
   //! Enforce periodic bcc on the ghost atoms
-  PetscCall(VecEnforceGhostAtomsPeriodic(X, box_idx_ptr, background_mesh));
+  PetscCall(VecEnforceGhostBlobsPeriodic(X, box_idx_ptr, background_mesh));
 
   //! Copy the updated ghost values back to the mean_q array
-  PetscCall(DMSwarmRestoreField(simulation.dm(),
-                                DMSwarmPICField_coor, NULL, NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-q", NULL, NULL,
                                 (void **)&mean_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore mean-p data
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-p", NULL,
-                                NULL, (void **)&mean_p_ptr));
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-p", NULL, NULL,
+                                (void **)&mean_p_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   Restore mass data
@@ -254,8 +251,8 @@ static PetscErrorCode Advection(PetscReal dt, Simulation& simulation,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore Periodic box index
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(simulation.dm(), "box-idx", NULL,
-                                NULL, (void **)&box_idx_ptr));
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "box-idx", NULL, NULL,
+                                (void **)&box_idx_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore idx data
@@ -274,8 +271,8 @@ static PetscErrorCode Advection(PetscReal dt, Simulation& simulation,
 
 /************************************************************************/
 
-static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation& simulation,
-                                    GoverningEquations& system_equations) {
+static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation &simulation,
+                                    GoverningEquations &system_equations) {
 
   PetscFunctionBeginUser;
 
@@ -289,8 +286,7 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation& simulation,
 
   //! Get local number of sites in the simulation (with ghost)
   PetscInt n_sites_local_ghosted;
-  PetscCall(
-      DMSwarmGetLocalSize(simulation.dm(), &n_sites_local_ghosted));
+  PetscCall(DMSwarmGetLocalSize(simulation.dm(), &n_sites_local_ghosted));
 
   //! Get number of ghost particles
   PetscInt n_sites_ghost = n_sites_local_ghosted - n_sites_local;
@@ -318,8 +314,8 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation& simulation,
      Get index of the particles
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscInt *idx_q_ptr;
-  PetscCall(DMSwarmGetField(simulation.dm(), "idx", NULL, NULL,
-                            (void **)&idx_q_ptr));
+  PetscCall(
+      DMSwarmGetField(simulation.dm(), "idx", NULL, NULL, (void **)&idx_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Get index for the ghost particles
@@ -351,8 +347,8 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation& simulation,
     Get mean position vector
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscScalar *mean_q_ptr; //! Mean position pointer
-  PetscCall(DMSwarmGetField(simulation.dm(), DMSwarmPICField_coor,
-                            NULL, NULL, (void **)&mean_q_ptr));
+  PetscCall(DMSwarmGetField(simulation.dm(), "mean-q", NULL, NULL,
+                            (void **)&mean_q_ptr));
   Vec X_k1; //! Mean position PETSc vector
   PetscCall(VecCreateGhostWithArray(PETSC_COMM_WORLD, n_dof_local,
                                     PETSC_DETERMINE, n_dof_ghost, idx_dof_ghost,
@@ -371,7 +367,7 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation& simulation,
   PetscCall(VecCopy(X_k1, X_k));
   PetscCall(VecGhostUpdateBegin(X_k, INSERT_VALUES, SCATTER_FORWARD));
   PetscCall(VecGhostUpdateEnd(X_k, INSERT_VALUES, SCATTER_FORWARD));
-  PetscCall(VecEnforceGhostAtomsPeriodic(X_k, box_idx_ptr, background_mesh));
+  PetscCall(VecEnforceGhostBlobsPeriodic(X_k, box_idx_ptr, background_mesh));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Initialize Jacobian matrix
@@ -431,8 +427,8 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation& simulation,
     Get the mass vector
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscScalar *mass_ptr; //! Mass pointer
-  PetscCall(DMSwarmGetField(simulation.dm(), "mass", NULL, NULL,
-                            (void **)&mass_ptr));
+  PetscCall(
+      DMSwarmGetField(simulation.dm(), "mass", NULL, NULL, (void **)&mass_ptr));
   Vec mass; //! Mass PETSc vector
   PetscCall(VecCreateGhostWithArray(
       PETSC_COMM_WORLD, n_sites_local, PETSC_DETERMINE, n_sites_ghost,
@@ -563,9 +559,8 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation& simulation,
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscCall(VecGhostUpdateBegin(X_k1, INSERT_VALUES, SCATTER_FORWARD));
   PetscCall(VecGhostUpdateEnd(X_k1, INSERT_VALUES, SCATTER_FORWARD));
-  PetscCall(VecEnforceGhostAtomsPeriodic(X_k1, box_idx_ptr, background_mesh));
-  PetscCall(DMSwarmRestoreField(simulation.dm(),
-                                DMSwarmPICField_coor, NULL, NULL,
+  PetscCall(VecEnforceGhostBlobsPeriodic(X_k1, box_idx_ptr, background_mesh));
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-q", NULL, NULL,
                                 (void **)&mean_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -589,8 +584,8 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation& simulation,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore Periodic box index
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(simulation.dm(), "box-idx", NULL,
-                                NULL, (void **)&box_idx_ptr));
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "box-idx", NULL, NULL,
+                                (void **)&box_idx_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore idx data
@@ -661,8 +656,7 @@ static PetscErrorCode compute_F0_and_RHS(Tao tao, Vec X_k1,
   Vec mass = ((JKO_ctx *)ctx)->mass;
 
   //! Take structure with the dmd equations
-  GoverningEquations& system_equations =
-      *((JKO_ctx *)ctx)->system_equations;
+  GoverningEquations &system_equations = *((JKO_ctx *)ctx)->system_equations;
 
   //! Time step
   PetscScalar Delta_t = ((JKO_ctx *)ctx)->Delta_t;
@@ -675,7 +669,7 @@ static PetscErrorCode compute_F0_and_RHS(Tao tao, Vec X_k1,
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscCall(VecGhostUpdateBegin(X_k1, INSERT_VALUES, SCATTER_FORWARD));
   PetscCall(VecGhostUpdateEnd(X_k1, INSERT_VALUES, SCATTER_FORWARD));
-  PetscCall(VecEnforceGhostAtomsPeriodic(X_k1, box_idx_ptr, background_mesh));
+  PetscCall(VecEnforceGhostBlobsPeriodic(X_k1, box_idx_ptr, background_mesh));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Compute density
@@ -747,8 +741,7 @@ PetscErrorCode compute_RHS(Tao tao, Vec X_k1, Vec D_JKO_Dq, void *ctx) {
   Vec mass = ((JKO_ctx *)ctx)->mass;
 
   //! Take structure with the dmd equations
-  GoverningEquations& system_equations =
-      *((JKO_ctx *)ctx)->system_equations;
+  GoverningEquations &system_equations = *((JKO_ctx *)ctx)->system_equations;
 
   //! Time step
   PetscScalar Delta_t = ((JKO_ctx *)ctx)->Delta_t;
@@ -761,7 +754,7 @@ PetscErrorCode compute_RHS(Tao tao, Vec X_k1, Vec D_JKO_Dq, void *ctx) {
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscCall(VecGhostUpdateBegin(X_k1, INSERT_VALUES, SCATTER_FORWARD));
   PetscCall(VecGhostUpdateEnd(X_k1, INSERT_VALUES, SCATTER_FORWARD));
-  PetscCall(VecEnforceGhostAtomsPeriodic(X_k1, box_idx_ptr, background_mesh));
+  PetscCall(VecEnforceGhostBlobsPeriodic(X_k1, box_idx_ptr, background_mesh));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Compute density

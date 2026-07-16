@@ -19,7 +19,6 @@
 #endif
 #include "Blobs/Blobs.hpp"
 #include "Blobs/Neighbors.hpp"
-#include "Blobs/Topology.hpp"
 #include "Macros.hpp"
 #include "Mesh/Boundary-Conditions.hpp"
 #include "petscdmswarm.h"
@@ -35,7 +34,8 @@ extern PetscMPIInt rank_MPI;
 
 /************************************************************************/
 
-PetscErrorCode DMSwarmCreateNeighborsBlobs(Simulation& simulation, double r_cutoff) {
+PetscErrorCode DMSwarmCreateNeighborsBlobs(Simulation &simulation,
+                                           double r_cutoff) {
 
   PetscFunctionBeginUser;
 
@@ -46,23 +46,22 @@ PetscErrorCode DMSwarmCreateNeighborsBlobs(Simulation& simulation, double r_cuto
 
   //! Get the local size (ghosted)
   PetscInt n_sites_local_ghosted;
-  PetscCall(
-      DMSwarmGetLocalSize(simulation.dm(), &n_sites_local_ghosted));
+  PetscCall(DMSwarmGetLocalSize(simulation.dm(), &n_sites_local_ghosted));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get mean position vector
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscScalar *mean_q_ptr;
-  PetscCall(DMSwarmGetField(simulation.dm(), DMSwarmPICField_coor,
-                            NULL, NULL, (void **)&mean_q_ptr));
+  PetscCall(DMSwarmGetField(simulation.dm(), "mean-q", NULL, NULL,
+                            (void **)&mean_q_ptr));
   Eigen::Map<MatrixType> mean_q(mean_q_ptr, n_sites_local_ghosted, 3);
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Get index of the particles
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscInt *idx_ptr;
-  PetscCall(DMSwarmGetField(simulation.dm(), "idx", NULL, NULL,
-                            (void **)&idx_ptr));
+  PetscCall(
+      DMSwarmGetField(simulation.dm(), "idx", NULL, NULL, (void **)&idx_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get ghost indicator
@@ -144,8 +143,7 @@ PetscErrorCode DMSwarmCreateNeighborsBlobs(Simulation& simulation, double r_cuto
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    Restore data
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(simulation.dm(),
-                                DMSwarmPICField_coor, NULL, NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-q", NULL, NULL,
                                 (void **)&mean_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -165,7 +163,7 @@ PetscErrorCode DMSwarmCreateNeighborsBlobs(Simulation& simulation, double r_cuto
 
 /********************************************************************************/
 
-PetscErrorCode DMSwarmDestroyNeighborsBlobs(Simulation& simulation) {
+PetscErrorCode DMSwarmDestroyNeighborsBlobs(Simulation &simulation) {
   PetscFunctionBeginUser;
   PetscCall(simulation.topology().clear());
   PetscFunctionReturn(PETSC_SUCCESS);

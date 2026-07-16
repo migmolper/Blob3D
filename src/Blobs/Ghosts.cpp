@@ -11,12 +11,25 @@
 
 #include "Macros.hpp"
 #include "Mesh/Boundary-Conditions.hpp"
+#include "Mesh/Coordinates.hpp"
 #include "Mesh/InOut-Mesh.hpp"
 #include "petscdmswarm.h"
+#include <map>
 #include <petscsystypes.h>
+#include <vector>
 
 extern PetscMPIInt size_MPI;
 extern PetscMPIInt rank_MPI;
+
+typedef struct {
+  PetscInt n_ghost_sites;
+  PetscInt n_duplicate_groups;
+  PetscInt n_redundant_sites;
+} GhostIdxUniquenessStats;
+
+static PetscErrorCode
+DMSwarmCheckGhostIdxUniqueness(Simulation &simulation,
+                               GhostIdxUniquenessStats *stats);
 
 /********************************************************************************/
 
@@ -27,13 +40,11 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
   PetscFunctionBeginUser;
 
   PetscInt* idx_ptr;
-  PetscInt* idx_diff_ptr;
   PetscInt* swarm_rank_ptr;
   PetscInt* ghost_ptr;
   PetscInt* rank_ptr;
   PetscInt* box_idx_ptr;
   PetscScalar* mean_q_ptr;
-  PetscScalar* mean_q_ref_ptr;
   PetscScalar* mean_p_ptr;
   PetscScalar* rho_ptr;
   PetscScalar* beta_ptr;
@@ -72,7 +83,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
   PetscReal lmin[3], lmax[3];
   DM background_mesh;
   PetscCall(DMSwarmGetCellDM(simulation.dm(), &background_mesh));
-  PetscCall(DMGetLocalBoundingBox(background_mesh, lmin, lmax));
+  PetscCall(DMGetPhysicalLocalBoundingBox(background_mesh, lmin, lmax));
 
   //! Lower left coordinates of the brick
   PetscReal X_ll, Y_ll, Z_ll;
@@ -104,8 +115,8 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Mark ghost particles in the buffer region of the domain.
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmGetField(simulation.dm(), DMSwarmPICField_coor,
-                            NULL, NULL, (void**)&mean_q_ptr));
+  PetscCall(DMSwarmGetField(simulation.dm(), "mean-q", NULL, NULL,
+                            (void**)&mean_q_ptr));
   Eigen::Map<MatrixType> mean_q(mean_q_ptr, n_local_size, dim);
 
   int num_ghost = 0;
@@ -129,7 +140,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ll + buffer_width;
       buffer_coords[5] = Z_ll + buffer_width;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_m1_m1_m1;
         num_ghost++;
@@ -149,7 +160,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ll + buffer_width;
       buffer_coords[5] = Z_ll + buffer_width;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_0_m1_m1;
         num_ghost++;
@@ -169,7 +180,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ll + buffer_width;
       buffer_coords[5] = Z_ll + buffer_width;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_p1_m1_m1;
         num_ghost++;
@@ -189,7 +200,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ur;
       buffer_coords[5] = Z_ll + buffer_width;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_m1_0_m1;
         num_ghost++;
@@ -209,7 +220,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ur;
       buffer_coords[5] = Z_ll + buffer_width;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_0_0_m1;
         num_ghost++;
@@ -229,7 +240,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ur;
       buffer_coords[5] = Z_ll + buffer_width;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_p1_0_m1;
         num_ghost++;
@@ -249,7 +260,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ur;
       buffer_coords[5] = Z_ll + buffer_width;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_m1_p1_m1;
         num_ghost++;
@@ -269,7 +280,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ur;
       buffer_coords[5] = Z_ll + buffer_width;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_0_p1_m1;
         num_ghost++;
@@ -289,7 +300,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ur;
       buffer_coords[5] = Z_ll + buffer_width;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_p1_p1_m1;
         num_ghost++;
@@ -309,7 +320,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ll + buffer_width;
       buffer_coords[5] = Z_ur;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_m1_m1_0;
         num_ghost++;
@@ -329,7 +340,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ll + buffer_width;
       buffer_coords[5] = Z_ur;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_0_m1_0;
         num_ghost++;
@@ -349,7 +360,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ll + buffer_width;
       buffer_coords[5] = Z_ur;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_p1_m1_0;
         num_ghost++;
@@ -369,7 +380,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ur;
       buffer_coords[5] = Z_ur;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_m1_0_0;
         num_ghost++;
@@ -391,7 +402,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ur;
       buffer_coords[5] = Z_ur;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_p1_0_0;
         num_ghost++;
@@ -411,7 +422,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ur;
       buffer_coords[5] = Z_ur;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_m1_p1_0;
         num_ghost++;
@@ -431,7 +442,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ur;
       buffer_coords[5] = Z_ur;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_0_p1_0;
         num_ghost++;
@@ -451,7 +462,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ur;
       buffer_coords[5] = Z_ur;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_p1_p1_0;
         num_ghost++;
@@ -471,7 +482,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ll + buffer_width;
       buffer_coords[5] = Z_ur;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_m1_m1_p1;
         num_ghost++;
@@ -491,7 +502,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ll + buffer_width;
       buffer_coords[5] = Z_ur;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_0_m1_p1;
         num_ghost++;
@@ -511,7 +522,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ll + buffer_width;
       buffer_coords[5] = Z_ur;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_p1_m1_p1;
         num_ghost++;
@@ -531,7 +542,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ur;
       buffer_coords[5] = Z_ur;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_m1_0_p1;
         num_ghost++;
@@ -551,7 +562,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ur;
       buffer_coords[5] = Z_ur;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_0_0_p1;
         num_ghost++;
@@ -571,7 +582,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ur;
       buffer_coords[5] = Z_ur;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_p1_0_p1;
         num_ghost++;
@@ -591,7 +602,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ur;
       buffer_coords[5] = Z_ur;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_m1_p1_p1;
         num_ghost++;
@@ -611,7 +622,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ur;
       buffer_coords[5] = Z_ur;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_0_p1_p1;
         num_ghost++;
@@ -631,7 +642,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
       buffer_coords[4] = Y_ur;
       buffer_coords[5] = Z_ur;
 
-      if (In_Out_Mesh(mean_q_i, buffer_coords)) {  //!
+      if (In_Out_Mesh_Closed(mean_q_i, buffer_coords)) {  //!
         idx_ghost[num_ghost] = site_i;
         rank_ghost[num_ghost] = rank_p1_p1_p1;
         num_ghost++;
@@ -639,8 +650,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
     }
   }
 
-  PetscCall(DMSwarmRestoreField(simulation.dm(),
-                                DMSwarmPICField_coor, NULL, NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-q", NULL, NULL,
                                 (void**)&mean_q_ptr));
 
 #ifdef DEBUG_MODE
@@ -666,11 +676,8 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
   PetscCall(DMSwarmGetField(simulation.dm(), "MPI-rank", NULL, NULL,
                             (void**)&rank_ptr));
 
-  PetscCall(DMSwarmGetField(simulation.dm(), DMSwarmPICField_coor,
-                            NULL, NULL, (void**)&mean_q_ptr));
-
-  PetscCall(DMSwarmGetField(simulation.dm(), "mean-q-ref", NULL,
-                            NULL, (void**)&mean_q_ref_ptr));
+  PetscCall(DMSwarmGetField(simulation.dm(), "mean-q", NULL, NULL,
+                            (void**)&mean_q_ptr));
 
   PetscCall(DMSwarmGetField(simulation.dm(), "mean-p", NULL, NULL,
                             (void**)&mean_p_ptr));
@@ -702,8 +709,6 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
     idx_ptr[ghost_i] = idx_ptr[loc_site_i];
     for (int alpha = 0; alpha < dim; alpha++) {
       mean_q_ptr[ghost_i * dim + alpha] = mean_q_ptr[loc_site_i * dim + alpha];
-      mean_q_ref_ptr[ghost_i * dim + alpha] =
-          mean_q_ref_ptr[loc_site_i * dim + alpha];
       mean_p_ptr[ghost_i * dim + alpha] =
           mean_p_ptr[loc_site_i * dim + alpha];
     }
@@ -717,15 +722,11 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
   PetscCall(DMSwarmRestoreField(simulation.dm(), "idx", NULL, NULL,
                                 (void**)&idx_ptr));
 
-  PetscCall(DMSwarmRestoreField(simulation.dm(),
-                                DMSwarmPICField_coor, NULL, NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-q", NULL, NULL,
                                 (void**)&mean_q_ptr));
 
-  PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-q-ref", NULL,
-                                NULL, (void**)&mean_q_ref_ptr));
-
   PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-p", NULL, NULL,
-                                (void**)&mean_p_ptr));                                
+                                (void**)&mean_p_ptr));
 
   PetscCall(DMSwarmRestoreField(simulation.dm(), "ghost", NULL, NULL,
                                 (void**)&ghost_ptr));
@@ -754,12 +755,133 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
   PetscCall(DMSwarmRestoreField(simulation.dm(), "idx-bcc-beta",
                                 NULL, NULL, (void**)&idx_beta_bcc_ptr));
 
+  PetscCall(DMSwarmSyncCoorFromMeanQ(simulation));
+
   //! Migrate new points
   PetscCall(DMSwarmMigrate(simulation.dm(), PETSC_TRUE));
+
+  //! Enforce periodic boundary conditions over the ghost blobs
+  PetscCall(DMSwarmEnforceGhostBlobsPeriodic(simulation));
+
+  //! Check the uniqueness of the ghost indices
+  PetscCall(DMSwarmCheckGhostIdxUniqueness(simulation, NULL));
 
   //! Destroy auxiliar variables
   free(idx_ghost);
   free(rank_ghost);
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+/********************************************************************************/
+
+namespace {
+
+struct LocalSiteRecord {
+  PetscInt local_site = 0;
+  PetscInt idx = 0;
+  PetscInt box_idx = 0;
+  PetscInt is_ghost = 0;
+};
+
+}  // namespace
+
+/********************************************************************************/
+
+static PetscErrorCode
+DMSwarmCheckGhostIdxUniqueness(Simulation &simulation,
+                               GhostIdxUniquenessStats *stats) {
+
+  PetscFunctionBeginUser;
+  PetscValidHeaderSpecific(simulation.dm(), DM_CLASSID, 1);
+
+  PetscInt *idx_ptr = NULL;
+  PetscInt *ghost_ptr = NULL;
+  PetscInt *box_idx_ptr = NULL;
+  PetscCall(DMSwarmGetField(simulation.dm(), "idx", NULL, NULL,
+                            (void **)&idx_ptr));
+  PetscCall(DMSwarmGetField(simulation.dm(), "ghost", NULL, NULL,
+                            (void **)&ghost_ptr));
+  PetscCall(DMSwarmGetField(simulation.dm(), "box-idx", NULL, NULL,
+                            (void **)&box_idx_ptr));
+
+  PetscInt n_sites_local_ghosted = 0;
+  PetscCall(DMSwarmGetLocalSize(simulation.dm(), &n_sites_local_ghosted));
+
+  std::map<PetscInt, std::vector<LocalSiteRecord>> sites_by_idx;
+
+  for (PetscInt site_i = 0; site_i < n_sites_local_ghosted; site_i++) {
+    LocalSiteRecord record;
+    record.local_site = site_i;
+    record.idx = idx_ptr[site_i];
+    record.box_idx = box_idx_ptr[site_i];
+    record.is_ghost = ghost_ptr[site_i];
+    sites_by_idx[record.idx].push_back(record);
+  }
+
+  PetscInt n_duplicate_groups_local = 0;
+  PetscInt n_redundant_sites_local = 0;
+  PetscInt n_ghost_sites_local = 0;
+
+  for (PetscInt site_i = 0; site_i < n_sites_local_ghosted; site_i++) {
+    if (ghost_ptr[site_i] != 0) {
+      n_ghost_sites_local++;
+    }
+  }
+
+  for (const auto &entry : sites_by_idx) {
+    const PetscInt idx = entry.first;
+    const std::vector<LocalSiteRecord> &records = entry.second;
+    if (records.size() <= 1) {
+      continue;
+    }
+
+    n_duplicate_groups_local++;
+    n_redundant_sites_local += static_cast<PetscInt>(records.size()) - 1;
+
+    for (size_t k = 1; k < records.size(); k++) {
+      PetscCall(PetscPrintf(
+          PETSC_COMM_WORLD,
+          "[Ghost-MPI-uniqueness] duplicate swarm idx %" PetscInt_FMT
+          "\n"
+          "  reference local %" PetscInt_FMT " ghost=%" PetscInt_FMT
+          " box-idx %" PetscInt_FMT "\n"
+          "  duplicate local %" PetscInt_FMT " ghost=%" PetscInt_FMT
+          " box-idx %" PetscInt_FMT "\n",
+          idx, records.front().local_site, records.front().is_ghost,
+          records.front().box_idx, records[k].local_site, records[k].is_ghost,
+          records[k].box_idx));
+    }
+  }
+
+  PetscInt n_duplicate_groups_global = 0;
+  PetscInt n_redundant_sites_global = 0;
+  PetscInt n_ghost_sites_global = 0;
+
+  PetscCall(MPIU_Allreduce(&n_duplicate_groups_local, &n_duplicate_groups_global,
+                           1, MPIU_INT, MPIU_SUM, PETSC_COMM_WORLD));
+  PetscCall(MPIU_Allreduce(&n_redundant_sites_local, &n_redundant_sites_global,
+                           1, MPIU_INT, MPIU_SUM, PETSC_COMM_WORLD));
+  PetscCall(MPIU_Allreduce(&n_ghost_sites_local, &n_ghost_sites_global, 1,
+                           MPIU_INT, MPIU_SUM, PETSC_COMM_WORLD));
+
+  if (stats != NULL) {
+    stats->n_ghost_sites = n_ghost_sites_global;
+    stats->n_duplicate_groups = n_duplicate_groups_global;
+    stats->n_redundant_sites = n_redundant_sites_global;
+  }
+
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "box-idx", NULL, NULL,
+                                (void **)&box_idx_ptr));
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "ghost", NULL, NULL,
+                                (void **)&ghost_ptr));
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "idx", NULL, NULL,
+                                (void **)&idx_ptr));
+
+  PetscCheck(n_duplicate_groups_global == 0, PETSC_COMM_WORLD, PETSC_ERR_USER,
+             "Ghost MPI idx uniqueness check failed: %" PetscInt_FMT
+             " duplicate idx groups",
+             n_duplicate_groups_global);
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }

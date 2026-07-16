@@ -16,10 +16,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
-#include <iostream>  //std::cout//std::cin
+#include <iostream> //std::cout//std::cin
 #include <math.h>
-#include <sstream>  //std::istringstream
-#include <string>   //std::string
+#include <sstream> //std::istringstream
+#include <string>  //std::string
 #include <vector>
 #include <vtkCellArray.h>
 #include <vtkCellData.h>
@@ -42,7 +42,8 @@ extern char OutputFolder[MAXC];
 
 /********************************************************************************/
 
-PetscErrorCode DMSwarmBlobsViewVtk(Simulation& simulation, const std::string& filename) {
+PetscErrorCode DMSwarmBlobsViewVtk(Simulation &simulation,
+                                   const std::string &filename) {
 
   PetscFunctionBeginUser;
   MPI_Comm comm = PETSC_COMM_WORLD;
@@ -74,51 +75,51 @@ PetscErrorCode DMSwarmBlobsViewVtk(Simulation& simulation, const std::string& fi
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Get index of the particles
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscInt* idx_ptr;
+  PetscInt *idx_ptr;
   PetscCall(
-      DMSwarmGetField(atomistic_data, "idx", NULL, NULL, (void**)&idx_ptr));
+      DMSwarmGetField(atomistic_data, "idx", NULL, NULL, (void **)&idx_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Boolean variable for ghost particles
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscInt* ghost_ptr;
-  PetscCall(
-      DMSwarmGetField(atomistic_data, "ghost", NULL, NULL, (void**)&ghost_ptr));
+  PetscInt *ghost_ptr;
+  PetscCall(DMSwarmGetField(atomistic_data, "ghost", NULL, NULL,
+                            (void **)&ghost_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get the mean position
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  const PetscReal* mean_q_ptr = nullptr;
-  PetscCall(DMSwarmGetField(atomistic_data, DMSwarmPICField_coor, NULL, NULL,
-                            (void**)&mean_q_ptr));
+  const PetscReal *mean_q_ptr = nullptr;
+  PetscCall(DMSwarmGetField(atomistic_data, "mean-q", NULL, NULL,
+                            (void **)&mean_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get the molar fraction
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscScalar* rho_ptr;
-  PetscCall(DMSwarmGetField(atomistic_data, "rho", NULL, NULL,
-                            (void**)&rho_ptr));
+  PetscScalar *rho_ptr;
+  PetscCall(
+      DMSwarmGetField(atomistic_data, "rho", NULL, NULL, (void **)&rho_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get the thermal Lagrange Multiplier (beta)
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscScalar* beta_ptr;
+  PetscScalar *beta_ptr;
   PetscCall(
-      DMSwarmGetField(atomistic_data, "beta", NULL, NULL, (void**)&beta_ptr));
+      DMSwarmGetField(atomistic_data, "beta", NULL, NULL, (void **)&beta_ptr));
 
   /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Index for the thermal bcc
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscInt* idx_beta_bcc_ptr;
+  PetscInt *idx_beta_bcc_ptr;
   PetscCall(DMSwarmGetField(atomistic_data, "idx-bcc-beta", NULL, NULL,
-                            (void**)&idx_beta_bcc_ptr));
+                            (void **)&idx_beta_bcc_ptr));
 
   /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Index for the MPI rank
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscInt* rank_ptr;
+  PetscInt *rank_ptr;
   PetscCall(DMSwarmGetField(atomistic_data, DMSwarmField_rank, NULL, NULL,
-                            (void**)&rank_ptr));
+                            (void **)&rank_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Calculate the local number of ghost particles
@@ -135,18 +136,18 @@ PetscErrorCode DMSwarmBlobsViewVtk(Simulation& simulation, const std::string& fi
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscInt numSitesLocal = numParticlesLocal - numParticlesGhostLocal;
 
-  std::vector<double> local_pos;            // dim * numSitesLocal
-  std::vector<double> local_xi;             // 1 * numSitesLocal
-  std::vector<double> local_beta;           // 1 * numSitesLocal
-  std::vector<int> local_idx_beta_bcc;      // 1 * numSitesLocal
-  std::vector<int> local_rank;              // 1 * numSitesLocal
+  std::vector<double> local_pos;       // dim * numSitesLocal
+  std::vector<double> local_xi;        // 1 * numSitesLocal
+  std::vector<double> local_beta;      // 1 * numSitesLocal
+  std::vector<int> local_idx_beta_bcc; // 1 * numSitesLocal
+  std::vector<int> local_rank;         // 1 * numSitesLocal
 
   local_pos.reserve(dim * numSitesLocal);
   local_xi.reserve(numSitesLocal);
   local_beta.reserve(numSitesLocal);
   local_idx_beta_bcc.reserve(numSitesLocal);
   local_rank.reserve(numSitesLocal);
-  
+
   for (PetscInt i = 0; i < numSitesLocal; ++i) {
 
     // positions
@@ -217,16 +218,16 @@ PetscErrorCode DMSwarmBlobsViewVtk(Simulation& simulation, const std::string& fi
               rank == 0 ? displs_pos.data() : nullptr, MPI_DOUBLE, 0, comm);
 
   // Helpers for scalar fields
-  auto gatherv_scalar_double = [&](const std::vector<double>& local,
-                                   std::vector<double>& global) {
+  auto gatherv_scalar_double = [&](const std::vector<double> &local,
+                                   std::vector<double> &global) {
     MPI_Gatherv(local.data(), ns_local_int, MPI_DOUBLE,
                 rank == 0 ? global.data() : nullptr,
                 rank == 0 ? recvcounts_sites.data() : nullptr,
                 rank == 0 ? displs_sites.data() : nullptr, MPI_DOUBLE, 0, comm);
   };
 
-  auto gatherv_scalar_int = [&](const std::vector<int>& local,
-                                std::vector<int>& global) {
+  auto gatherv_scalar_int = [&](const std::vector<int> &local,
+                                std::vector<int> &global) {
     MPI_Gatherv(local.data(), ns_local_int, MPI_INT,
                 rank == 0 ? global.data() : nullptr,
                 rank == 0 ? recvcounts_sites.data() : nullptr,
@@ -237,7 +238,7 @@ PetscErrorCode DMSwarmBlobsViewVtk(Simulation& simulation, const std::string& fi
   gatherv_scalar_double(local_beta, global_beta);
   gatherv_scalar_int(local_idx_beta_bcc, global_idx_beta_bcc);
   gatherv_scalar_int(local_rank, global_rank);
-  
+
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Rank 0 builds vtkPolyData and writes a single .vtp file
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
@@ -281,7 +282,7 @@ PetscErrorCode DMSwarmBlobsViewVtk(Simulation& simulation, const std::string& fi
     polydata->GetPointData()->AddArray(beta_arr);
     polydata->GetPointData()->AddArray(idx_beta_bcc_arr);
     polydata->GetPointData()->AddArray(rank_arr);
-    
+
     vtkSmartPointer<vtkXMLPolyDataWriter> writer =
         vtkSmartPointer<vtkXMLPolyDataWriter>::New();
     writer->SetFileName(filename.c_str());
@@ -297,31 +298,31 @@ PetscErrorCode DMSwarmBlobsViewVtk(Simulation& simulation, const std::string& fi
     writer->Write();
   }
 
-  MPI_Barrier(comm); 
+  MPI_Barrier(comm);
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore all DMSwarm fields
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(
-      DMSwarmRestoreField(atomistic_data, "idx", NULL, NULL, (void**)&idx_ptr));
+  PetscCall(DMSwarmRestoreField(atomistic_data, "idx", NULL, NULL,
+                                (void **)&idx_ptr));
 
   PetscCall(DMSwarmRestoreField(atomistic_data, "ghost", NULL, NULL,
-                                (void**)&ghost_ptr));
+                                (void **)&ghost_ptr));
 
-  PetscCall(DMSwarmRestoreField(atomistic_data, DMSwarmPICField_coor, NULL,
-                                NULL, (void**)&mean_q_ptr));
+  PetscCall(DMSwarmRestoreField(atomistic_data, "mean-q", NULL, NULL,
+                                (void **)&mean_q_ptr));
 
-  PetscCall(DMSwarmRestoreField(atomistic_data, "molar-fraction", NULL, NULL,
-                                (void**)&rho_ptr));
+  PetscCall(DMSwarmRestoreField(atomistic_data, "rho", NULL, NULL,
+                                (void **)&rho_ptr));
 
   PetscCall(DMSwarmRestoreField(atomistic_data, "beta", NULL, NULL,
-                                (void**)&beta_ptr));
+                                (void **)&beta_ptr));
 
   PetscCall(DMSwarmRestoreField(atomistic_data, "idx-bcc-beta", NULL, NULL,
-                                (void**)&idx_beta_bcc_ptr));
+                                (void **)&idx_beta_bcc_ptr));
 
   PetscCall(DMSwarmRestoreField(atomistic_data, DMSwarmField_rank, NULL, NULL,
-                                (void**)&rank_ptr));
+                                (void **)&rank_ptr));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }

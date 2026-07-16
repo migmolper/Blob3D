@@ -55,6 +55,18 @@ ParticleSwarm &ParticleSwarm::operator=(ParticleSwarm &&other) noexcept {
 }
 
 void ParticleSwarm::release() noexcept {
+  PetscBool petsc_alive = PETSC_FALSE;
+  PetscInitialized(&petsc_alive);
+  if (!petsc_alive) {
+    /* PetscFinalize / MPI_Finalize already ran: drop handles without MPI. */
+    dm_ = nullptr;
+    dump2petsc_ = nullptr;
+    n_global_ = 0;
+    n_local_ = 0;
+    n_ghost_ = 0;
+    return;
+  }
+
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Destroy the background mesh attached to the swarm
   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
@@ -68,7 +80,7 @@ void ParticleSwarm::release() noexcept {
   }
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    Destroy dump → PETSc mapping
+    Destroy dump ? PETSc mapping
   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   if (dump2petsc_) {
     AODestroy(&dump2petsc_);
@@ -97,7 +109,13 @@ void ParticleSwarm::adopt(DM dm, AO dump2petsc, PetscInt n_global,
 /********************************************************************************/
 
 NeighborTopology::~NeighborTopology() {
-  //! Best-effort cleanup; PETSc may already be finalized
+  PetscBool petsc_alive = PETSC_FALSE;
+  PetscInitialized(&petsc_alive);
+  if (!petsc_alive) {
+    neighs_ = nullptr;
+    n_ = 0;
+    return;
+  }
   if (neighs_) {
     for (PetscInt i = 0; i < n_; ++i) {
       if (neighs_[i]) {
@@ -162,6 +180,11 @@ PetscErrorCode NeighborTopology::clear() {
 /********************************************************************************/
 
 Simulation::~Simulation() {
+  PetscBool petsc_alive = PETSC_FALSE;
+  PetscInitialized(&petsc_alive);
+  if (!petsc_alive) {
+    return;
+  }
   //! Destroy topology while the DM is still alive, then release particles
   if (dm()) {
     (void)destroy_topology();
@@ -174,11 +197,11 @@ PetscErrorCode Simulation::generate_topology(double buffer_width) {
 
   PetscFunctionBeginUser;
 
-  //! 1º Create ghost atoms
+  //! 1? Create ghost atoms
   PetscCall(DMSwarmSetMigrateType(dm(), DMSWARM_MIGRATE_BASIC));
   PetscCall(DMSwarmCreateGhostBlobs(*this, buffer_width));
 
-  //! 2º Compute list of mechanical neighs
+  //! 2? Compute list of mechanical neighs
   PetscCall(DMSwarmCreateNeighborsBlobs(*this, buffer_width));
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -192,21 +215,21 @@ PetscErrorCode Simulation::regenerate_topology(double buffer_width) {
 
   PetscInt n_sites_global = 0;
 
-  //! 1º: Destroy topology
+  //! 1?: Destroy topology
   PetscCall(DMSwarmDestroyNeighborsBlobs(*this));
 
-  //! 2º: Destroy ghost atoms
+  //! 2?: Destroy ghost atoms
   PetscCall(DMSwarmDestroyGhostBlobs(*this));
 
-  //! 3º: Enforce periodic conditions over physical atoms
-  PetscCall(DMSwarmEnforceAtomsPeriodic(*this, buffer_width));
+  //! 3?: Enforce periodic conditions over physical atoms
+  PetscCall(DMSwarmEnforceBlobsPeriodic(*this, buffer_width));
 
-  //! 4º: Rebin atoms
+  //! 4?: Rebin atoms
   PetscCall(DMSwarmSyncCoorFromMeanQ(*this));
   PetscCall(DMSwarmSetMigrateType(dm(), DMSWARM_MIGRATE_DMCELLNSCATTER));
   PetscCall(DMSwarmMigrate(dm(), PETSC_TRUE));
 
-  //! 5º: Update number of particles and check consistency
+  //! 5?: Update number of particles and check consistency
   PetscCall(DMSwarmGetSize(dm(), &n_sites_global));
   PetscCall(DMSwarmGetLocalSize(dm(), &n_sites_local()));
   if (n_sites_global != this->n_sites_global()) {
@@ -216,7 +239,7 @@ PetscErrorCode Simulation::regenerate_topology(double buffer_width) {
             n_sites_global, this->n_sites_global());
   }
 
-  //! 6º: Update "MPI-rank"
+  //! 6?: Update "MPI-rank"
   PetscInt *rank_ptr;
   PetscCall(DMSwarmGetField(dm(), "MPI-rank", NULL, NULL, (void **)&rank_ptr));
   for (PetscInt site_u = 0; site_u < n_sites_local(); site_u++) {
@@ -225,11 +248,11 @@ PetscErrorCode Simulation::regenerate_topology(double buffer_width) {
   PetscCall(
       DMSwarmRestoreField(dm(), "MPI-rank", NULL, NULL, (void **)&rank_ptr));
 
-  //! 7º: create new ghost atoms and impose periodicity over them
+  //! 7?: create new ghost atoms and impose periodicity over them
   PetscCall(DMSwarmSetMigrateType(dm(), DMSWARM_MIGRATE_BASIC));
   PetscCall(DMSwarmCreateGhostBlobs(*this, buffer_width));
 
-  //! 8º: Update topology
+  //! 8?: Update topology
   PetscCall(DMSwarmCreateNeighborsBlobs(*this, buffer_width));
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -241,10 +264,10 @@ PetscErrorCode Simulation::destroy_topology() {
 
   PetscFunctionBeginUser;
 
-  //! 1º Destroy list of neighs
+  //! 1? Destroy list of neighs
   PetscCall(DMSwarmDestroyNeighborsBlobs(*this));
 
-  //! 2º Destroy ghost atoms
+  //! 2? Destroy ghost atoms
   PetscCall(DMSwarmDestroyGhostBlobs(*this));
 
   PetscFunctionReturn(PETSC_SUCCESS);
