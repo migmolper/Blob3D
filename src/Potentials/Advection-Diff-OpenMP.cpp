@@ -38,6 +38,7 @@ extern DiffusivePotential Potential_AD;
 PetscErrorCode AdvectionDiffusionEquations::evaluate_meassure_JKO(
     Vec rho_k1, const Vec x_k1, const Vec beta_k1, const Vec mass,
     const ParticleTopology* atom_topology) {
+
   PetscFunctionBeginUser;
 
   unsigned int dim = NumberDimensions;
@@ -129,6 +130,7 @@ PetscErrorCode AdvectionDiffusionEquations::evaluate_JKO(
     PetscScalar* JKO_system, PetscScalar Delta_t, const Vec rho_k1,
     const Vec x_k1, const Vec x_k, const Vec beta_k1, const Vec beta_k,
     const Vec mass, const ParticleTopology* atom_topology) {
+      
   PetscFunctionBeginUser;
 
   (void)atom_topology;

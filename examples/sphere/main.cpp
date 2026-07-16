@@ -93,7 +93,7 @@ int main(int argc, char **argv) {
   PetscOptionsSetValue(NULL, "-minJKO_dx_tao_type", "cg");
   PetscOptionsSetValue(NULL, "-minJKO_dx_tao_cg_type", "prp");
   PetscOptionsSetValue(NULL, "-minJKO_dx_tao_max_funcs", "100");
-  //  PetscOptionsSetValue(NULL, "-minJKO_dx_tao_monitor_globalization", "");
+  PetscOptionsSetValue(NULL, "-minJKO_dx_tao_monitor_globalization", "");
   PetscOptionsSetValue(NULL, "-minJKO_dx_tao_view", "");
   PetscOptionsSetValue(NULL, "-minJKO_dx_tao_converged_reason", "");
 
@@ -157,21 +157,6 @@ int main(int argc, char **argv) {
     Initialize  equations
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   AdvectionDiffusionEquations system_equations;
-
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    Print background mesh
-    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  DM background_mesh;
-  PetscCall(DMSwarmGetCellDM(simulation.dm(), &background_mesh));
-
-  PetscViewer viewer;
-  PetscCall(PetscViewerCreate(PETSC_COMM_WORLD, &viewer));
-  PetscCall(PetscViewerSetType(viewer, PETSCVIEWERVTK));
-  PetscCall(PetscViewerFileSetMode(viewer, FILE_MODE_WRITE));
-  snprintf(OutputFile, MAXC, "%s/Mg-hcp-sphere-R-20-mesh.vtu", OutputFolder);
-  PetscCall(PetscViewerFileSetName(viewer, OutputFile));
-  PetscCall(DMView(background_mesh, viewer));
-  PetscCall(PetscViewerDestroy(&viewer));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Outputs initial configuration

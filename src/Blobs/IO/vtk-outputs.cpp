@@ -57,11 +57,11 @@ PetscErrorCode DMSwarmBlobsViewVtk(Simulation &simulation,
   PetscInt numParticlesLocal;
 
   //! Get the DMSwarm object
-  DM atomistic_data = simulation.dm();
+  DM blob_data = simulation.dm();
 
   // Get local number of particles and their coordinates
-  PetscCall(DMSwarmGetSize(atomistic_data, &totalParticles));
-  PetscCall(DMSwarmGetLocalSize(atomistic_data, &numParticlesLocal));
+  PetscCall(DMSwarmGetSize(blob_data, &totalParticles));
+  PetscCall(DMSwarmGetLocalSize(blob_data, &numParticlesLocal));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get the global (x,y,z) indices of the lower left corner and size of the
@@ -69,7 +69,7 @@ PetscErrorCode DMSwarmBlobsViewVtk(Simulation &simulation,
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscReal lmin[3], lmax[3];
   DM background_mesh;
-  PetscCall(DMSwarmGetCellDM(atomistic_data, &background_mesh));
+  PetscCall(DMSwarmGetCellDM(blob_data, &background_mesh));
   PetscCall(DMGetBoundingBox(background_mesh, lmin, lmax));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -77,20 +77,20 @@ PetscErrorCode DMSwarmBlobsViewVtk(Simulation &simulation,
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscInt *idx_ptr;
   PetscCall(
-      DMSwarmGetField(atomistic_data, "idx", NULL, NULL, (void **)&idx_ptr));
+      DMSwarmGetField(blob_data, "idx", NULL, NULL, (void **)&idx_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Boolean variable for ghost particles
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscInt *ghost_ptr;
-  PetscCall(DMSwarmGetField(atomistic_data, "ghost", NULL, NULL,
+  PetscCall(DMSwarmGetField(blob_data, "ghost", NULL, NULL,
                             (void **)&ghost_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get the mean position
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   const PetscReal *mean_q_ptr = nullptr;
-  PetscCall(DMSwarmGetField(atomistic_data, "mean-q", NULL, NULL,
+  PetscCall(DMSwarmGetField(blob_data, "mean-q", NULL, NULL,
                             (void **)&mean_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -98,27 +98,27 @@ PetscErrorCode DMSwarmBlobsViewVtk(Simulation &simulation,
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscScalar *rho_ptr;
   PetscCall(
-      DMSwarmGetField(atomistic_data, "rho", NULL, NULL, (void **)&rho_ptr));
+      DMSwarmGetField(blob_data, "rho", NULL, NULL, (void **)&rho_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get the thermal Lagrange Multiplier (beta)
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscScalar *beta_ptr;
   PetscCall(
-      DMSwarmGetField(atomistic_data, "beta", NULL, NULL, (void **)&beta_ptr));
+      DMSwarmGetField(blob_data, "beta", NULL, NULL, (void **)&beta_ptr));
 
   /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Index for the thermal bcc
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscInt *idx_beta_bcc_ptr;
-  PetscCall(DMSwarmGetField(atomistic_data, "idx-bcc-beta", NULL, NULL,
+  PetscCall(DMSwarmGetField(blob_data, "idx-bcc-beta", NULL, NULL,
                             (void **)&idx_beta_bcc_ptr));
 
   /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Index for the MPI rank
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscInt *rank_ptr;
-  PetscCall(DMSwarmGetField(atomistic_data, DMSwarmField_rank, NULL, NULL,
+  PetscCall(DMSwarmGetField(blob_data, DMSwarmField_rank, NULL, NULL,
                             (void **)&rank_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -245,10 +245,6 @@ PetscErrorCode DMSwarmBlobsViewVtk(Simulation &simulation,
   if (rank == 0) {
     auto points = vtkSmartPointer<vtkPoints>::New();
 
-    auto atomic_number_arr = vtkSmartPointer<vtkDoubleArray>::New();
-    atomic_number_arr->SetNumberOfComponents(1);
-    atomic_number_arr->SetName("Atomic number");
-
     auto rho_arr = vtkSmartPointer<vtkDoubleArray>::New();
     rho_arr->SetNumberOfComponents(1);
     rho_arr->SetName("rho");
@@ -277,7 +273,6 @@ PetscErrorCode DMSwarmBlobsViewVtk(Simulation &simulation,
 
     vtkSmartPointer<vtkPolyData> polydata = vtkSmartPointer<vtkPolyData>::New();
     polydata->SetPoints(points);
-    polydata->GetPointData()->AddArray(atomic_number_arr);
     polydata->GetPointData()->AddArray(rho_arr);
     polydata->GetPointData()->AddArray(beta_arr);
     polydata->GetPointData()->AddArray(idx_beta_bcc_arr);
@@ -303,25 +298,25 @@ PetscErrorCode DMSwarmBlobsViewVtk(Simulation &simulation,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore all DMSwarm fields
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(atomistic_data, "idx", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(blob_data, "idx", NULL, NULL,
                                 (void **)&idx_ptr));
 
-  PetscCall(DMSwarmRestoreField(atomistic_data, "ghost", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(blob_data, "ghost", NULL, NULL,
                                 (void **)&ghost_ptr));
 
-  PetscCall(DMSwarmRestoreField(atomistic_data, "mean-q", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(blob_data, "mean-q", NULL, NULL,
                                 (void **)&mean_q_ptr));
 
-  PetscCall(DMSwarmRestoreField(atomistic_data, "rho", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(blob_data, "rho", NULL, NULL,
                                 (void **)&rho_ptr));
 
-  PetscCall(DMSwarmRestoreField(atomistic_data, "beta", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(blob_data, "beta", NULL, NULL,
                                 (void **)&beta_ptr));
 
-  PetscCall(DMSwarmRestoreField(atomistic_data, "idx-bcc-beta", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(blob_data, "idx-bcc-beta", NULL, NULL,
                                 (void **)&idx_beta_bcc_ptr));
 
-  PetscCall(DMSwarmRestoreField(atomistic_data, DMSwarmField_rank, NULL, NULL,
+  PetscCall(DMSwarmRestoreField(blob_data, DMSwarmField_rank, NULL, NULL,
                                 (void **)&rank_ptr));
 
   PetscFunctionReturn(PETSC_SUCCESS);
