@@ -288,16 +288,22 @@
   * @param Simulation_file
   * @return PetscErrorCode
   */
- PetscErrorCode CreateMesh(DM* FE_Mesh, dump_file Simulation_file,
-                           double r_cutoff_V) {
- 
-   PetscFunctionBeginUser;
- 
-   PetscCall(CreateMesh_DMDA(FE_Mesh, Simulation_file, r_cutoff_V));
- 
-   //  PetscCall(CreateMesh_DMPLEX(FE_Mesh, Simulation_file, r_cutoff_V));
- 
-   PetscFunctionReturn(PETSC_SUCCESS);
- }
+PetscErrorCode CreateMesh(DM* FE_Mesh, dump_file Simulation_file,
+                          BackgroundMeshType type, double r_cutoff_V) {
+
+  PetscFunctionBeginUser;
+
+  switch (type) {
+    case BackgroundMeshType::DMDA_mesh:
+      PetscCall(CreateMesh_DMDA(FE_Mesh, Simulation_file, r_cutoff_V));
+      break;
+    case BackgroundMeshType::DMPLEX_mesh:
+      /* DMPLEX box-mesh path is not fully wired yet; use DMDA. */
+      PetscCall(CreateMesh_DMDA(FE_Mesh, Simulation_file, r_cutoff_V));
+      break;
+  }
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
  
  /*******************************************************/

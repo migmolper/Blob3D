@@ -35,25 +35,25 @@ extern PetscMPIInt rank_MPI;
 
 /************************************************************************/
 
-PetscErrorCode DMSwarmCreateNeighborsBlobs(DMD *Simulation, double r_cutoff) {
+PetscErrorCode DMSwarmCreateNeighborsBlobs(Simulation& simulation, double r_cutoff) {
 
   PetscFunctionBeginUser;
 
   unsigned int dim = NumberDimensions;
 
   //! Get the local size
-  PetscInt n_sites_local = Simulation->n_sites_local;
+  PetscInt n_sites_local = simulation.n_sites_local();
 
   //! Get the local size (ghosted)
   PetscInt n_sites_local_ghosted;
   PetscCall(
-      DMSwarmGetLocalSize(Simulation->atomistic_data, &n_sites_local_ghosted));
+      DMSwarmGetLocalSize(simulation.dm(), &n_sites_local_ghosted));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get mean position vector
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscScalar *mean_q_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, DMSwarmPICField_coor,
+  PetscCall(DMSwarmGetField(simulation.dm(), DMSwarmPICField_coor,
                             NULL, NULL, (void **)&mean_q_ptr));
   Eigen::Map<MatrixType> mean_q(mean_q_ptr, n_sites_local_ghosted, 3);
 
@@ -61,14 +61,14 @@ PetscErrorCode DMSwarmCreateNeighborsBlobs(DMD *Simulation, double r_cutoff) {
      Get index of the particles
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscInt *idx_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "idx", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "idx", NULL, NULL,
                             (void **)&idx_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get ghost indicator
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscInt *ghost_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "ghost", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "ghost", NULL, NULL,
                             (void **)&ghost_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -138,26 +138,26 @@ PetscErrorCode DMSwarmCreateNeighborsBlobs(DMD *Simulation, double r_cutoff) {
   //! Wait
   PetscCall(PetscBarrier(NULL));
 
-  //! Set list of diffusive neighs
-  Simulation->mechanical_neighs_idx = mechanical_neighs_idx;
+  //! Transfer ownership of neighbor lists to the simulation topology
+  simulation.topology().adopt(mechanical_neighs_idx, n_sites_local_ghosted);
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    Restore data
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data,
+  PetscCall(DMSwarmRestoreField(simulation.dm(),
                                 DMSwarmPICField_coor, NULL, NULL,
                                 (void **)&mean_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore idx data
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "idx", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "idx", NULL, NULL,
                                 (void **)&idx_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore ghost indicator
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "ghost", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "ghost", NULL, NULL,
                                 (void **)&ghost_ptr));
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -165,21 +165,9 @@ PetscErrorCode DMSwarmCreateNeighborsBlobs(DMD *Simulation, double r_cutoff) {
 
 /********************************************************************************/
 
-PetscErrorCode DMSwarmDestroyNeighborsBlobs(DMD *Simulation) {
+PetscErrorCode DMSwarmDestroyNeighborsBlobs(Simulation& simulation) {
   PetscFunctionBeginUser;
-
-  PetscInt n_atoms_local = 0;
-  PetscCall(DMSwarmGetLocalSize(Simulation->atomistic_data, &n_atoms_local));
-
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   Destroy mechanical neighs
-   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  for (PetscInt site_i = 0; site_i < n_atoms_local; site_i++) {
-    PetscCall(ISDestroy(&(Simulation->mechanical_neighs_idx[site_i])));
-  }
-
-  PetscCall(PetscFree(Simulation->mechanical_neighs_idx));
-
+  PetscCall(simulation.topology().clear());
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 

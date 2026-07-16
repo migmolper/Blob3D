@@ -276,7 +276,7 @@ PetscErrorCode DMScalePhysicalCoordinates(DM dm, const Eigen::Matrix3d& F) {
 
 /************************************************************************/
 
-PetscErrorCode DMDApplyVolumetricExpansion(DMD* Simulation,
+PetscErrorCode DMDApplyVolumetricExpansion(Simulation& simulation,
                                            const Eigen::Matrix3d& F) {
   DM background_mesh;
 
@@ -285,7 +285,7 @@ PetscErrorCode DMDApplyVolumetricExpansion(DMD* Simulation,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Scale the stored physical bbox on the background mesh
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmGetCellDM(Simulation->atomistic_data, &background_mesh));
+  PetscCall(DMSwarmGetCellDM(simulation.dm(), &background_mesh));
   PetscCall(DMScalePhysicalCoordinates(background_mesh, F));
   PetscFunctionReturn(PETSC_SUCCESS);
 }
@@ -344,15 +344,15 @@ PetscErrorCode DMSwarmSyncCoorFromMeanQ_DM(DM atomistic_data) {
 
 /************************************************************************/
 
-PetscErrorCode DMSwarmSyncCoorFromMeanQ(DMD* Simulation) {
+PetscErrorCode DMSwarmSyncCoorFromMeanQ(Simulation& simulation) {
   PetscFunctionBeginUser;
-  PetscCall(DMSwarmSyncCoorFromMeanQ_DM(Simulation->atomistic_data));
+  PetscCall(DMSwarmSyncCoorFromMeanQ_DM(simulation.dm()));
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 /************************************************************************/
 
-PetscErrorCode DMSwarmScaleMeanQ(DMD* Simulation, const Eigen::Matrix3d& F) {
+PetscErrorCode DMSwarmScaleMeanQ(Simulation& simulation, const Eigen::Matrix3d& F) {
   DM background_mesh;
   DMBoundaryType bcc[3] = {DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
                            DM_BOUNDARY_NONE};
@@ -365,13 +365,13 @@ PetscErrorCode DMSwarmScaleMeanQ(DMD* Simulation, const Eigen::Matrix3d& F) {
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get mesh boundary conditions and mean-q field
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmGetCellDM(Simulation->atomistic_data, &background_mesh));
+  PetscCall(DMSwarmGetCellDM(simulation.dm(), &background_mesh));
   PetscCall(get_mesh_boundary_condition(bcc, &background_mesh));
   const DMBoundaryType bx = bcc[0];
   const DMBoundaryType by = bcc[1];
   const DMBoundaryType bz = bcc[2];
-  PetscCall(DMSwarmGetLocalSize(Simulation->atomistic_data, &n_local));
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "mean-q", NULL, NULL,
+  PetscCall(DMSwarmGetLocalSize(simulation.dm(), &n_local));
+  PetscCall(DMSwarmGetField(simulation.dm(), "mean-q", NULL, NULL,
                             (void**)&mean_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -387,7 +387,7 @@ PetscErrorCode DMSwarmScaleMeanQ(DMD* Simulation, const Eigen::Matrix3d& F) {
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore mean-q data
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "mean-q", NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-q", NULL,
                                 NULL, (void**)&mean_q_ptr));
   PetscFunctionReturn(PETSC_SUCCESS);
 }

@@ -9,12 +9,10 @@
  *
  */
 
-#ifdef USE_VTK
-
 #ifndef OUTPUT_BLOBS_VTK_HPP
 #define OUTPUT_BLOBS_VTK_HPP
 
-#include "Macros.hpp"
+#include "Simulation.hpp"
 
 /**
  * @brief
@@ -23,8 +21,7 @@
  * @param adp
  * @return int
  */
-PetscErrorCode DMSwarmBlobsViewVtk(DMD* Simulation, const std::string& filename);
-
-#endif /* OUTPUT_BLOBS_VTK_HPP */
+PetscErrorCode DMSwarmBlobsViewVtk(Simulation& simulation,
+                                   const std::string& filename);
 
 #endif /* OUTPUT_BLOBS_VTK_HPP */

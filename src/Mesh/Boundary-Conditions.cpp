@@ -63,7 +63,7 @@ PetscErrorCode get_mesh_boundary_condition(DMBoundaryType* bcc, DM* da) {
 
 /************************************************************************/
 
-PetscErrorCode DMSwarmEnforceAtomsPeriodic(DMD* Simulation,
+PetscErrorCode DMSwarmEnforceAtomsPeriodic(Simulation& simulation,
                                            double buffer_width) {
 
   PetscFunctionBeginUser;
@@ -75,11 +75,11 @@ PetscErrorCode DMSwarmEnforceAtomsPeriodic(DMD* Simulation,
   unsigned int dim = NumberDimensions;
 
   //! Number of local physical sites
-  PetscInt n_sites_local = Simulation->n_sites_local;
+  PetscInt n_sites_local = simulation.n_sites_local();
 
   //! Get atomistic coordinates
   PetscScalar* mean_q_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "mean-q", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "mean-q", NULL, NULL,
                             (void**)&mean_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -88,7 +88,7 @@ PetscErrorCode DMSwarmEnforceAtomsPeriodic(DMD* Simulation,
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscReal gmin[3], gmax[3];
   DM background_mesh;
-  PetscCall(DMSwarmGetCellDM(Simulation->atomistic_data, &background_mesh));
+  PetscCall(DMSwarmGetCellDM(simulation.dm(), &background_mesh));
   PetscCall(DMGetPhysicalBoundingBox(background_mesh, gmin, gmax, NULL));
 
   //! Define computational box
@@ -159,7 +159,7 @@ PetscErrorCode DMSwarmEnforceAtomsPeriodic(DMD* Simulation,
             box_coords[3], box_coords[1], box_coords[4], box_coords[2],
             box_coords[5], (int)bcc[0], (int)bcc[1], (int)bcc[2]));
         free(found_local_ptr);
-        PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "mean-q",
+        PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-q",
                                       NULL, NULL, (void**)&mean_q_ptr));
         PetscFunctionReturn(PETSC_ERR_RETURN);
       }
@@ -171,17 +171,17 @@ PetscErrorCode DMSwarmEnforceAtomsPeriodic(DMD* Simulation,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore auxiliar data.
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "mean-q", NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-q", NULL,
                                 NULL, (void**)&mean_q_ptr));
 
-  PetscCall(DMSwarmSyncCoorFromMeanQ(Simulation));
+  PetscCall(DMSwarmSyncCoorFromMeanQ(simulation));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 /********************************************************************************/
 
-PetscErrorCode DMSwarmEnforceGhostAtomsPeriodic(DMD* Simulation) {
+PetscErrorCode DMSwarmEnforceGhostAtomsPeriodic(Simulation& simulation) {
 
   PetscFunctionBeginUser;
 
@@ -191,21 +191,21 @@ PetscErrorCode DMSwarmEnforceGhostAtomsPeriodic(DMD* Simulation) {
   unsigned int dim = NumberDimensions;
 
   //! Number of local physical sites
-  PetscInt n_sites_local = Simulation->n_sites_local;
+  PetscInt n_sites_local = simulation.n_sites_local();
 
   //! Get new local size
   PetscInt n_sites_local_ghosted;
   PetscCall(
-      DMSwarmGetLocalSize(Simulation->atomistic_data, &n_sites_local_ghosted));
+      DMSwarmGetLocalSize(simulation.dm(), &n_sites_local_ghosted));
 
   //! Get atomistic coordinates
   PetscScalar* mean_q_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "mean-q", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "mean-q", NULL, NULL,
                             (void**)&mean_q_ptr));
 
   //! Get box index field
   PetscInt* box_idx_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "box-idx", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "box-idx", NULL, NULL,
                             (void**)&box_idx_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -215,7 +215,7 @@ PetscErrorCode DMSwarmEnforceGhostAtomsPeriodic(DMD* Simulation) {
   PetscReal lmin[3], lmax[3];
   PetscReal gmin[3], gmax[3], mesh_buffer_width;
   DM background_mesh;
-  PetscCall(DMSwarmGetCellDM(Simulation->atomistic_data, &background_mesh));
+  PetscCall(DMSwarmGetCellDM(simulation.dm(), &background_mesh));
   PetscCall(DMGetPhysicalLocalBoundingBox(background_mesh, lmin, lmax));
   PetscCall(DMGetPhysicalBoundingBox(background_mesh, gmin, gmax,
                                      &mesh_buffer_width));
@@ -273,10 +273,10 @@ PetscErrorCode DMSwarmEnforceGhostAtomsPeriodic(DMD* Simulation) {
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore auxiliar data.
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "mean-q", NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-q", NULL,
                                 NULL, (void**)&mean_q_ptr));
 
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "box-idx", NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "box-idx", NULL,
                                 NULL, (void**)&box_idx_ptr));
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -365,7 +365,7 @@ PetscErrorCode VecEnforceGhostAtomsPeriodic(Vec mean_q,
 
 /************************************************************************/
 
-PetscErrorCode DMSwarmFixMeanPositionBox(DMD* Simulation, PetscInt FixLabel,
+PetscErrorCode DMSwarmFixMeanPositionBox(Simulation& simulation, PetscInt FixLabel,
                                          const PetscScalar box_coords[6]) {
 
   PetscFunctionBeginUser;
@@ -386,16 +386,16 @@ PetscErrorCode DMSwarmFixMeanPositionBox(DMD* Simulation, PetscInt FixLabel,
   unsigned int dim = NumberDimensions;
 
   //! Number of local physical sites
-  PetscInt n_sites_local = Simulation->n_sites_local;
+  PetscInt n_sites_local = simulation.n_sites_local();
 
   //! Get atomistic coordinates
   PetscScalar* mean_q_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "mean-q", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "mean-q", NULL, NULL,
                             (void**)&mean_q_ptr));
 
   //! Get fix-mean-q index field
   PetscInt* idx_bcc_mean_q_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "idx-bcc-mean-q", NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "idx-bcc-mean-q", NULL,
                             NULL, (void**)&idx_bcc_mean_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -418,10 +418,10 @@ PetscErrorCode DMSwarmFixMeanPositionBox(DMD* Simulation, PetscInt FixLabel,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore auxiliar data.
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "mean-q", NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-q", NULL,
                                 NULL, (void**)&mean_q_ptr));
 
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "idx-bcc-mean-q",
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "idx-bcc-mean-q",
                                 NULL, NULL, (void**)&idx_bcc_mean_q_ptr));
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -429,7 +429,7 @@ PetscErrorCode DMSwarmFixMeanPositionBox(DMD* Simulation, PetscInt FixLabel,
 
 /************************************************************************/
 
-PetscErrorCode DMSwarmApplyDisplacement(DMD* Simulation, PetscInt FixLabel,
+PetscErrorCode DMSwarmApplyDisplacement(Simulation& simulation, PetscInt FixLabel,
                                         PetscScalar displacement_x,
                                         PetscScalar displacement_y,
                                         PetscScalar displacement_z) {
@@ -452,12 +452,12 @@ PetscErrorCode DMSwarmApplyDisplacement(DMD* Simulation, PetscInt FixLabel,
     Get system topology
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   //! Get local number of sites in the simulation (without ghost)
-  PetscInt n_sites_local = Simulation->n_sites_local;
+  PetscInt n_sites_local = simulation.n_sites_local();
 
   //! Get local number of sites in the simulation (with ghost)
   PetscInt n_sites_local_ghosted;
   PetscCall(
-      DMSwarmGetLocalSize(Simulation->atomistic_data, &n_sites_local_ghosted));
+      DMSwarmGetLocalSize(simulation.dm(), &n_sites_local_ghosted));
 
   //! Get number of ghost particles
   PetscInt n_sites_ghost = n_sites_local_ghosted - n_sites_local;
@@ -466,14 +466,14 @@ PetscErrorCode DMSwarmApplyDisplacement(DMD* Simulation, PetscInt FixLabel,
     Periodic box index
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscInt* box_idx_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "box-idx", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "box-idx", NULL, NULL,
                             (void**)&box_idx_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Get index of the particles
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscInt* idx_q_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "idx", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "idx", NULL, NULL,
                             (void**)&idx_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -492,14 +492,14 @@ PetscErrorCode DMSwarmApplyDisplacement(DMD* Simulation, PetscInt FixLabel,
      Get fix-mean-q index field
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscInt* idx_bcc_mean_q_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "idx-bcc-mean-q", NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "idx-bcc-mean-q", NULL,
                             NULL, (void**)&idx_bcc_mean_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get mean position pointer
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscScalar* mean_q_ptr;  //! Mean position pointer
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "mean-q", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "mean-q", NULL, NULL,
                             (void**)&mean_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -523,7 +523,7 @@ PetscErrorCode DMSwarmApplyDisplacement(DMD* Simulation, PetscInt FixLabel,
     Get finite element mesh
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   DM background_mesh;
-  PetscCall(DMSwarmGetCellDM(Simulation->atomistic_data, &background_mesh));
+  PetscCall(DMSwarmGetCellDM(simulation.dm(), &background_mesh));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get mean position vector update ghost atoms and enforce periodic bcc
@@ -542,28 +542,28 @@ PetscErrorCode DMSwarmApplyDisplacement(DMD* Simulation, PetscInt FixLabel,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore mean-q data
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "mean-q", NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-q", NULL,
                                 NULL, (void**)&mean_q_ptr));
 
-  PetscCall(DMSwarmSyncCoorFromMeanQ(Simulation));
+  PetscCall(DMSwarmSyncCoorFromMeanQ(simulation));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore Periodic box index
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "box-idx", NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "box-idx", NULL,
                                 NULL, (void**)&box_idx_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore idx data
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "idx", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "idx", NULL, NULL,
                                 (void**)&idx_q_ptr));
   free(idx_dof_ghost);
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   Restore fix-mean-q index field
   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "idx-bcc-mean-q",
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "idx-bcc-mean-q",
                                 NULL, NULL, (void**)&idx_bcc_mean_q_ptr));
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -638,7 +638,7 @@ PetscErrorCode VecFixMeanPositionRHS(Vec RHS, Vec mean_q, Vec mean_q_ref,
 
 /************************************************************************/
 
-PetscErrorCode DMSwarmFixStdvPositionBox(DMD* Simulation, PetscInt FixLabel,
+PetscErrorCode DMSwarmFixStdvPositionBox(Simulation& simulation, PetscInt FixLabel,
                                          const PetscScalar box_coords[6]) {
 
   PetscFunctionBeginUser;
@@ -659,16 +659,16 @@ PetscErrorCode DMSwarmFixStdvPositionBox(DMD* Simulation, PetscInt FixLabel,
   unsigned int dim = NumberDimensions;
 
   //! Number of local physical sites
-  PetscInt n_sites_local = Simulation->n_sites_local;
+  PetscInt n_sites_local = simulation.n_sites_local();
 
   //! Get atomistic coordinates
   PetscScalar* mean_q_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "mean-q", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "mean-q", NULL, NULL,
                             (void**)&mean_q_ptr));
 
   //! Get fix-stdv-q index field
   PetscInt* idx_bcc_stdv_q_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "idx-bcc-stdv-q", NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "idx-bcc-stdv-q", NULL,
                             NULL, (void**)&idx_bcc_stdv_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -691,10 +691,10 @@ PetscErrorCode DMSwarmFixStdvPositionBox(DMD* Simulation, PetscInt FixLabel,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore auxiliar data.
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "mean-q", NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-q", NULL,
                                 NULL, (void**)&mean_q_ptr));
 
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "idx-bcc-stdv-q",
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "idx-bcc-stdv-q",
                                 NULL, NULL, (void**)&idx_bcc_stdv_q_ptr));
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -766,7 +766,7 @@ PetscErrorCode VecFixStdvPositionRHS(Vec RHS, Vec stdv_q, Vec stdv_q_ref,
 /************************************************************************/
 
 PetscErrorCode DMSwarmFixChemicalMultiplierBox(
-    DMD* Simulation, const PetscScalar box_coords[6]) {
+    Simulation& simulation, const PetscScalar box_coords[6]) {
 
   PetscFunctionBeginUser;
 
@@ -776,21 +776,21 @@ PetscErrorCode DMSwarmFixChemicalMultiplierBox(
   unsigned int dim = NumberDimensions;
 
   //! Number of local physical sites
-  PetscInt n_sites_local = Simulation->n_sites_local;
+  PetscInt n_sites_local = simulation.n_sites_local();
 
   //! Get atomistic coordinates
   PetscScalar* mean_q_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "mean-q", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "mean-q", NULL, NULL,
                             (void**)&mean_q_ptr));
 
   //! Get fix chemical multiplier index field
   PetscInt* idx_bcc_gamma_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "idx-bcc-gamma", NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "idx-bcc-gamma", NULL,
                             NULL, (void**)&idx_bcc_gamma_ptr));
 
   //!  Get the indx of the diffusive atoms
   PetscInt* idx_diff_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "idx-diff", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "idx-diff", NULL, NULL,
                             (void**)&idx_diff_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -814,16 +814,16 @@ PetscErrorCode DMSwarmFixChemicalMultiplierBox(
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore auxiliar data.
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "mean-q", NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-q", NULL,
                                 NULL, (void**)&mean_q_ptr));
 
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "idx-bcc-gamma",
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "idx-bcc-gamma",
                                 NULL, NULL, (void**)&idx_bcc_gamma_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore the indx of the diffusive atoms
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "idx-diff", NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "idx-diff", NULL,
                                 NULL, (void**)&idx_diff_ptr));
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -831,7 +831,7 @@ PetscErrorCode DMSwarmFixChemicalMultiplierBox(
 
 /************************************************************************/
 
-PetscErrorCode DMSwarmFixThermalMultiplierBox(DMD* Simulation,
+PetscErrorCode DMSwarmFixThermalMultiplierBox(Simulation& simulation,
                                               const PetscScalar box_coords[6]) {
 
   PetscFunctionBeginUser;
@@ -842,16 +842,16 @@ PetscErrorCode DMSwarmFixThermalMultiplierBox(DMD* Simulation,
   unsigned int dim = NumberDimensions;
 
   //! Number of local physical sites
-  PetscInt n_sites_local = Simulation->n_sites_local;
+  PetscInt n_sites_local = simulation.n_sites_local();
 
   //! Get atomistic coordinates
   PetscScalar* mean_q_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "mean-q", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "mean-q", NULL, NULL,
                             (void**)&mean_q_ptr));
 
   //! Get fix thermal multiplier index field
   PetscInt* idx_bcc_beta_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "idx-bcc-beta", NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "idx-bcc-beta", NULL,
                             NULL, (void**)&idx_bcc_beta_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -874,10 +874,10 @@ PetscErrorCode DMSwarmFixThermalMultiplierBox(DMD* Simulation,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore auxiliar data.
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "mean-q", NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-q", NULL,
                                 NULL, (void**)&mean_q_ptr));
 
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "idx-bcc-beta",
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "idx-bcc-beta",
                                 NULL, NULL, (void**)&idx_bcc_beta_ptr));
 
   PetscFunctionReturn(PETSC_SUCCESS);

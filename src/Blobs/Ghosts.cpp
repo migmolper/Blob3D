@@ -20,7 +20,7 @@ extern PetscMPIInt rank_MPI;
 
 /********************************************************************************/
 
-PetscErrorCode DMSwarmCreateGhostBlobs(DMD* Simulation, double buffer_width) {
+PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_width) {
 
   unsigned int dim = NumberDimensions;
 
@@ -45,7 +45,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(DMD* Simulation, double buffer_width) {
     Check we have the correct migration algorithm
       - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   DMSwarmMigrateType atoms_migrate_type;
-  DMSwarmGetMigrateType(Simulation->atomistic_data, &atoms_migrate_type);
+  DMSwarmGetMigrateType(simulation.dm(), &atoms_migrate_type);
 
   if (atoms_migrate_type != DMSWARM_MIGRATE_BASIC) {
 
@@ -59,11 +59,11 @@ PetscErrorCode DMSwarmCreateGhostBlobs(DMD* Simulation, double buffer_width) {
 
   //! Get global size
   PetscInt n_global_size = 0;
-  PetscCall(DMSwarmGetSize(Simulation->atomistic_data, &n_global_size));
+  PetscCall(DMSwarmGetSize(simulation.dm(), &n_global_size));
 
   //! Get local size
   PetscInt n_local_size = 0;
-  PetscCall(DMSwarmGetLocalSize(Simulation->atomistic_data, &n_local_size));
+  PetscCall(DMSwarmGetLocalSize(simulation.dm(), &n_local_size));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get the global (x,y,z) indices of the lower left corner and size of the
@@ -71,7 +71,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(DMD* Simulation, double buffer_width) {
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscReal lmin[3], lmax[3];
   DM background_mesh;
-  PetscCall(DMSwarmGetCellDM(Simulation->atomistic_data, &background_mesh));
+  PetscCall(DMSwarmGetCellDM(simulation.dm(), &background_mesh));
   PetscCall(DMGetLocalBoundingBox(background_mesh, lmin, lmax));
 
   //! Lower left coordinates of the brick
@@ -104,7 +104,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(DMD* Simulation, double buffer_width) {
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Mark ghost particles in the buffer region of the domain.
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, DMSwarmPICField_coor,
+  PetscCall(DMSwarmGetField(simulation.dm(), DMSwarmPICField_coor,
                             NULL, NULL, (void**)&mean_q_ptr));
   Eigen::Map<MatrixType> mean_q(mean_q_ptr, n_local_size, dim);
 
@@ -639,7 +639,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(DMD* Simulation, double buffer_width) {
     }
   }
 
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data,
+  PetscCall(DMSwarmRestoreField(simulation.dm(),
                                 DMSwarmPICField_coor, NULL, NULL,
                                 (void**)&mean_q_ptr));
 
@@ -648,46 +648,46 @@ PetscErrorCode DMSwarmCreateGhostBlobs(DMD* Simulation, double buffer_width) {
             << " from rank: " << rank_MPI << std::endl;
 #endif
 
-  PetscCall(DMSwarmAddNPoints(Simulation->atomistic_data, num_ghost));
+  PetscCall(DMSwarmAddNPoints(simulation.dm(), num_ghost));
 
   //! Initialize new points
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "idx", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "idx", NULL, NULL,
                             (void**)&idx_ptr));
 
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, DMSwarmField_rank, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), DMSwarmField_rank, NULL,
                             NULL, (void**)&swarm_rank_ptr));
 
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "ghost", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "ghost", NULL, NULL,
                             (void**)&ghost_ptr));
 
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "box-idx", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "box-idx", NULL, NULL,
                             (void**)&box_idx_ptr));
 
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "MPI-rank", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "MPI-rank", NULL, NULL,
                             (void**)&rank_ptr));
 
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, DMSwarmPICField_coor,
+  PetscCall(DMSwarmGetField(simulation.dm(), DMSwarmPICField_coor,
                             NULL, NULL, (void**)&mean_q_ptr));
 
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "mean-q-ref", NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "mean-q-ref", NULL,
                             NULL, (void**)&mean_q_ref_ptr));
 
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "mean-p", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "mean-p", NULL, NULL,
                             (void**)&mean_p_ptr));
 
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "rho", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "rho", NULL, NULL,
                             (void**)&rho_ptr));
 
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "beta", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "beta", NULL, NULL,
                             (void**)&beta_ptr));
 
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "mass", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "mass", NULL, NULL,
                             (void**)&mass_ptr));
 
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "idx-bcc-mean-q", NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "idx-bcc-mean-q", NULL,
                             NULL, (void**)&idx_bcc_mean_q_ptr));
 
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "idx-bcc-beta", NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "idx-bcc-beta", NULL,
                             NULL, (void**)&idx_beta_bcc_ptr));
 
   for (int idx = 0; idx < num_ghost; idx++) {
@@ -714,48 +714,48 @@ PetscErrorCode DMSwarmCreateGhostBlobs(DMD* Simulation, double buffer_width) {
     idx_beta_bcc_ptr[ghost_i] = idx_beta_bcc_ptr[loc_site_i];
   }
 
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "idx", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "idx", NULL, NULL,
                                 (void**)&idx_ptr));
 
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data,
+  PetscCall(DMSwarmRestoreField(simulation.dm(),
                                 DMSwarmPICField_coor, NULL, NULL,
                                 (void**)&mean_q_ptr));
 
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "mean-q-ref", NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-q-ref", NULL,
                                 NULL, (void**)&mean_q_ref_ptr));
 
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "mean-p", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-p", NULL, NULL,
                                 (void**)&mean_p_ptr));                                
 
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "ghost", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "ghost", NULL, NULL,
                                 (void**)&ghost_ptr));
 
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "box-idx", NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "box-idx", NULL,
                                 NULL, (void**)&box_idx_ptr));
 
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "MPI-rank", NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "MPI-rank", NULL,
                                 NULL, (void**)&rank_ptr));
 
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, DMSwarmField_rank,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), DMSwarmField_rank,
                                 NULL, NULL, (void**)&swarm_rank_ptr));
 
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "rho", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "rho", NULL, NULL,
                                 (void**)&rho_ptr));
 
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "beta", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "beta", NULL, NULL,
                                 (void**)&beta_ptr));
 
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "mass", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "mass", NULL, NULL,
                                 (void**)&mass_ptr));
 
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "idx-bcc-mean-q",
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "idx-bcc-mean-q",
                                 NULL, NULL, (void**)&idx_bcc_mean_q_ptr));
 
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "idx-bcc-beta",
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "idx-bcc-beta",
                                 NULL, NULL, (void**)&idx_beta_bcc_ptr));
 
   //! Migrate new points
-  PetscCall(DMSwarmMigrate(Simulation->atomistic_data, PETSC_TRUE));
+  PetscCall(DMSwarmMigrate(simulation.dm(), PETSC_TRUE));
 
   //! Destroy auxiliar variables
   free(idx_ghost);
@@ -766,27 +766,27 @@ PetscErrorCode DMSwarmCreateGhostBlobs(DMD* Simulation, double buffer_width) {
 
 /********************************************************************************/
 
-PetscErrorCode DMSwarmDestroyGhostBlobs(DMD* Simulation) {
+PetscErrorCode DMSwarmDestroyGhostBlobs(Simulation& simulation) {
 
   PetscFunctionBeginUser;
 
   //! Get global size
   PetscInt n_global_size = 0;
-  PetscCall(DMSwarmGetSize(Simulation->atomistic_data, &n_global_size));
+  PetscCall(DMSwarmGetSize(simulation.dm(), &n_global_size));
 
   //! Get local size
   PetscInt n_local_size = 0;
-  PetscCall(DMSwarmGetLocalSize(Simulation->atomistic_data, &n_local_size));
+  PetscCall(DMSwarmGetLocalSize(simulation.dm(), &n_local_size));
 
   //!
   PetscInt num_remove_point = 0;
 
   PetscInt* swarm_rank_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, DMSwarmField_rank, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), DMSwarmField_rank, NULL,
                             NULL, (void**)&swarm_rank_ptr));
 
   PetscInt* rank_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "MPI-rank", NULL, NULL,
+  PetscCall(DMSwarmGetField(simulation.dm(), "MPI-rank", NULL, NULL,
                             (void**)&rank_ptr));
 
   for (int site_i = 0; site_i < n_local_size; site_i++) {
@@ -802,13 +802,13 @@ PetscErrorCode DMSwarmDestroyGhostBlobs(DMD* Simulation) {
     }
   }
 
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, DMSwarmField_rank,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), DMSwarmField_rank,
                                 NULL, NULL, (void**)&swarm_rank_ptr));
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "MPI-rank", NULL,
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "MPI-rank", NULL,
                                 NULL, (void**)&rank_ptr));
 
   for (int site_i = 0; site_i < num_remove_point; site_i++) {
-    PetscCall(DMSwarmRemovePoint(Simulation->atomistic_data));
+    PetscCall(DMSwarmRemovePoint(simulation.dm()));
   }
 
 #ifdef DEBUG_MODE

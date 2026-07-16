@@ -9,8 +9,6 @@
  *
  */
 
-#ifdef USE_VTK
-
 #include "Blobs/Blobs.hpp"
 #include "Macros.hpp"
 #include <Eigen/Dense>
@@ -44,7 +42,7 @@ extern char OutputFolder[MAXC];
 
 /********************************************************************************/
 
-PetscErrorCode DMSwarmBlobsViewVtk(DMD* Simulation, const std::string& filename) {
+PetscErrorCode DMSwarmBlobsViewVtk(Simulation& simulation, const std::string& filename) {
 
   PetscFunctionBeginUser;
   MPI_Comm comm = PETSC_COMM_WORLD;
@@ -58,7 +56,7 @@ PetscErrorCode DMSwarmBlobsViewVtk(DMD* Simulation, const std::string& filename)
   PetscInt numParticlesLocal;
 
   //! Get the DMSwarm object
-  DM atomistic_data = Simulation->atomistic_data;
+  DM atomistic_data = simulation.dm();
 
   // Get local number of particles and their coordinates
   PetscCall(DMSwarmGetSize(atomistic_data, &totalParticles));
@@ -329,5 +327,3 @@ PetscErrorCode DMSwarmBlobsViewVtk(DMD* Simulation, const std::string& filename)
 }
 
 /********************************************************************************/
-
-#endif

@@ -1,7 +1,7 @@
 /**
  * @file variables.hpp
- * @author your name (you@domain.com)
- * @brief
+ * @author Miguel Molinos ([migmolper](https://github.com/migmolper))
+ * @brief Global simulation parameters (declared here, defined in Variables.cpp).
  * @version 0.1
  * @date 2022-07-23
  *
@@ -15,90 +15,90 @@
 #include "Macros.hpp"
 #include <Eigen/Dense>
 
-char OutputFolder[MAXC];
-char InputFolder[MAXC];
+extern char OutputFolder[MAXC];
+extern char InputFolder[MAXC];
 
 /***********************************/
 /********* PARALLELIZATION *********/
 /***********************************/
-PetscMPIInt rank_MPI = 0;
-PetscMPIInt size_MPI = 1;
+extern PetscMPIInt rank_MPI;
+extern PetscMPIInt size_MPI;
 
 //! Number of MPI partitions in x,y,z directions
-PetscInt ndiv_mesh_X = PETSC_DECIDE;
-PetscInt ndiv_mesh_Y = PETSC_DECIDE;
-PetscInt ndiv_mesh_Z = PETSC_DECIDE;
+extern PetscInt ndiv_mesh_X;
+extern PetscInt ndiv_mesh_Y;
+extern PetscInt ndiv_mesh_Z;
 
-PetscInt size_MPI_X = PETSC_DECIDE; 
-PetscInt size_MPI_Y = PETSC_DECIDE; 
-PetscInt size_MPI_Z = PETSC_DECIDE;
+extern PetscInt size_MPI_X;
+extern PetscInt size_MPI_Y;
+extern PetscInt size_MPI_Z;
 
 /*********************************/
 /** PARAMETERS FOR PETSC SOLVER **/
 /*********************************/
 
 //!< absolute convergence tolerance
-double petsc_abstol = 1.e-7;
+extern double petsc_abstol;
 
 //!< relative convergence tolerance
-double petsc_rtol = 1.e-10;
+extern double petsc_rtol;
 
 //!< convergence tolerance in terms of the norm of the change in the
 //!< solution between steps, || delta x || < stol*|| x ||
-double petsc_stol = 1.e-4;
+extern double petsc_stol;
 
 //!< maximum number of iterations
-double petsc_maxit = 30;
+extern double petsc_maxit;
 
 //!< maximum number of function evaluations
-double petsc_maxf = 2000;
+extern double petsc_maxf;
 
 //!< Number of stored previous solutions and residuals
-char petsc_ngmres_m[] = "2";
+extern char petsc_ngmres_m[];
 
 //!< The minimum step length
-char petsc_linesearch_minlambda[] = "0.01";
+extern char petsc_linesearch_minlambda[];
 
 //!< The linesearch damping parameter
-char petsc_linesearch_damping[] = "0.50";
+extern char petsc_linesearch_damping[];
 
 //!< The number of iterations for iterative line searches
-char petsc_linesearch_max_it[] = "10";
+extern char petsc_linesearch_max_it[];
 
 /*********************************/
 /*** PARAMETERS FOR DIFFUSION ***/
 /*********************************/
 
 //!< Diffusivity. Parameter to be adjusted. see article below
-double Df = 0.045;
+extern double Df;
 
 //!< time step. Parameter to be adjusted.
-double dt_diffusion = 0.0004;
+extern double dt_diffusion;
 
 //!< diffusivity distance. Parameter to be adjusted.
-double dr_diffusion = 3.2;
+extern double dr_diffusion;
 
 //!< label to consider diffusion or not. 0=No diffusion and
 //!< 1= yes diffusion; by default yes diffusion
-int diffusion = 1;
+extern int diffusion;
 
 //!< minimun diffusion. If the diffusion between site i and j is less
 //!< than this amoun, we dont take into account in our calculations.
-double min_dxij = 1e-8;
+extern double min_dxij;
 
 //<! maximum number of iterations of the diffusion for each step
-int max_it_diff = 1;
+extern int max_it_diff;
 
 //<! in percentage
-double max_total_mass = 0.01;
-double max_Xh = 0.9;
+extern double max_total_mass;
+extern double max_Xh;
 
 /*****************************************/
-DiffusivePotential Potential_AD;
+extern DiffusivePotential Potential_AD;
 
 /******************************************************/
 /***** Variable to store the mass of each element *****/
 /******************************************************/
-double element_mass[112];
+extern double element_mass[112];
 
 #endif /* VARIABLES_HPP */

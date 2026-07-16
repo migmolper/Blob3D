@@ -52,7 +52,7 @@ dump_file DMSwarmBlobsReadDump(const char* SimulationFile) {
   fgets(aux_line, sizeof(aux_line), simulation_data);
   error = fscanf(simulation_data, "%d\n", &n_atoms);
   Simulation.n_atoms = n_atoms;
-  PetscPrintf(PETSC_COMM_WORLD, "Number of atoms: %i\n", n_atoms);
+  PetscPrintf(PETSC_COMM_WORLD, "Number of particles: %i\n", n_atoms);
 
   //! @brief Read box bcc
   char bc_x[10000];

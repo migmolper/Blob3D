@@ -1,49 +1,25 @@
 /**
  * @file Blobs/Topology.hpp
- * @author Miguel Molinos (@migmolper)
- * @brief
- * @version 0.1
- * @date 2024-08-02
- *
- * @copyright Copyright (c) 2024
- *
+ * @brief Topology helpers (thin wrappers around Simulation methods).
  */
 
-#include "Macros.hpp"
-#include "petscis.h"
-#include <petscerror.h>
+#ifndef TOPOLOGY_HPP
+#define TOPOLOGY_HPP
 
-#ifndef TOPOLOGY_BLOBS_HPP
-#define TOPOLOGY_BLOBS_HPP
+#include "Simulation.hpp"
 
-/*******************************************************/
+inline PetscErrorCode DMSwarmGenerateBlobsTopology(Simulation& simulation,
+                                                   double r_cutoff) {
+  return simulation.generate_topology(r_cutoff);
+}
 
-/**
- * @brief
- *
- * @param Simulation
- * @return PetscErrorCode
- */
-PetscErrorCode DMSwarmGenerateBlobsTopology(DMD* Simulation, double r_cutoff);
+inline PetscErrorCode DMSwarmRegenerateBlobsTopology(Simulation& simulation,
+                                                     double r_cutoff) {
+  return simulation.regenerate_topology(r_cutoff);
+}
 
-/**
- * @brief
- *
- * @param Simulation
- * @param VOL_EXPANSION
- * @return PetscErrorCode
- */
-PetscErrorCode DMSwarmRegenerateBlobsTopology(DMD* Simulation,
-                                              double buffer_width);
+inline PetscErrorCode DMSwarmDestroyBlobsTopology(Simulation& simulation) {
+  return simulation.destroy_topology();
+}
 
-/**
- * @brief
- *
- * @param Simulation
- * @return PetscErrorCode
- */
-PetscErrorCode DMSwarmDestroyBlobsTopology(DMD* Simulation);
-
-/*******************************************************/
-
-#endif /* TOPOLOGY_BLOBS_HPP */
+#endif /* TOPOLOGY_HPP */

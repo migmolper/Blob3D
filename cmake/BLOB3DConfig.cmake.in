@@ -7,7 +7,6 @@ pkg_search_module(PETSC REQUIRED IMPORTED_TARGET PETSc)
 
 set(_blob3D_use_mpi @USE_MPI@)
 set(_blob3D_use_openmp @USE_OPENMP@)
-set(_blob3D_use_vtk @USE_VTK@)
 set(_blob3D_use_slepc @USE_SLEPc@)
 
 if(_blob3D_use_mpi)
@@ -18,9 +17,7 @@ if(_blob3D_use_openmp)
   find_dependency(OpenMP REQUIRED)
 endif()
 
-if(_blob3D_use_vtk)
-  find_dependency(VTK REQUIRED)
-endif()
+find_dependency(VTK REQUIRED)
 
 if(_blob3D_use_slepc)
   pkg_search_module(SLEPC REQUIRED IMPORTED_TARGET SLEPc)

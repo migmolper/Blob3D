@@ -67,21 +67,9 @@ logs
 /test/Mechanical-eqs/min-V/outputs
 /test/Periodic-Boundary/outputs
 
-/examples/Nanowire-thermal-expansion/build
-/examples/Nanowire-thermal-expansion/outputs
-/examples/Nanowire-thermal-expansion/exe
-
-/examples/Nanowire-set-chempotential/build
-/examples/Nanowire-set-chempotential/outputs
-/examples/Nanowire-set-chempotential/exe
-
-/examples/Spataru-diffusion/build
-/examples/Spataru-diffusion/outputs
-/examples/Spataru-diffusion/exe
-
-/examples/Bulk-Modulus/build
-/examples/Bulk-Modulus/outputs
-/examples/Bulk-Modulus/exe
+/examples/sphere/build
+/examples/sphere/outputs
+/examples/sphere/exe
 
 # Test enviroment for istorage
 /test/istorage/build

@@ -185,59 +185,6 @@ typedef struct dump_file {
 
 /********************************************************************************/
 
-
-/**
- * @brief Global variable to define a DMD simulation
- *
- */
- typedef struct DMD {
-
-  /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   @brief System information
-    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !*/
-  //! @param Variable: with the atomistic data
-  DM atomistic_data;
-
-  //! @param n_sites_global: Number of atoms in the global domain
-  PetscInt n_sites_global;
-
-  //! @param n_sites_local: Number of atoms in the local domain (without ghost)
-  PetscInt n_sites_local;
-
-  //! @param n_ghost: Number of ghost atoms in the local domain
-  PetscInt n_ghost;
-
-  /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  @brief Enviroment thermo-chemo-mechanical variables
-  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !*/
-  //! @param Pressure_env: Enviromental value of the pressure
-  double Pressure_env;
-
-  //! @param Temperature_env: Enviromental value of the temperature
-  double Temperature_env;
-
-  //! @param ChemicalPotential_env: Enviromental value of the chemical potential
-  //! ({mu}). {mu} = {gamma}/{beta}
-  double ChemicalPotential_env;
-
-  /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   @brief Topological variables of each site
-    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !*/
-  /** @param neigh: Local indices of I atoms (we only need for the cell) */
-  IS* mechanical_neighs_idx;
-
-  /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    @brief Miscelaneous variables
-  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !*/
-  /** @param dump2petsc_mapping: Allow the user to track the index of each atom
-   * from the .dump prdering and petsc ordering */
-  AO dump2petsc_mapping;
-
-} DMD;
-
-/*******************************************************/
-
-
 /**
  * @brief Structure which contains the necessary information to evaluate the
  * DiffusivePotential potential
@@ -334,50 +281,6 @@ class ShapeFunction {
                                const Eigen::Vector3d& x_i,
                                double beta_i) const = 0;
 };
-
-/*******************************************************/
-
-typedef struct DMD_context {
-
-  //! @param n_sites_global: Number of atoms in the global domain
-  PetscInt n_sites_global;
-
-  //! @param n_sites_local: Number of atoms in the local domain (without ghost)
-  PetscInt n_sites_local;
-
-  //! @param n_ghost: Number of ghost atoms in the local domain
-  PetscInt n_ghost;
-
-  /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  @brief Interatomic Potential Information
-  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !*/
-  PetscScalar r_cutoff;
-
-  //  adpPotential V;
-
-  GoverningEquations* system_equations;
-
-  /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  @brief Enviroment thermo-chemo-mechanical variables
-  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !*/
-  //! @param Pressure_env: Enviromental value of the pressure
-  double Pressure_env;
-
-  //! @param Temperature_env: Enviromental value of the temperature
-  double Temperature_env;
-
-  //! @param ChemicalPotential_env: Enviromental value of the chemical potential
-  //! ({mu}). {mu} = {gamma}/{beta}
-  double ChemicalPotential_env;
-
-  /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    @brief Topology variables
-  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !*/
-  /** @param dump2petsc_mapping: Allow the user to track the index of each atom
-   * from the .dump prdering and petsc ordering */
-  AO dump2petsc_mapping;
-
-} DMD_context;
 
 /*******************************************************/
 

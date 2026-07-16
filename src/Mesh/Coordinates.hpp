@@ -13,6 +13,7 @@
 #define COORDINATES_HPP
 
 #include "Macros.hpp"
+#include "Simulation.hpp"
 #include <Eigen/Dense>
 #include <cmath>
 #include <petscdm.h>
@@ -161,16 +162,16 @@ inline Eigen::Matrix3d DMBuildDeformationGradient(const PetscScalar F_diag[3],
  * @param F Deformation gradient (diagonal components used)
  * @return PetscErrorCode
  */
-PetscErrorCode DMDApplyVolumetricExpansion(DMD* Simulation,
-                                         const Eigen::Matrix3d& F);
+PetscErrorCode DMDApplyVolumetricExpansion(Simulation& simulation,
+                                           const Eigen::Matrix3d& F);
 
 /**
  * @brief Sync swarm PIC coordinates from physical `mean-q`.
  *
- * @param Simulation Simulation object
+ * @param simulation Simulation object
  * @return PetscErrorCode
  */
-PetscErrorCode DMSwarmSyncCoorFromMeanQ(DMD* Simulation);
+PetscErrorCode DMSwarmSyncCoorFromMeanQ(Simulation& simulation);
 
 /**
  * @brief Sync swarm PIC coordinates from physical `mean-q`.
@@ -187,10 +188,11 @@ PetscErrorCode DMSwarmSyncCoorFromMeanQ_DM(DM atomistic_data);
  * deformation gradient to the DMSwarm `mean-q` field after a barostat solve;
  * during the solve, trial positions live in a duplicated `Vec mean_q`.
  *
- * @param Simulation Simulation object
+ * @param simulation Simulation object
  * @param F Deformation gradient (diagonal components used)
  * @return PetscErrorCode
  */
-PetscErrorCode DMSwarmScaleMeanQ(DMD* Simulation, const Eigen::Matrix3d& F);
+PetscErrorCode DMSwarmScaleMeanQ(Simulation& simulation,
+                                 const Eigen::Matrix3d& F);
 
 #endif /* COORDINATES_HPP */

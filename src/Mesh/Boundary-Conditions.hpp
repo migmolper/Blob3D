@@ -14,6 +14,7 @@
 
 #include "Macros.hpp"
 #include "Mesh/Coordinates.hpp"
+#include "Simulation.hpp"
 #include <Eigen/Dense>
 
 inline void MillerIndexToTuple(Miller_Index idx, int& dx, int& dy, int& dz) {
@@ -189,15 +190,16 @@ PetscErrorCode get_mesh_boundary_condition(DMBoundaryType* bcc, DM* da);
  * @param Simulation Simulation object
  * @return PetscErrorCode
  */
-PetscErrorCode DMSwarmEnforceAtomsPeriodic(DMD* Simulation, double r_cutoff);
+PetscErrorCode DMSwarmEnforceAtomsPeriodic(Simulation& simulation,
+                                           double r_cutoff);
 
 /**
  * @brief Enforce periodic boundary conditions over the ghost atoms
  *
- * @param Simulation
+ * @param simulation
  * @return PetscErrorCode
  */
-PetscErrorCode DMSwarmEnforceGhostAtomsPeriodic(DMD* Simulation);
+PetscErrorCode DMSwarmEnforceGhostAtomsPeriodic(Simulation& simulation);
 
 /**
  * @brief
@@ -211,10 +213,12 @@ PetscErrorCode VecEnforceGhostAtomsPeriodic(Vec mean_q,
                                             const PetscInt* box_idx_ptr,
                                             DM background_mesh);
 
-PetscErrorCode DMSwarmFixMeanPositionBox(DMD* Simulation, PetscInt FixLabel,
+PetscErrorCode DMSwarmFixMeanPositionBox(Simulation& simulation,
+                                         PetscInt FixLabel,
                                          const PetscScalar box_coords[6]);
 
-PetscErrorCode DMSwarmApplyDisplacement(DMD* Simulation, PetscInt FixLabel,
+PetscErrorCode DMSwarmApplyDisplacement(Simulation& simulation,
+                                        PetscInt FixLabel,
                                         PetscScalar displacement_x,
                                         PetscScalar displacement_y,
                                         PetscScalar displacement_z);
@@ -222,16 +226,17 @@ PetscErrorCode DMSwarmApplyDisplacement(DMD* Simulation, PetscInt FixLabel,
 PetscErrorCode VecFixMeanPositionRHS(Vec RHS, Vec mean_q, Vec mean_q_ref,
                                      const PetscInt* idx_bcc_mean_q);
 
-PetscErrorCode DMSwarmFixStdvPositionBox(DMD* Simulation, PetscInt FixLabel,
+PetscErrorCode DMSwarmFixStdvPositionBox(Simulation& simulation,
+                                         PetscInt FixLabel,
                                          const PetscScalar box_coords[6]);
 
 PetscErrorCode VecFixStdvPositionRHS(Vec RHS, Vec stdv_q, Vec stdv_q_ref,
                                      const PetscInt* idx_bcc_stdv_q);
 
-PetscErrorCode DMSwarmFixChemicalMultiplierBox(DMD* Simulation,
+PetscErrorCode DMSwarmFixChemicalMultiplierBox(Simulation& simulation,
                                                const PetscScalar box_coords[6]);
 
-PetscErrorCode DMSwarmFixThermalMultiplierBox(DMD* Simulation,
+PetscErrorCode DMSwarmFixThermalMultiplierBox(Simulation& simulation,
                                               const PetscScalar box_coords[6]);
 
 #endif /* BOUNDARY_CONDITIONS_HPP */

@@ -459,10 +459,9 @@ static PetscErrorCode InitializeBlobs_DMPlex(DM* atomistic_data,
  Create a DMShell and attach a regularly spaced DMDA for point location
  Override methods for point location
 */
-PetscErrorCode init_Blob_simulation(DMD* Simulation,               //!
-                                    dump_file Simulation_file,     //!
-                                    BackgroundMeshType mesh_type,  //!
-                                    double r_cutoff_V) {
+PetscErrorCode Simulation::initialize(const dump_file& Simulation_file,
+                                      BackgroundMeshType mesh_type,
+                                      double r_cutoff_V) {
 
   unsigned int dim = NumberDimensions;
 
@@ -471,16 +470,11 @@ PetscErrorCode init_Blob_simulation(DMD* Simulation,               //!
   MPI_Comm comm;
   PetscMPIInt size;
   PetscMPIInt rank;
-  PetscInt blocksize;
 
   //!
   PetscInt n_atoms_global = 0;
   PetscInt n_atoms_local = 0;
   PetscInt n_atoms = Simulation_file.n_atoms;
-
-  //!
-  IS beta_bcc;
-  IS gamma_bcc;
 
   PetscFunctionBeginUser;
 
@@ -569,34 +563,10 @@ PetscErrorCode init_Blob_simulation(DMD* Simulation,               //!
   PetscCall(
       DMSwarmRestoreField(atomistic_data, "idx", NULL, NULL, (void**)&idx_ptr));
 
-  //! Fill the context structure
-  Simulation->n_sites_global = n_atoms_global;
-  Simulation->n_sites_local = n_atoms_local;
-  Simulation->Temperature_env = 0.0;
-  Simulation->ChemicalPotential_env = 0.0;
-  Simulation->Pressure_env = 0.0;
-  Simulation->atomistic_data = atomistic_data;
-  Simulation->dump2petsc_mapping = dump2petsc_mapping;
-
-  PetscFunctionReturn(PETSC_SUCCESS);
-}
-
-/*******************************************************/
-
-PetscErrorCode destroy_Blob_simulation(DMD* Simulation) {
-
-  PetscFunctionBeginUser;
-
-  //! @brief Destroy the DMSwarm
-  DM FE_Mesh;
-  PetscCall(DMSwarmGetCellDM(Simulation->atomistic_data, &FE_Mesh));
-  PetscCall(DMDestroy(&FE_Mesh));
-
-  //! @brief Atomistic variables
-  PetscCall(DMDestroy(&Simulation->atomistic_data));
-
-  //! @brief Topological variables
-  PetscCall(AODestroy(&Simulation->dump2petsc_mapping));
+  //! Fill the simulation (takes ownership of DM + AO)
+  particles_.adopt(atomistic_data, dump2petsc_mapping, n_atoms_global,
+                   n_atoms_local);
+  env_ = Environment{};
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
