@@ -70,8 +70,8 @@ struct JKO_ctx {
   /*! @param mass: Mass vector */
   Vec mass;
 
-  /*! @param system_equations Definition of the equation */
-  governing_equations system_equations;
+  /*! @param system_equations Definition of the equation (non-owning) */
+  GoverningEquations* system_equations;
 
   /*! @param Delta_t: Time-step */
   PetscScalar Delta_t;
@@ -81,10 +81,10 @@ struct JKO_ctx {
 };
 
 static PetscErrorCode Advection(PetscReal dt, DMD *Simulation,
-                                governing_equations system_equations);
+                                GoverningEquations& system_equations);
 
 static PetscErrorCode JKO_Diffusion(PetscReal dt, DMD *Simulation,
-                                    governing_equations system_equations);
+                                    GoverningEquations& system_equations);
 
 static PetscErrorCode compute_F0_and_RHS(Tao tao, Vec X_k1, PetscReal *F0,
                                          Vec D_JKO_Dx, void *ctx);
@@ -95,7 +95,7 @@ static PetscErrorCode compute_RHS(Tao tao, Vec X_k1, Vec D_JKO_Dx, void *ctx);
 
 PetscErrorCode
 Mass_Trasport_Advection_Diffusion(PetscReal dt, DMD *Simulation,
-                                  governing_equations system_equations) {
+                                  GoverningEquations& system_equations) {
 
   PetscFunctionBeginUser;
 
@@ -122,9 +122,10 @@ Mass_Trasport_Advection_Diffusion(PetscReal dt, DMD *Simulation,
 /************************************************************************/
 
 static PetscErrorCode Advection(PetscReal dt, DMD *Simulation,
-                                governing_equations system_equations) {
+                                GoverningEquations& system_equations) {
 
   PetscFunctionBeginUser;
+  (void)system_equations;
   unsigned int dim = NumberDimensions;
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -274,7 +275,7 @@ static PetscErrorCode Advection(PetscReal dt, DMD *Simulation,
 /************************************************************************/
 
 static PetscErrorCode JKO_Diffusion(PetscReal dt, DMD *Simulation,
-                                    governing_equations system_equations) {
+                                    GoverningEquations& system_equations) {
 
   PetscFunctionBeginUser;
 
@@ -484,7 +485,7 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, DMD *Simulation,
   ctx.beta_k1 = beta_k1;
   ctx.beta_k = beta_k;
   ctx.mass = mass;
-  ctx.system_equations = system_equations;
+  ctx.system_equations = &system_equations;
   ctx.Delta_t = dt;
   ctx.background_mesh = background_mesh;
 
@@ -660,7 +661,8 @@ static PetscErrorCode compute_F0_and_RHS(Tao tao, Vec X_k1,
   Vec mass = ((JKO_ctx *)ctx)->mass;
 
   //! Take structure with the dmd equations
-  governing_equations system_equations = ((JKO_ctx *)ctx)->system_equations;
+  GoverningEquations& system_equations =
+      *((JKO_ctx *)ctx)->system_equations;
 
   //! Time step
   PetscScalar Delta_t = ((JKO_ctx *)ctx)->Delta_t;
@@ -745,7 +747,8 @@ PetscErrorCode compute_RHS(Tao tao, Vec X_k1, Vec D_JKO_Dq, void *ctx) {
   Vec mass = ((JKO_ctx *)ctx)->mass;
 
   //! Take structure with the dmd equations
-  governing_equations system_equations = ((JKO_ctx *)ctx)->system_equations;
+  GoverningEquations& system_equations =
+      *((JKO_ctx *)ctx)->system_equations;
 
   //! Time step
   PetscScalar Delta_t = ((JKO_ctx *)ctx)->Delta_t;

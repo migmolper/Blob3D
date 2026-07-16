@@ -147,7 +147,7 @@
    /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Initialize  equations
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-   governing_equations system_equations = Advection_Diff_constructor();
+   AdvectionDiffusionEquations system_equations;
  
    /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Print background mesh

@@ -259,88 +259,45 @@ typedef struct DiffusivePotential {
 /*******************************************************/
 
 /**
- * @brief Structure which contains user define equations to evaluate any sort of
- * equilibrium equation
+ * @brief Abstract base class for user-defined JKO / mass-transport equations.
  *
+ * Derive from this class to provide a concrete potential (e.g. advection–
+ * diffusion). Call sites should pass a reference (or non-owning pointer) so
+ * that polymorphic overrides are invoked.
  */
-typedef struct governing_equations {
+class GoverningEquations {
+ public:
+  virtual ~GoverningEquations() {}
 
   /**
-   * @brief Compute the discrete Jordan-Kinderlerhrer-Otto functional
+   * @brief Reconstruct the discrete density measure from particle data.
+   */
+  virtual PetscErrorCode evaluate_meassure_JKO(
+      Vec rho, const Vec q_k1, const Vec beta_k1, const Vec mass,
+      const ParticleTopology* atom_topology) = 0;
+
+  /**
+   * @brief Evaluate the discrete Jordan–Kinderlehrer–Otto functional
    *
    \f[
     F(\rho_{k+1}) \sim \sum_p^n \frac{1}{2} \frac{\|q_{p,k+1} - q_{p,k} \|^2 +
    \|\beta_{p,k+1} - \beta_{p,k} \|^2}{t_{k+1} - t_{k}} m_p +
    V(\rho_{k+1}(x_{p,k+1}))\, m_p
    \f]
-   * @param JKO_system: Value of the JKO functional
-   * @param Delta_t: Time step increment t_{k+1} - t_{k}
-   * @param rho: Density field
-   * @param x_k1: Particle position at k+1
-   * @param x_k: Particle position at k
-   * @param beta_k1: Particle width at k+1
-   * @param beta_k: Particle width at k
-   * @param atom_topology: Topology information of the atoms
    */
-  PetscErrorCode (*evaluate_meassure_JKO)(
-      Vec rho,                             //!
-      const Vec q_k1,                      //!
-      const Vec beta_k1,                   //!
-      const Vec mass,                      //!
-      const ParticleTopology* atom_topology);  //!
+  virtual PetscErrorCode evaluate_JKO(
+      PetscScalar* JKO_system, PetscScalar Delta_t, const Vec rho,
+      const Vec q_k1, const Vec q_k, const Vec beta_k1, const Vec beta_k,
+      const Vec mass, const ParticleTopology* atom_topology) = 0;
 
   /**
-   * @brief Compute the discrete Jordan-Kinderlerhrer-Otto functional
-   *
-   \f[
-    F(\rho_{k+1}) \sim \sum_p^n \frac{1}{2} \frac{\|q_{p,k+1} - q_{p,k} \|^2 +
-   \|\beta_{p,k+1} - \beta_{p,k} \|^2}{t_{k+1} - t_{k}} m_p +
-   V(\rho_{k+1}(x_{p,k+1}))\, m_p
-   \f]
-   * @param JKO_system: Value of the JKO functional
-   * @param rho: Density field
-   * @param x_k1: Particle position at k+1
-   * @param x_k: Particle position at k
-   * @param beta_k1: Particle width at k+1
-   * @param beta_k: Particle width at k
-   * @param atom_topology: Topology information of the atoms
+   * @brief Evaluate the position gradient of the discrete JKO functional.
    */
-  PetscErrorCode (*evaluate_JKO)(PetscScalar* JKO_system,             //!
-                                 PetscScalar Delta_t,                 //!
-                                 const Vec rho,                       //!
-                                 const Vec q_k1,                      //!
-                                 const Vec q_k,                       //!
-                                 const Vec beta_k1,                   //!
-                                 const Vec beta_k,                    //!
-                                 const Vec mass,                      //!
-                                 const ParticleTopology* atom_topology);  //!
-
-  /**
-   * @brief Compute the discrete Jordan-Kinderlerhrer-Otto functional
-   *
-   \f[
-    F(\rho_{k+1}) \sim \sum_p^n \frac{1}{2} \frac{\|q_{p,k+1} - q_{p,k} \|^2 +
-   \|\beta_{p,k+1} - \beta_{p,k} \|^2}{t_{k+1} - t_{k}} m_p +
-   V(\rho_{k+1}(q_{p,k+1}))\, m_p
-   \f]
-   * @param D_JKO_Dq: Value of the position gradient of the JKO functional
-   * @param rho: Density field
-   * @param x_k1: Particle position at k+1
-   * @param x_k: Particle position at k
-   * @param beta_k1: Particle width at k+1
-   * @param atom_topology: Topology information of the atoms
-   */
-  PetscErrorCode (*evaluate_D_JKO_Dq)(
-      Vec D_JKO_Dq,                        //!
-      PetscScalar Delta_t,                 //!
-      const Vec rho_k1,                    //!
-      const Vec x_k1,                      //!
-      const Vec x_k,                       //!
-      const Vec beta_k1,                   //!
-      const Vec mass,                      //!
-      const ParticleTopology* atom_topology);  //!                  //!
-
-} governing_equations;
+  virtual PetscErrorCode evaluate_D_JKO_Dq(
+      Vec D_JKO_Dq, PetscScalar Delta_t, const Vec rho_k1, const Vec x_k1,
+      const Vec x_k, const Vec beta_k1, const Vec mass,
+      const ParticleTopology* atom_topology) = 0;
+};
 
 /*******************************************************/
 
@@ -398,7 +355,7 @@ typedef struct DMD_context {
 
   //  adpPotential V;
 
-  governing_equations system_equations;
+  GoverningEquations* system_equations;
 
   /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   @brief Enviroment thermo-chemo-mechanical variables

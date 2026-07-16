@@ -1,13 +1,15 @@
 /**
- * @file MgHx-ADP-Residuals.cpp
+ * @file Potentials/Advection-Diff-OpenMP.cpp
  * @author Miguel Molinos ([migmolper](https://github.com/migmolper))
- * @brief
+ * @brief Advection–diffusion GoverningEquations implementation.
  * @version 0.1
  * @date 2025-10-14
  *
  * @copyright Copyright (c) 2025
  *
  */
+
+#include "Potentials/Advection-Diff-OpenMP.hpp"
 
 #include "petscsys.h"
 #include "petscvec.h"
@@ -26,64 +28,17 @@
 #include "Blobs/Topology.hpp"
 #include "Macros.hpp"
 #include "Mesh/Boundary-Conditions.hpp"
-#include "petscvec.h"
 
 extern PetscMPIInt size_MPI;
 extern PetscMPIInt rank_MPI;
 
 extern DiffusivePotential Potential_AD;
 
-/********************************************************************************/
-
-static PetscErrorCode evaluate_meassure(Vec rho,                             //!
-                                        const Vec q_k1,                      //!
-                                        const Vec beta_k1,                   //!
-                                        const Vec mass,                      //!
-                                        const ParticleTopology* atom_topology);  //!
-
-static PetscErrorCode evaluate_F(PetscScalar* JKO_system,             //!
-                                 PetscScalar Delta_t,                 //!
-                                 const Vec rho,                       //!
-                                 const Vec q_k1,                      //!
-                                 const Vec q_k,                       //!
-                                 const Vec beta_k1,                   //!
-                                 const Vec beta_k,                    //!
-                                 const Vec mass,                      //!
-                                 const ParticleTopology* atom_topology);  //!
-
-static PetscErrorCode evaluate_D_F_Dq(Vec D_JKO_Dq,                        //!
-                                      PetscScalar Delta_t,                 //!
-                                      const Vec rho_k1,                    //!
-                                      const Vec x_k1,                      //!
-                                      const Vec x_k,                       //!
-                                      const Vec beta_k1,                   //!
-                                      const Vec mass,                      //!
-                                      const ParticleTopology* atom_topology);  //!
-
-/********************************************************************************/
-
-governing_equations Advection_Diff_constructor() {
-
-  governing_equations equations;
-
-  equations.evaluate_meassure_JKO = evaluate_meassure;
-
-  equations.evaluate_JKO = evaluate_F;
-
-  equations.evaluate_D_JKO_Dq = evaluate_D_F_Dq;
-
-  return equations;
-}
-
 /************************************************************************/
 
-static PetscErrorCode evaluate_meassure(
-    Vec rho_k1,                         //!
-    const Vec x_k1,                     //!
-    const Vec beta_k1,                  //!
-    const Vec mass,                     //!
-    const ParticleTopology* atom_topology)  //!                        //!
-{
+PetscErrorCode AdvectionDiffusionEquations::evaluate_meassure_JKO(
+    Vec rho_k1, const Vec x_k1, const Vec beta_k1, const Vec mass,
+    const ParticleTopology* atom_topology) {
   PetscFunctionBeginUser;
 
   unsigned int dim = NumberDimensions;
@@ -100,7 +55,7 @@ static PetscErrorCode evaluate_meassure(
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Acces to the local version of the vectors
   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  Vec rho_k1_loc, mass_loc, x_k1_loc, x_k_loc, beta_k1_loc, beta_k_loc;
+  Vec rho_k1_loc, mass_loc, x_k1_loc, beta_k1_loc;
   PetscCall(VecGhostGetLocalForm(rho_k1, &rho_k1_loc));
   PetscCall(VecGhostGetLocalForm(mass, &mass_loc));
   PetscCall(VecGhostGetLocalForm(x_k1, &x_k1_loc));
@@ -171,22 +126,17 @@ static PetscErrorCode evaluate_meassure(
 
 /************************************************************************/
 
-static PetscErrorCode evaluate_F(
-    PetscScalar* JKO_system,            //!
-    PetscScalar Delta_t,                //!
-    const Vec rho_k1,                   //!
-    const Vec x_k1,                     //!
-    const Vec x_k,                      //!
-    const Vec beta_k1,                  //!
-    const Vec beta_k,                   //!
-    const Vec mass,                     //!
-    const ParticleTopology* atom_topology)  //!                        //!
-{
+PetscErrorCode AdvectionDiffusionEquations::evaluate_JKO(
+    PetscScalar* JKO_system, PetscScalar Delta_t, const Vec rho_k1,
+    const Vec x_k1, const Vec x_k, const Vec beta_k1, const Vec beta_k,
+    const Vec mass, const ParticleTopology* atom_topology) {
   PetscFunctionBeginUser;
 
+  (void)atom_topology;
+
   unsigned int dim = NumberDimensions;
-  PetscScalar kappa = Potential_AD.kappa;      //!
-  PetscScalar rho_ref = Potential_AD.rho_ref;  //!
+  PetscScalar kappa = Potential_AD.kappa;
+  PetscScalar rho_ref = Potential_AD.rho_ref;
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get local size
@@ -247,7 +197,6 @@ static PetscErrorCode evaluate_F(
     PetscScalar dr_i_k = 1.0 / sqrt(beta_k_ptr[site_i]);
     PetscScalar Dr_i = dr_i_k1 - dr_i_k;
 
-    //!
     PetscScalar JKO_i =
         (0.5 / Delta_t) * (L2_Dphi * L2_Dphi + Dr_i * Dr_i) * m_i +
         kappa * log(rho_k1_i / rho_ref) * m_i;
@@ -256,23 +205,21 @@ static PetscErrorCode evaluate_F(
     JKO_local += JKO_i;
   }
 
-  //! Compute the resulting Meanfield Hamiltonian and Meanfield grand-cannonical
-  //! partition function
   //! Perform partial sum reduction of each MPI process
   PetscCall(MPIU_Allreduce(&JKO_local, JKO_system, 1, MPI_DOUBLE, MPI_SUM,
                            MPI_COMM_WORLD));
 
   //! Check if the internal energy is a NAN
   if (PetscIsNanReal(*JKO_system) == PETSC_TRUE) {
-    PetscCall(PetscError(PETSC_COMM_SELF, __LINE__, "evaluate_F", __FILE__,
+    PetscCall(PetscError(PETSC_COMM_SELF, __LINE__, "evaluate_JKO", __FILE__,
                          PETSC_ERR_RETURN, PETSC_ERROR_INITIAL,
                          "The internal energy takes a NaN value"));
     PetscFunctionReturn(PETSC_ERR_RETURN);
   }
 
-  //! Check if the internal energy is a inft
+  //! Check if the internal energy is infinity
   if (PetscIsInfReal(*JKO_system) == PETSC_TRUE) {
-    PetscCall(PetscError(PETSC_COMM_SELF, __LINE__, "evaluate_F", __FILE__,
+    PetscCall(PetscError(PETSC_COMM_SELF, __LINE__, "evaluate_JKO", __FILE__,
                          PETSC_ERR_RETURN, PETSC_ERROR_INITIAL,
                          "The internal energy takes a infinity value"));
     PetscFunctionReturn(PETSC_ERR_RETURN);
@@ -303,22 +250,17 @@ static PetscErrorCode evaluate_F(
 
 /************************************************************************/
 
-static PetscErrorCode evaluate_D_F_Dq(Vec D_JKO_Dq,                       //!
-                                      PetscScalar Delta_t,                //!
-                                      const Vec rho_k1,                   //!
-                                      const Vec x_k1,                     //!
-                                      const Vec x_k,                      //!
-                                      const Vec beta_k1,                  //!
-                                      const Vec mass,                     //!
-                                      const ParticleTopology* atom_topology)  //!
-
-{
+PetscErrorCode AdvectionDiffusionEquations::evaluate_D_JKO_Dq(
+    Vec D_JKO_Dq, PetscScalar Delta_t, const Vec rho_k1, const Vec x_k1,
+    const Vec x_k, const Vec beta_k1, const Vec mass,
+    const ParticleTopology* atom_topology) {
   PetscFunctionBeginUser;
 
   unsigned int dim = NumberDimensions;
 
-  PetscScalar kappa = Potential_AD.kappa;      //!
-  PetscScalar rho_ref = Potential_AD.rho_ref;  //!
+  PetscScalar kappa = Potential_AD.kappa;
+  PetscScalar rho_ref = Potential_AD.rho_ref;
+  (void)rho_ref;
 
   Blob shapefunc;
 
@@ -390,7 +332,6 @@ static PetscErrorCode evaluate_D_F_Dq(Vec D_JKO_Dq,                       //!
       d_rho_k1_dx_u += shapefunc.dN_i(x_u_k1, x_i_k1, beta_i) * m_i;
     }
 
-    //!
     Eigen::Vector3d D_JKO_Dq_u =
         (Dphi / Delta_t) * m_u + kappa * (d_rho_k1_dx_u / rho_k1_u) * m_u;
 
@@ -407,6 +348,7 @@ static PetscErrorCode evaluate_D_F_Dq(Vec D_JKO_Dq,                       //!
   PetscCall(VecRestoreArrayRead(rho_k1_loc, &rho_k1_ptr));
   PetscCall(VecRestoreArrayRead(x_k1_loc, &x_k1_ptr));
   PetscCall(VecRestoreArrayRead(x_k_loc, &x_k_ptr));
+  PetscCall(VecRestoreArrayRead(beta_k1_loc, &beta_k1_ptr));
   PetscCall(VecRestoreArrayRead(mass_loc, &mass_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
