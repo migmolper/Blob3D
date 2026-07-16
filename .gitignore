@@ -55,18 +55,6 @@ logs
 /docs/*
 !/docs/*.md
 
-/test/configure.sh
-/test/run.sh
-/test/build
-/test/Potentials/outputs
-/test/Atoms/outputs
-/test/Kinetics/outputs
-/test/IO/outputs
-/test/Mesh/outputs
-/test/Mechanical-eqs/min-F0/outputs
-/test/Mechanical-eqs/min-V/outputs
-/test/Periodic-Boundary/outputs
-
 /examples/sphere/build
 /examples/sphere/outputs
 /examples/sphere/exe

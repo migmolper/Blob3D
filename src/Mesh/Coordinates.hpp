@@ -27,7 +27,7 @@
  *   and maps reference space to physical units for BCs and PIC normalization.
  * - The neighbor-list buffer width is stored on the same DMDA container and set
  *   in CreateMesh from the potential cutoff radius.
- * - Swarm `mean-q` stores physical atom positions; `DMSwarmPICField_coor`
+ * - Swarm `mean-q` stores physical particle positions; `DMSwarmPICField_coor`
  *   stores the normalized positions required by the swarm PIC layer.
  */
 
@@ -176,10 +176,10 @@ PetscErrorCode DMSwarmSyncCoorFromMeanQ(Simulation& simulation);
 /**
  * @brief Sync swarm PIC coordinates from physical `mean-q`.
  *
- * @param atomistic_data DMSwarm object
+ * @param particle_data DMSwarm object
  * @return PetscErrorCode
  */
-PetscErrorCode DMSwarmSyncCoorFromMeanQ_DM(DM atomistic_data);
+PetscErrorCode DMSwarmSyncCoorFromMeanQ_DM(DM particle_data);
 
 /**
  * @brief Scale physical `mean-q` with a diagonal deformation gradient.

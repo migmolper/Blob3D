@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
   dump_file Simulation_dump_data = DMSwarmBlobsReadDump(SimulationFile);
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    Initialize atomistic simulation
+    Initialize blob simulation
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   Simulation simulation;
   PetscCall(simulation.initialize(
@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
   PetscCall(DMSwarmDestroyGlobalVectorFromField(simulation.dm(), "mean-p", &P));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   Create ghost atoms and topology
+   Create ghost blobs and topology
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscCall(simulation.generate_topology(Delta_r));
 

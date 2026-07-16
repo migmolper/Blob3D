@@ -1,6 +1,7 @@
 /**
- * @file Atoms/Ghosts.cpp
- * @author Miguel Molinos (@migmolper)
+ * @file Blobs/Ghosts.cpp
+ * @author Miguel Molinos ([migmolper](https://github.com/migmolper))
+ * @brief Create and destroy the ghosts list for the particles
  * @brief
  * @version 0.1
  * @date 2024-08-22
@@ -55,10 +56,10 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Check we have the correct migration algorithm
       - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  DMSwarmMigrateType atoms_migrate_type;
-  DMSwarmGetMigrateType(simulation.dm(), &atoms_migrate_type);
+  DMSwarmMigrateType particle_migrate_type;
+  DMSwarmGetMigrateType(simulation.dm(), &particle_migrate_type);
 
-  if (atoms_migrate_type != DMSWARM_MIGRATE_BASIC) {
+  if (particle_migrate_type != DMSWARM_MIGRATE_BASIC) {
 
     PetscCall(
         PetscError(PETSC_COMM_WORLD, __LINE__, "DMSwarmCreateGhostBlobs",
@@ -653,11 +654,6 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
   PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-q", NULL, NULL,
                                 (void**)&mean_q_ptr));
 
-#ifdef DEBUG_MODE
-  std::cout << "Number of ghost atoms: " << num_ghost
-            << " from rank: " << rank_MPI << std::endl;
-#endif
-
   PetscCall(DMSwarmAddNPoints(simulation.dm(), num_ghost));
 
   //! Initialize new points
@@ -932,11 +928,6 @@ PetscErrorCode DMSwarmDestroyGhostBlobs(Simulation& simulation) {
   for (int site_i = 0; site_i < num_remove_point; site_i++) {
     PetscCall(DMSwarmRemovePoint(simulation.dm()));
   }
-
-#ifdef DEBUG_MODE
-  std::cout << "Number of removed ghost atoms: " << num_remove_point
-            << " at rank: " << rank_MPI << std::endl;
-#endif
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }

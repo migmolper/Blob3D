@@ -229,7 +229,7 @@ static PetscErrorCode Advection(PetscReal dt, Simulation &simulation,
   PetscCall(VecGhostUpdateBegin(X, INSERT_VALUES, SCATTER_FORWARD));
   PetscCall(VecGhostUpdateEnd(X, INSERT_VALUES, SCATTER_FORWARD));
 
-  //! Enforce periodic bcc on the ghost atoms
+  //! Enforce periodic bcc on the ghost particles
   PetscCall(VecEnforceGhostBlobsPeriodic(X, box_idx_ptr, background_mesh));
 
   //! Copy the updated ghost values back to the mean_q array
@@ -595,7 +595,7 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation &simulation,
   free(idx_dof_ghost);
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    Restore atom topology
+    Restore particle topology
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   for (PetscInt site_u = 0; site_u < n_sites_local_ghosted; site_u++) {
     PetscCall(DMSwarmRestoreParticleNeighbors(&blob_topology[site_u],

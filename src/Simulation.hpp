@@ -67,19 +67,19 @@ class ParticleSwarm {
   AO dump_to_petsc() const { return dump2petsc_; }
 
   /**
-   * @brief Number of atoms in the global domain
+   * @brief Number of particles in the global domain
    */
   PetscInt n_global() const { return n_global_; }
   PetscInt& n_global() { return n_global_; }
 
   /**
-   * @brief Number of atoms in the local domain (without ghost)
+   * @brief Number of particles in the local domain (without ghost)
    */
   PetscInt n_local() const { return n_local_; }
   PetscInt& n_local() { return n_local_; }
 
   /**
-   * @brief Number of ghost atoms in the local domain
+   * @brief Number of ghost particles in the local domain
    */
   PetscInt n_ghost() const { return n_ghost_; }
   PetscInt& n_ghost() { return n_ghost_; }
@@ -94,8 +94,8 @@ class ParticleSwarm {
    *
    * @param dm DMSwarm object
    * @param dump2petsc AO mapping from dump ordering to PETSc ordering
-   * @param n_global Number of atoms in the global domain
-   * @param n_local Number of atoms in the local domain (without ghost)
+   * @param n_global Number of particles in the global domain
+   * @param n_local Number of particles in the local domain (without ghost)
    */
   void adopt(DM dm, AO dump2petsc, PetscInt n_global, PetscInt n_local);
 
@@ -104,20 +104,20 @@ class ParticleSwarm {
    @brief System information
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !*/
 
-  //! @param dm_: Atomistic data (DMSwarm)
+  //! @param dm_: Particle data (DMSwarm)
   DM dm_{nullptr};
 
-  //! @param dump2petsc_: Track the index of each atom from .dump to PETSc
+  //! @param dump2petsc_: Track the index of each particle from .dump to PETSc
   //! ordering
   AO dump2petsc_{nullptr};
 
-  //! @param n_global_: Number of atoms in the global domain
+  //! @param n_global_: Number of particles in the global domain
   PetscInt n_global_{0};
 
-  //! @param n_local_: Number of atoms in the local domain (without ghost)
+  //! @param n_local_: Number of particles in the local domain (without ghost)
   PetscInt n_local_{0};
 
-  //! @param n_ghost_: Number of ghost atoms in the local domain
+  //! @param n_ghost_: Number of ghost particles in the local domain
   PetscInt n_ghost_{0};
 };
 
@@ -213,7 +213,7 @@ class Simulation {
                             double r_cutoff);
 
   /**
-   * @brief Create ghost atoms and mechanical neighbor lists
+   * @brief Create ghost particles and mechanical neighbor lists
    *
    * @param buffer_width Search / ghost buffer width
    * @return PetscErrorCode
@@ -229,7 +229,7 @@ class Simulation {
   PetscErrorCode regenerate_topology(double buffer_width);
 
   /**
-   * @brief Destroy neighbor lists and ghost atoms
+   * @brief Destroy neighbor lists and ghost particles
    *
    * @return PetscErrorCode
    */
@@ -256,22 +256,21 @@ class Simulation {
   /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    @brief Convenience accessors used throughout the solvers
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !*/
-
-  //! @brief Atomistic data (DMSwarm)
+  //! @brief Particle data (DMSwarm)
   DM dm() const { return particles_.dm(); }
 
   //! @brief Dump-file to PETSc index mapping
   AO dump_to_petsc() const { return particles_.dump_to_petsc(); }
 
-  //! @param n_sites_global: Number of atoms in the global domain
+  //! @param n_sites_global: Number of particles in the global domain
   PetscInt n_sites_global() const { return particles_.n_global(); }
   PetscInt& n_sites_global() { return particles_.n_global(); }
 
-  //! @param n_sites_local: Number of atoms in the local domain (without ghost)
+  //! @param n_sites_local: Number of particles in the local domain (without ghost)
   PetscInt n_sites_local() const { return particles_.n_local(); }
   PetscInt& n_sites_local() { return particles_.n_local(); }
 
-  //! @param n_ghost: Number of ghost atoms in the local domain
+  //! @param n_ghost: Number of ghost particles in the local domain
   PetscInt n_ghost() const { return particles_.n_ghost(); }
   PetscInt& n_ghost() { return particles_.n_ghost(); }
 

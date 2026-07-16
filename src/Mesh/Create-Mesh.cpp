@@ -72,7 +72,7 @@ static PetscErrorCode CreateMesh_DMDA(DM *FE_Mesh,               //!
   PetscCall(DMSetFromOptions(*FE_Mesh));
   PetscCall(DMSetUp(*FE_Mesh));
 
-  //! Periodic directions need >= 2 MPI ranks: ghost atoms are exchanged across
+  //! Periodic directions need >= 2 MPI ranks: ghost particles are exchanged across
   //! inter-rank faces; a single rank cannot provide a halo across the wrap.
   {
     PetscInt nprocs_x = 0, nprocs_y = 0, nprocs_z = 0;

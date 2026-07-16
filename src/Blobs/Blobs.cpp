@@ -40,8 +40,8 @@ using namespace std;
 /**
  * @brief Fold a physical coordinate into the fundamental cell [lo, hi).
  *
- * Used before DMDA/DMSwarm partition tests so periodic image atoms match the
- * half-open brick owned by PETSc ranks.
+ * Used before DMDA/DMSwarm partition tests so periodic image particles match
+ * the half-open brick owned by PETSc ranks.
  */
 static PetscReal FoldPeriodicCoordinate(PetscReal x, PetscReal lo,
                                         PetscReal hi) {
@@ -82,20 +82,20 @@ static bool IsInReferenceLocalPartition(const PetscReal norm[3],
 
 /*******************************************************/
 
-static PetscErrorCode InitializeBlobs_DMDA(DM *atomistic_data,
+static PetscErrorCode InitializeBlobs_DMDA(DM *blobs_data,
                                            dump_file Simulation_file) {
 
   PetscFunctionBeginUser;
 
   //! Get Integers
   unsigned int dim = NumberDimensions;
-  PetscInt n_atoms = Simulation_file.n_atoms;
-  PetscInt n_atoms_local = 0;
+  PetscInt n_particles = Simulation_file.n_particles;
+  PetscInt n_particles_local = 0;
   MPI_Comm comm;
   PetscMPIInt size;
   PetscMPIInt rank;
 
-  PetscCall(PetscObjectGetComm((PetscObject)*atomistic_data, &comm));
+  PetscCall(PetscObjectGetComm((PetscObject)*blobs_data, &comm));
   PetscCallMPI(MPI_Comm_size(comm, &size));
   PetscCallMPI(MPI_Comm_rank(comm, &rank));
 
@@ -105,28 +105,27 @@ static PetscErrorCode InitializeBlobs_DMDA(DM *atomistic_data,
   PetscReal lmin_ref[3], lmax_ref[3];
   DMBoundaryType bcc[3] = {DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
                            DM_BOUNDARY_NONE};
-  PetscCall(DMSwarmGetCellDM(*atomistic_data, &FE_Mesh));
+  PetscCall(DMSwarmGetCellDM(*blobs_data, &FE_Mesh));
   PetscCall(DMGetPhysicalBoundingBox(FE_Mesh, gmin, gmax, NULL));
   PetscCall(DMGetLocalBoundingBox(FE_Mesh, lmin_ref, lmax_ref));
   PetscCall(get_mesh_boundary_condition(bcc, &FE_Mesh));
 
   //! @brief mean_q: physical coordinates stored in mean-q
   double *mean_q_ptr;
-  PetscCall(DMSwarmGetField(*atomistic_data, "mean-q", NULL, NULL,
-                            (void **)&mean_q_ptr));
-  Eigen::Map<MatrixType> mean_q(mean_q_ptr, n_atoms, dim);
-
-  //! @brief idx_ptr: Global index of each atomic position
-  int *idx_ptr;
   PetscCall(
-      DMSwarmGetField(*atomistic_data, "idx", NULL, NULL, (void **)&idx_ptr));
+      DMSwarmGetField(*blobs_data, "mean-q", NULL, NULL, (void **)&mean_q_ptr));
+  Eigen::Map<MatrixType> mean_q(mean_q_ptr, n_particles, dim);
 
-  //! @brief found: Flag to check if the atom is found in the mesh
-  int *found_local_ptr = (int *)calloc(n_atoms, sizeof(int));
+  //! @brief idx_ptr: Global index of each particle position
+  int *idx_ptr;
+  PetscCall(DMSwarmGetField(*blobs_data, "idx", NULL, NULL, (void **)&idx_ptr));
 
-  //! @brief Loop in the elemnts of the background mesh and find atoms in the
-  //! mesh
-  for (PetscInt site_i = 0; site_i < n_atoms; site_i++) {
+  //! @brief found: Flag to check if the particle is found in the mesh
+  int *found_local_ptr = (int *)calloc(n_particles, sizeof(int));
+
+  //! @brief Loop in the elemnts of the background mesh and find particles in
+  //! the mesh
+  for (PetscInt site_i = 0; site_i < n_particles; site_i++) {
 
     Eigen::Map<const Eigen::Vector3d> mean_q_i(
         &(Simulation_file.mean_q[site_i * dim]), dim);
@@ -149,39 +148,39 @@ static PetscErrorCode InitializeBlobs_DMDA(DM *atomistic_data,
 
     if (IsInReferenceLocalPartition(norm, lmin_ref, lmax_ref)) {
       found_local_ptr[site_i] = 1;
-      idx_ptr[n_atoms_local] = site_i;
+      idx_ptr[n_particles_local] = site_i;
       for (unsigned int alpha = 0; alpha < dim; alpha++) {
-        mean_q_ptr[n_atoms_local * dim + alpha] = mean_q_fold[alpha];
+        mean_q_ptr[n_particles_local * dim + alpha] = mean_q_fold[alpha];
       }
-      n_atoms_local++;
+      n_particles_local++;
     }
   }
 
-  PetscCall(DMSwarmRestoreField(*atomistic_data, "mean-q", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(*blobs_data, "mean-q", NULL, NULL,
                                 (void **)&mean_q_ptr));
-  PetscCall(DMSwarmRestoreField(*atomistic_data, "idx", NULL, NULL,
-                                (void **)&idx_ptr));
+  PetscCall(
+      DMSwarmRestoreField(*blobs_data, "idx", NULL, NULL, (void **)&idx_ptr));
 
   //! Reduce found_local_ptr
-  PetscInt *found_local_ptr_all = (int *)calloc(n_atoms, sizeof(int));
-  PetscCall(MPIU_Allreduce(found_local_ptr, found_local_ptr_all, n_atoms,
+  PetscInt *found_local_ptr_all = (int *)calloc(n_particles, sizeof(int));
+  PetscCall(MPIU_Allreduce(found_local_ptr, found_local_ptr_all, n_particles,
                            MPI_INT, MPI_SUM, MPI_COMM_WORLD));
 
   //! Check global size
-  PetscInt n_atoms_all = 0;
-  PetscCall(MPIU_Allreduce(&n_atoms_local, &n_atoms_all, 1, MPI_INT, MPI_SUM,
-                           MPI_COMM_WORLD));
+  PetscInt n_particles_all = 0;
+  PetscCall(MPIU_Allreduce(&n_particles_local, &n_particles_all, 1, MPI_INT,
+                           MPI_SUM, MPI_COMM_WORLD));
 
-  //! Check if the number of atoms is the same
-  if (n_atoms_all != n_atoms) {
-    for (PetscInt site_i = 0; site_i < n_atoms; site_i++) {
+  //! Check if the number of particles is the same
+  if (n_particles_all != n_particles) {
+    for (PetscInt site_i = 0; site_i < n_particles; site_i++) {
       if (found_local_ptr_all[site_i] == 0) {
-        PetscCall(
-            PetscPrintf(PETSC_COMM_WORLD,
-                        "The atom %i (%f, %f, %f) is not found in the mesh !\n",
-                        site_i, Simulation_file.mean_q[site_i * dim],
-                        Simulation_file.mean_q[site_i * dim + 1],
-                        Simulation_file.mean_q[site_i * dim + 2]));
+        PetscCall(PetscPrintf(
+            PETSC_COMM_WORLD,
+            "The particle %i (%f, %f, %f) is not found in the mesh !\n", site_i,
+            Simulation_file.mean_q[site_i * dim],
+            Simulation_file.mean_q[site_i * dim + 1],
+            Simulation_file.mean_q[site_i * dim + 2]));
       }
     }
   }
@@ -190,67 +189,64 @@ static PetscErrorCode InitializeBlobs_DMDA(DM *atomistic_data,
   free(found_local_ptr);
   free(found_local_ptr_all);
 
-  //! Check if the number of atoms is the same
-  if (n_atoms_all != n_atoms) {
+  //! Check if the number of particles is the same
+  if (n_particles_all != n_particles) {
     PetscCall(PetscError(
         PETSC_COMM_WORLD, __LINE__, "init_DMD_simulation", __FILE__,
         PETSC_ERR_RETURN, PETSC_ERROR_INITIAL,
         "The global size (%i) of the DMSwarm does not match the input (%i) !",
-        n_atoms_all, n_atoms));
+        n_particles_all, n_particles));
     PetscFunctionReturn(PETSC_ERR_RETURN);
   }
 
   //! @brief Set local sizes
-  PetscCall(DMSwarmSetLocalSizes(*atomistic_data, n_atoms_local, BufferLenght));
+  PetscCall(DMSwarmSetLocalSizes(*blobs_data, n_particles_local, BufferLenght));
 
-  //! @brief mean_p: Mean value of each atomic momentum
-  PetscCall(DMSwarmGetField(*atomistic_data, "mean-q", NULL, NULL,
-                            (void **)&mean_q_ptr));
+  //! @brief mean_p: Mean value of each particle momentum
+  PetscCall(
+      DMSwarmGetField(*blobs_data, "mean-q", NULL, NULL, (void **)&mean_q_ptr));
 
   //! @brief rho: Density
   double *rho;
-  PetscCall(DMSwarmGetField(*atomistic_data, "rho", NULL, NULL, (void **)&rho));
+  PetscCall(DMSwarmGetField(*blobs_data, "rho", NULL, NULL, (void **)&rho));
 
   //! @brief mass: Mass of each particle
   double *mass;
-  PetscCall(
-      DMSwarmGetField(*atomistic_data, "mass", NULL, NULL, (void **)&mass));
+  PetscCall(DMSwarmGetField(*blobs_data, "mass", NULL, NULL, (void **)&mass));
 
   //! @brief beta: Thermal Lagrange multiplier
   double *beta;
-  PetscCall(
-      DMSwarmGetField(*atomistic_data, "beta", NULL, NULL, (void **)&beta));
+  PetscCall(DMSwarmGetField(*blobs_data, "beta", NULL, NULL, (void **)&beta));
 
   //! @brief idx_ptr: index of the site
-  PetscCall(
-      DMSwarmGetField(*atomistic_data, "idx", NULL, NULL, (void **)&idx_ptr));
+  PetscCall(DMSwarmGetField(*blobs_data, "idx", NULL, NULL, (void **)&idx_ptr));
 
-  //! @brief ghost_ptr: index if the site is a ghost atom or not
+  //! @brief ghost_ptr: index if the site is a ghost particle or not
   PetscInt *ghost_ptr;
-  PetscCall(DMSwarmGetField(*atomistic_data, "ghost", NULL, NULL,
-                            (void **)&ghost_ptr));
+  PetscCall(
+      DMSwarmGetField(*blobs_data, "ghost", NULL, NULL, (void **)&ghost_ptr));
 
   //! @brief box_idx_ptr: periodic box index
   PetscInt *box_idx_ptr;
-  PetscCall(DMSwarmGetField(*atomistic_data, "box-idx", NULL, NULL,
+  PetscCall(DMSwarmGetField(*blobs_data, "box-idx", NULL, NULL,
                             (void **)&box_idx_ptr));
 
   //! @brief site_mpi_rank: Integer which defines MPI rank location
   PetscInt *site_mpi_rank;
-  PetscCall(DMSwarmGetField(*atomistic_data, "MPI-rank", NULL, NULL,
+  PetscCall(DMSwarmGetField(*blobs_data, "MPI-rank", NULL, NULL,
                             (void **)&site_mpi_rank));
 
   //!  @brief Pointers with the information of the boundary condition
   PetscInt *idx_bcc_mean_q_ptr;
-  PetscCall(DMSwarmGetField(*atomistic_data, "idx-bcc-mean-q", NULL, NULL,
+  PetscCall(DMSwarmGetField(*blobs_data, "idx-bcc-mean-q", NULL, NULL,
                             (void **)&idx_bcc_mean_q_ptr));
 
   PetscInt *idx_bcc_beta_ptr;
-  PetscCall(DMSwarmGetField(*atomistic_data, "idx-bcc-beta", NULL, NULL,
+  PetscCall(DMSwarmGetField(*blobs_data, "idx-bcc-beta", NULL, NULL,
                             (void **)&idx_bcc_beta_ptr));
 
   //! Set information from the .dump file
-  for (PetscInt local_site_i = 0; local_site_i < n_atoms_local;
+  for (PetscInt local_site_i = 0; local_site_i < n_particles_local;
        local_site_i++) {
 
     PetscInt site_i = idx_ptr[local_site_i];
@@ -303,25 +299,24 @@ static PetscErrorCode InitializeBlobs_DMDA(DM *atomistic_data,
   }
 
   //! Restore particle fields
-  PetscCall(DMSwarmRestoreField(*atomistic_data, "mean-q", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(*blobs_data, "mean-q", NULL, NULL,
                                 (void **)&mean_q_ptr));
+  PetscCall(DMSwarmRestoreField(*blobs_data, "rho", NULL, NULL, (void **)&rho));
   PetscCall(
-      DMSwarmRestoreField(*atomistic_data, "rho", NULL, NULL, (void **)&rho));
+      DMSwarmRestoreField(*blobs_data, "mass", NULL, NULL, (void **)&mass));
   PetscCall(
-      DMSwarmRestoreField(*atomistic_data, "mass", NULL, NULL, (void **)&mass));
+      DMSwarmRestoreField(*blobs_data, "beta", NULL, NULL, (void **)&beta));
   PetscCall(
-      DMSwarmRestoreField(*atomistic_data, "beta", NULL, NULL, (void **)&beta));
-  PetscCall(DMSwarmRestoreField(*atomistic_data, "idx", NULL, NULL,
-                                (void **)&idx_ptr));
-  PetscCall(DMSwarmRestoreField(*atomistic_data, "ghost", NULL, NULL,
+      DMSwarmRestoreField(*blobs_data, "idx", NULL, NULL, (void **)&idx_ptr));
+  PetscCall(DMSwarmRestoreField(*blobs_data, "ghost", NULL, NULL,
                                 (void **)&ghost_ptr));
-  PetscCall(DMSwarmRestoreField(*atomistic_data, "box-idx", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(*blobs_data, "box-idx", NULL, NULL,
                                 (void **)&box_idx_ptr));
-  PetscCall(DMSwarmRestoreField(*atomistic_data, "MPI-rank", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(*blobs_data, "MPI-rank", NULL, NULL,
                                 (void **)&site_mpi_rank));
-  PetscCall(DMSwarmRestoreField(*atomistic_data, "idx-bcc-mean-q", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(*blobs_data, "idx-bcc-mean-q", NULL, NULL,
                                 (void **)&idx_bcc_mean_q_ptr));
-  PetscCall(DMSwarmRestoreField(*atomistic_data, "idx-bcc-beta", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(*blobs_data, "idx-bcc-beta", NULL, NULL,
                                 (void **)&idx_bcc_beta_ptr));
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -339,16 +334,16 @@ PetscErrorCode Simulation::initialize(const dump_file &Simulation_file,
 
   unsigned int dim = NumberDimensions;
 
-  DM atomistic_data;
+  DM blobs_data;
   DM FE_Mesh;
   MPI_Comm comm;
   PetscMPIInt size;
   PetscMPIInt rank;
 
   //!
-  PetscInt n_atoms_global = 0;
-  PetscInt n_atoms_local = 0;
-  PetscInt n_atoms = Simulation_file.n_atoms;
+  PetscInt n_particles_global = 0;
+  PetscInt n_particles_local = 0;
+  PetscInt n_particles = Simulation_file.n_particles;
 
   PetscFunctionBeginUser;
 
@@ -359,90 +354,89 @@ PetscErrorCode Simulation::initialize(const dump_file &Simulation_file,
   PetscCall(PetscObjectGetComm((PetscObject)FE_Mesh, &comm));
   PetscCallMPI(MPI_Comm_size(comm, &size));
   PetscCallMPI(MPI_Comm_rank(comm, &rank));
-  PetscCall(DMCreate(comm, &atomistic_data));
-  PetscCall(DMSetType(atomistic_data, DMSWARM));
-  PetscCall(DMSetDimension(atomistic_data, dim));
-  PetscCall(PetscObjectSetName((PetscObject)atomistic_data, "Blobs"));
-  PetscCall(DMSwarmSetType(atomistic_data, DMSWARM_PIC));
-  PetscCall(DMSwarmSetCellDM(atomistic_data, FE_Mesh));
+  PetscCall(DMCreate(comm, &blobs_data));
+  PetscCall(DMSetType(blobs_data, DMSWARM));
+  PetscCall(DMSetDimension(blobs_data, dim));
+  PetscCall(PetscObjectSetName((PetscObject)blobs_data, "Blobs"));
+  PetscCall(DMSwarmSetType(blobs_data, DMSWARM_PIC));
+  PetscCall(DMSwarmSetCellDM(blobs_data, FE_Mesh));
 
   //! Molar fraction: Xi := <n>_0
   PetscCall(
-      DMSwarmRegisterPetscDatatypeField(atomistic_data, "rho", 1, PETSC_REAL));
+      DMSwarmRegisterPetscDatatypeField(blobs_data, "rho", 1, PETSC_REAL));
 
   //! Thermal multiplier: Beta := 1/(kb * T)
   PetscCall(
-      DMSwarmRegisterPetscDatatypeField(atomistic_data, "beta", 1, PETSC_REAL));
+      DMSwarmRegisterPetscDatatypeField(blobs_data, "beta", 1, PETSC_REAL));
 
   //! Mass of the particle
   PetscCall(
-      DMSwarmRegisterPetscDatatypeField(atomistic_data, "mass", 1, PETSC_REAL));
+      DMSwarmRegisterPetscDatatypeField(blobs_data, "mass", 1, PETSC_REAL));
 
   //! Mean value of the position: mean-q
-  PetscCall(DMSwarmRegisterPetscDatatypeField(atomistic_data, "mean-q", 3,
-                                              PETSC_REAL));
+  PetscCall(
+      DMSwarmRegisterPetscDatatypeField(blobs_data, "mean-q", 3, PETSC_REAL));
 
   //! Mean momentum of the particle
-  PetscCall(DMSwarmRegisterPetscDatatypeField(atomistic_data, "mean-p", 3,
-                                              PETSC_REAL));
+  PetscCall(
+      DMSwarmRegisterPetscDatatypeField(blobs_data, "mean-p", 3, PETSC_REAL));
 
   //! Site ghost
   PetscCall(
-      DMSwarmRegisterPetscDatatypeField(atomistic_data, "ghost", 1, PETSC_INT));
+      DMSwarmRegisterPetscDatatypeField(blobs_data, "ghost", 1, PETSC_INT));
 
   //! Periodic box index
-  PetscCall(DMSwarmRegisterPetscDatatypeField(atomistic_data, "box-idx", 1,
-                                              PETSC_INT));
+  PetscCall(
+      DMSwarmRegisterPetscDatatypeField(blobs_data, "box-idx", 1, PETSC_INT));
 
   //! Site idx
-  PetscCall(
-      DMSwarmRegisterPetscDatatypeField(atomistic_data, "idx", 1, PETSC_INT));
+  PetscCall(DMSwarmRegisterPetscDatatypeField(blobs_data, "idx", 1, PETSC_INT));
 
   //! MPI rank
-  PetscCall(DMSwarmRegisterPetscDatatypeField(atomistic_data, "MPI-rank", 1,
-                                              PETSC_INT));
+  PetscCall(
+      DMSwarmRegisterPetscDatatypeField(blobs_data, "MPI-rank", 1, PETSC_INT));
 
   //! Boundary condition idex for the mean position
-  PetscCall(DMSwarmRegisterPetscDatatypeField(atomistic_data, "idx-bcc-mean-q",
-                                              1, PETSC_INT));
+  PetscCall(DMSwarmRegisterPetscDatatypeField(blobs_data, "idx-bcc-mean-q", 1,
+                                              PETSC_INT));
 
   //! Boundary condition idex for the shape of the distribution
-  PetscCall(DMSwarmRegisterPetscDatatypeField(atomistic_data, "idx-bcc-beta", 1,
+  PetscCall(DMSwarmRegisterPetscDatatypeField(blobs_data, "idx-bcc-beta", 1,
                                               PETSC_INT));
 
   //!
-  PetscCall(DMSwarmFinalizeFieldRegister(atomistic_data));
-  PetscCall(DMSwarmSetLocalSizes(atomistic_data, n_atoms, BufferLenght));
+  PetscCall(DMSwarmFinalizeFieldRegister(blobs_data));
+  PetscCall(DMSwarmSetLocalSizes(blobs_data, n_particles, BufferLenght));
 
   //! Initialize the particles using dump information
-  PetscCall(InitializeBlobs_DMDA(&atomistic_data, Simulation_file));
+  PetscCall(InitializeBlobs_DMDA(&blobs_data, Simulation_file));
 
   //! Sync normalized swarm coordinates used by DMSwarmMigrate
-  PetscCall(DMSwarmSyncCoorFromMeanQ_DM(atomistic_data));
+  PetscCall(DMSwarmSyncCoorFromMeanQ_DM(blobs_data));
 
   //! Set the number of particles
-  PetscCall(DMSwarmGetSize(atomistic_data, &n_atoms_global));
-  PetscCall(DMSwarmGetLocalSize(atomistic_data, &n_atoms_local));
+  PetscCall(DMSwarmGetSize(blobs_data, &n_particles_global));
+  PetscCall(DMSwarmGetLocalSize(blobs_data, &n_particles_local));
 
   //! Create a context to relate petsc numbering and dump numbering
   AO dump2petsc_mapping;
   IS dump_ordering;
 
   PetscInt *idx_ptr;
-  PetscCall(
-      DMSwarmGetField(atomistic_data, "idx", NULL, NULL, (void **)&idx_ptr));
+  PetscCall(DMSwarmGetField(blobs_data, "idx", NULL, NULL, (void **)&idx_ptr));
 
-  PetscCall(ISCreateGeneral(PETSC_COMM_WORLD, n_atoms_local, idx_ptr,
+  PetscCall(ISCreateGeneral(PETSC_COMM_WORLD, n_particles_local, idx_ptr,
                             PETSC_COPY_VALUES, &dump_ordering));
   PetscCall(AOCreateBasicIS(dump_ordering, NULL, &dump2petsc_mapping));
   PetscCall(ISDestroy(&dump_ordering));
-  PetscCall(AOApplicationToPetsc(dump2petsc_mapping, n_atoms_local, idx_ptr));
-  PetscCall(DMSwarmRestoreField(atomistic_data, "idx", NULL, NULL,
-                                (void **)&idx_ptr));
+  PetscCall(
+      AOApplicationToPetsc(dump2petsc_mapping, n_particles_local, idx_ptr));
+  PetscCall(
+      DMSwarmRestoreField(blobs_data, "idx", NULL, NULL, (void **)&idx_ptr));
 
   //! Fill the simulation (takes ownership of DM + AO)
-  particles_.adopt(atomistic_data, dump2petsc_mapping, n_atoms_global,
-                   n_atoms_local);
+  particles_.adopt(blobs_data, dump2petsc_mapping, n_particles_global,
+                   n_particles_local);
   env_ = Environment{};
 
   PetscFunctionReturn(PETSC_SUCCESS);

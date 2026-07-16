@@ -292,7 +292,7 @@ PetscErrorCode DMDApplyVolumetricExpansion(Simulation& simulation,
 
 /************************************************************************/
 
-PetscErrorCode DMSwarmSyncCoorFromMeanQ_DM(DM atomistic_data) {
+PetscErrorCode DMSwarmSyncCoorFromMeanQ_DM(DM blobs_data) {
   PetscFunctionBeginUser;
 
   DM background_mesh;
@@ -305,17 +305,17 @@ PetscErrorCode DMSwarmSyncCoorFromMeanQ_DM(DM atomistic_data) {
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Physical bbox
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmGetCellDM(atomistic_data, &background_mesh));
+  PetscCall(DMSwarmGetCellDM(blobs_data, &background_mesh));
   PetscCall(DMGetPhysicalBoundingBox(background_mesh, gmin, gmax, NULL));
-  PetscCall(DMSwarmGetLocalSize(atomistic_data, &n_local));
+  PetscCall(DMSwarmGetLocalSize(blobs_data, &n_local));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get swarm fields
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmGetField(atomistic_data, "mean-q", NULL, NULL,
+  PetscCall(DMSwarmGetField(blobs_data, "mean-q", NULL, NULL,
                             (void**)&mean_q_ptr));
 
-  PetscCall(DMSwarmGetField(atomistic_data, DMSwarmPICField_coor, NULL, NULL,
+  PetscCall(DMSwarmGetField(blobs_data, DMSwarmPICField_coor, NULL, NULL,
                             (void**)&PIC_coor_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -335,9 +335,9 @@ PetscErrorCode DMSwarmSyncCoorFromMeanQ_DM(DM atomistic_data) {
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore swarm fields
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(atomistic_data, "mean-q", NULL, NULL,
+  PetscCall(DMSwarmRestoreField(blobs_data, "mean-q", NULL, NULL,
                                 (void**)&mean_q_ptr));
-  PetscCall(DMSwarmRestoreField(atomistic_data, DMSwarmPICField_coor, NULL,
+  PetscCall(DMSwarmRestoreField(blobs_data, DMSwarmPICField_coor, NULL,
                                 NULL, (void**)&PIC_coor_ptr));
   PetscFunctionReturn(PETSC_SUCCESS);
 }

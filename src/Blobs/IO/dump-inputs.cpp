@@ -37,7 +37,7 @@ dump_file DMSwarmBlobsReadDump(const char* SimulationFile) {
   unsigned int dim = NumberDimensions;
   dump_file Simulation;
 
-  //! Variables to read atomistic data
+  //! Variables to read particle data
   FILE* simulation_data = fopen(SimulationFile, "r");
   char aux_line[10000];
   int error;
@@ -47,12 +47,12 @@ dump_file DMSwarmBlobsReadDump(const char* SimulationFile) {
   fgets(aux_line, sizeof(aux_line), simulation_data);
   error = fscanf(simulation_data, "%d\n", &time_step);
 
-  //! @brief Read number of atomic position
-  int n_atoms = 0;
+  //! @brief Read number of particle position
+  int n_particles = 0;
   fgets(aux_line, sizeof(aux_line), simulation_data);
-  error = fscanf(simulation_data, "%d\n", &n_atoms);
-  Simulation.n_atoms = n_atoms;
-  PetscPrintf(PETSC_COMM_WORLD, "Number of particles: %i\n", n_atoms);
+  error = fscanf(simulation_data, "%d\n", &n_particles);
+  Simulation.n_particles = n_particles;
+  PetscPrintf(PETSC_COMM_WORLD, "Number of particles: %i\n", n_particles);
 
   //! @brief Read box bcc
   char bc_x[10000];
@@ -102,24 +102,24 @@ dump_file DMSwarmBlobsReadDump(const char* SimulationFile) {
   Simulation.box_z_max = box_z_max;
 
   //! @brief Create arrays
-  Simulation.beta = (double*)calloc(n_atoms, sizeof(double));
+  Simulation.beta = (double*)calloc(n_particles, sizeof(double));
 
-  Simulation.beta_bcc = (int*)calloc(n_atoms, sizeof(int));
+  Simulation.beta_bcc = (int*)calloc(n_particles, sizeof(int));
 
-  Simulation.gamma = (double*)calloc(n_atoms, sizeof(double));
+  Simulation.gamma = (double*)calloc(n_particles, sizeof(double));
 
-  Simulation.gamma_bcc = (int*)calloc(n_atoms, sizeof(int));
+  Simulation.gamma_bcc = (int*)calloc(n_particles, sizeof(int));
 
-  Simulation.mean_q = (double*)calloc(n_atoms * dim, sizeof(double));
+  Simulation.mean_q = (double*)calloc(n_particles * dim, sizeof(double));
 
-  Simulation.stdv_q = (double*)calloc(n_atoms, sizeof(double));
+  Simulation.stdv_q = (double*)calloc(n_particles, sizeof(double));
 
-  Simulation.xi = (double*)calloc(n_atoms, sizeof(double));
+  Simulation.xi = (double*)calloc(n_particles, sizeof(double));
 
   //! @brief Read properties from dump file
   fgets(aux_line, sizeof(aux_line), simulation_data);
 
-  for (unsigned int i_site = 0; i_site < n_atoms; i_site++) {
+  for (unsigned int i_site = 0; i_site < n_particles; i_site++) {
 
     unsigned int Particle_idx;
     unsigned int Particle_Type;

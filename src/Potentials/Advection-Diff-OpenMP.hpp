@@ -27,18 +27,18 @@ class AdvectionDiffusionEquations : public GoverningEquations {
 
   PetscErrorCode evaluate_meassure_JKO(
       Vec rho, const Vec q_k1, const Vec beta_k1, const Vec mass,
-      const ParticleTopology* atom_topology) override;
+      const ParticleTopology* particle_topology) override;
 
   PetscErrorCode evaluate_JKO(PetscScalar* JKO_system, PetscScalar Delta_t,
                               const Vec rho, const Vec q_k1, const Vec q_k,
                               const Vec beta_k1, const Vec beta_k,
                               const Vec mass,
-                              const ParticleTopology* atom_topology) override;
+                              const ParticleTopology* particle_topology) override;
 
   PetscErrorCode evaluate_D_JKO_Dq(
       Vec D_JKO_Dq, PetscScalar Delta_t, const Vec rho_k1, const Vec x_k1,
       const Vec x_k, const Vec beta_k1, const Vec mass,
-      const ParticleTopology* atom_topology) override;
+      const ParticleTopology* particle_topology) override;
 };
 
 #endif /* ADVEC_DIFF_POTENTIAL_HPP */

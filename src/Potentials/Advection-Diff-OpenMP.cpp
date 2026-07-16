@@ -37,7 +37,7 @@ extern DiffusivePotential Potential_AD;
 
 PetscErrorCode AdvectionDiffusionEquations::evaluate_meassure_JKO(
     Vec rho_k1, const Vec x_k1, const Vec beta_k1, const Vec mass,
-    const ParticleTopology* atom_topology) {
+    const ParticleTopology* particle_topology) {
 
   PetscFunctionBeginUser;
 
@@ -82,13 +82,13 @@ PetscErrorCode AdvectionDiffusionEquations::evaluate_meassure_JKO(
 #pragma omp parallel for schedule(runtime)
   for (int site_u = 0; site_u < n_sites; site_u++) {
 
-    //! @brief Get atomistic information of site i
+    //! @brief Get particle information of site i
     PetscScalar rho_k1_u = 0.0;
     Eigen::Map<const Eigen::Vector3d> x_u_k1(&x_k1_ptr[dim * site_u]);
 
     //! Get topology data of subset Bu(rc)
-    unsigned int size_Bu = atom_topology[site_u].size;
-    const PetscInt* list_Bu = atom_topology[site_u].list;
+    unsigned int size_Bu = particle_topology[site_u].size;
+    const PetscInt* list_Bu = particle_topology[site_u].list;
 
     //! @brief Compute local sum
     for (int idx_i = 0; idx_i < size_Bu; idx_i++) {
@@ -129,11 +129,11 @@ PetscErrorCode AdvectionDiffusionEquations::evaluate_meassure_JKO(
 PetscErrorCode AdvectionDiffusionEquations::evaluate_JKO(
     PetscScalar* JKO_system, PetscScalar Delta_t, const Vec rho_k1,
     const Vec x_k1, const Vec x_k, const Vec beta_k1, const Vec beta_k,
-    const Vec mass, const ParticleTopology* atom_topology) {
-      
+    const Vec mass, const ParticleTopology* particle_topology) {
+
   PetscFunctionBeginUser;
 
-  (void)atom_topology;
+  (void)particle_topology;
 
   unsigned int dim = NumberDimensions;
   PetscScalar kappa = Potential_AD.kappa;
@@ -186,7 +186,7 @@ PetscErrorCode AdvectionDiffusionEquations::evaluate_JKO(
 #pragma omp parallel for reduction(+ : JKO_local) schedule(runtime)
   for (int site_i = 0; site_i < n_sites; site_i++) {
 
-    //! @brief Get atomistic information of site i
+    //! @brief Get particle information of site i
     PetscScalar rho_k1_i = rho_k1_ptr[site_i];
     Eigen::Map<const Eigen::Vector3d> x_i_k1(&x_k1_ptr[dim * site_i]);
     Eigen::Map<const Eigen::Vector3d> x_i_k(&x_k_ptr[dim * site_i]);
@@ -254,7 +254,7 @@ PetscErrorCode AdvectionDiffusionEquations::evaluate_JKO(
 PetscErrorCode AdvectionDiffusionEquations::evaluate_D_JKO_Dq(
     Vec D_JKO_Dq, PetscScalar Delta_t, const Vec rho_k1, const Vec x_k1,
     const Vec x_k, const Vec beta_k1, const Vec mass,
-    const ParticleTopology* atom_topology) {
+    const ParticleTopology* particle_topology) {
   PetscFunctionBeginUser;
 
   unsigned int dim = NumberDimensions;
@@ -310,7 +310,7 @@ PetscErrorCode AdvectionDiffusionEquations::evaluate_D_JKO_Dq(
 #pragma omp parallel for schedule(runtime)
   for (int site_u = 0; site_u < n_sites; site_u++) {
 
-    //! @brief Get atomistic information of site i
+    //! @brief Get particle information of site i
     PetscScalar rho_k1_u = rho_k1_ptr[site_u];
     PetscScalar m_u = mass_ptr[site_u];
     Eigen::Vector3d d_rho_k1_dx_u = Eigen::Vector3d::Zero();
@@ -319,8 +319,8 @@ PetscErrorCode AdvectionDiffusionEquations::evaluate_D_JKO_Dq(
     Eigen::Vector3d Dphi = x_u_k1 - x_u_k;
 
     //! Get topology data of subset Bu(rc)
-    unsigned int size_Bu = atom_topology[site_u].size;
-    const PetscInt* list_Bu = atom_topology[site_u].list;
+    unsigned int size_Bu = particle_topology[site_u].size;
+    const PetscInt* list_Bu = particle_topology[site_u].list;
 
     //! @brief Compute local gradient of the density
     for (int idx_i = 1; idx_i < size_Bu; idx_i++) {

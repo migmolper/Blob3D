@@ -1,12 +1,7 @@
 /**
- * @file Atoms/Neighbors.cpp
+ * @file Blobs/Neighbors.cpp
  * @author Miguel Molinos ([migmolper](https://github.com/migmolper))
- * @brief
- * @version 0.1
- * @date 2022-07-23
- *
- * @copyright Copyright (c) 2022
- *
+ * @brief Create and destroy the neighbors list for the particles
  */
 
 #include <cstdlib>

@@ -134,8 +134,8 @@ typedef struct {
 
 typedef struct dump_file {
 
-  /** @param n_atoms Number of atoms */
-  int n_atoms;
+  /** @param n_particles Number of particles */
+  int n_particles;
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Box bounds
@@ -169,10 +169,10 @@ typedef struct dump_file {
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Position-related variables
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  /** @param mean_q: Mean value of each atomic position */
+  /** @param mean_q: Mean value of each particle position */
   double* mean_q;
 
-  /** @param stdv_q: Standard desviation of each atomic position */
+  /** @param stdv_q: Standard desviation of exach particle position */
   double* stdv_q;
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -221,7 +221,7 @@ class GoverningEquations {
    */
   virtual PetscErrorCode evaluate_meassure_JKO(
       Vec rho, const Vec q_k1, const Vec beta_k1, const Vec mass,
-      const ParticleTopology* atom_topology) = 0;
+      const ParticleTopology* particle_topology) = 0;
 
   /**
    * @brief Evaluate the discrete Jordan–Kinderlehrer–Otto functional
@@ -235,7 +235,7 @@ class GoverningEquations {
   virtual PetscErrorCode evaluate_JKO(
       PetscScalar* JKO_system, PetscScalar Delta_t, const Vec rho,
       const Vec q_k1, const Vec q_k, const Vec beta_k1, const Vec beta_k,
-      const Vec mass, const ParticleTopology* atom_topology) = 0;
+      const Vec mass, const ParticleTopology* particle_topology) = 0;
 
   /**
    * @brief Evaluate the position gradient of the discrete JKO functional.
@@ -243,7 +243,7 @@ class GoverningEquations {
   virtual PetscErrorCode evaluate_D_JKO_Dq(
       Vec D_JKO_Dq, PetscScalar Delta_t, const Vec rho_k1, const Vec x_k1,
       const Vec x_k, const Vec beta_k1, const Vec mass,
-      const ParticleTopology* atom_topology) = 0;
+      const ParticleTopology* particle_topology) = 0;
 };
 
 /*******************************************************/
@@ -252,7 +252,7 @@ class GoverningEquations {
  * @brief Abstract base class for Shape Functions and Potential Components.
  * * This interface defines the contract for any function N_i and its
  * spatial gradient DN_i, evaluated at point x relative to a reference
- * position x_i (e.g., a node or an atomic site).
+ * position x_i (e.g., a node or an particle site).
  */
 class ShapeFunction {
  public:

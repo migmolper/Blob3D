@@ -185,7 +185,7 @@ inline bool IsDirectionActive(int dx, int dy, int dz, DMBoundaryType bx,
 PetscErrorCode get_mesh_boundary_condition(DMBoundaryType* bcc, DM* da);
 
 /**
- * @brief Enforce periodic boundary conditions over the ghost atoms
+ * @brief Enforce periodic boundary conditions over the ghost particles
  *
  * @param Simulation Simulation object
  * @return PetscErrorCode
@@ -194,7 +194,7 @@ PetscErrorCode DMSwarmEnforceBlobsPeriodic(Simulation& simulation,
                                            double r_cutoff);
 
 /**
- * @brief Enforce periodic boundary conditions over the ghost atoms
+ * @brief Enforce periodic boundary conditions over the ghost particles
  *
  * @param simulation
  * @return PetscErrorCode

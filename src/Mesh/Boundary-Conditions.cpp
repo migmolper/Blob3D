@@ -31,7 +31,7 @@ using namespace std;
 /**
  * @brief Fold a physical coordinate into the fundamental cell [lo, hi).
  *
- * Used before DMDA/DMSwarm partition tests so periodic image atoms match the
+ * Used before DMDA/DMSwarm partition tests so periodic image particles match the
  * half-open brick owned by PETSc ranks.
  */
 inline PetscReal FoldPeriodicCoordinate(PetscReal x, PetscReal lo,
@@ -77,7 +77,7 @@ PetscErrorCode DMSwarmEnforceBlobsPeriodic(Simulation& simulation,
   //! Number of local physical sites
   PetscInt n_sites_local = simulation.n_sites_local();
 
-  //! Get atomistic coordinates
+  //! Get particle coordinates
   PetscScalar* mean_q_ptr;
   PetscCall(DMSwarmGetField(simulation.dm(), "mean-q", NULL, NULL,
                             (void**)&mean_q_ptr));
@@ -106,7 +106,7 @@ PetscErrorCode DMSwarmEnforceBlobsPeriodic(Simulation& simulation,
    Check if the site is inside the domain and enforce periodic boundary
   conditions
   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  //! @brief found: Flag to check if the atom is found in the mesh
+  //! @brief found: Flag to check if the particle is found in the mesh
   int* found_local_ptr = (int*)calloc(n_sites_local, sizeof(int));
 
 #pragma omp parallel for schedule(runtime)
@@ -152,7 +152,7 @@ PetscErrorCode DMSwarmEnforceBlobsPeriodic(Simulation& simulation,
         PetscCall(PetscError(
             PETSC_COMM_SELF, __LINE__, "DMSwarmEnforceBlobsPeriodic", __FILE__,
             PETSC_ERR_RETURN, PETSC_ERROR_INITIAL,
-            "Atom %" PetscInt_FMT
+            "Particle %" PetscInt_FMT
             " at (%g, %g, %g), box [%g,%g] x [%g,%g] x [%g,%g], "
             "bcc = (%d,%d,%d)\n",
             site_i, mean_q_i(0), mean_q_i(1), mean_q_i(2), box_coords[0],
@@ -198,7 +198,7 @@ PetscErrorCode DMSwarmEnforceGhostBlobsPeriodic(Simulation& simulation) {
   PetscCall(
       DMSwarmGetLocalSize(simulation.dm(), &n_sites_local_ghosted));
 
-  //! Get atomistic coordinates
+  //! Get particle coordinates
   PetscScalar* mean_q_ptr;
   PetscCall(DMSwarmGetField(simulation.dm(), "mean-q", NULL, NULL,
                             (void**)&mean_q_ptr));
@@ -236,7 +236,7 @@ PetscErrorCode DMSwarmEnforceGhostBlobsPeriodic(Simulation& simulation) {
   PetscCall(get_mesh_boundary_condition(bcc, &background_mesh));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   Loop over ghost atoms
+   Loop over ghost particles
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 #pragma omp parallel for schedule(runtime)
   for (int site_i = n_sites_local; site_i < n_sites_local_ghosted; site_i++) {
@@ -309,7 +309,7 @@ PetscErrorCode VecEnforceGhostBlobsPeriodic(Vec mean_q,
   PetscCall(VecGetLocalSize(mean_q_loc, &n_dof_local_ghosted));
   PetscInt n_sites_local_ghosted = n_dof_local_ghosted / dim;
 
-  //! Get atomistic coordinates
+  //! Get particle coordinates
   PetscScalar* mean_q_ptr;
   PetscCall(VecGetArray(mean_q_loc, &mean_q_ptr));
 
@@ -325,7 +325,7 @@ PetscErrorCode VecEnforceGhostBlobsPeriodic(Vec mean_q,
   const Eigen::Vector3d lattice_z_B(0.0, 0.0, gmax[2] - gmin[2]);
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   Loop over ghost atoms
+   Loop over ghost particles
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 #pragma omp parallel for schedule(runtime)
   for (int site_i = n_sites_local; site_i < n_sites_local_ghosted; site_i++) {
@@ -388,7 +388,7 @@ PetscErrorCode DMSwarmFixMeanPositionBox(Simulation& simulation, PetscInt FixLab
   //! Number of local physical sites
   PetscInt n_sites_local = simulation.n_sites_local();
 
-  //! Get atomistic coordinates
+  //! Get particle coordinates
   PetscScalar* mean_q_ptr;
   PetscCall(DMSwarmGetField(simulation.dm(), "mean-q", NULL, NULL,
                             (void**)&mean_q_ptr));
@@ -399,7 +399,7 @@ PetscErrorCode DMSwarmFixMeanPositionBox(Simulation& simulation, PetscInt FixLab
                             NULL, (void**)&idx_bcc_mean_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   Loop over atoms
+   Loop over particles
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 #pragma omp parallel for schedule(runtime)
   for (int site_i = 0; site_i < n_sites_local; site_i++) {
@@ -503,7 +503,7 @@ PetscErrorCode DMSwarmApplyDisplacement(Simulation& simulation, PetscInt FixLabe
                             (void**)&mean_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    Loop over atoms
+    Loop over particles
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   for (int site_i = 0; site_i < n_sites_local; site_i++) {
 
@@ -526,7 +526,7 @@ PetscErrorCode DMSwarmApplyDisplacement(Simulation& simulation, PetscInt FixLabe
   PetscCall(DMSwarmGetCellDM(simulation.dm(), &background_mesh));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    Get mean position vector update ghost atoms and enforce periodic bcc
+    Get mean position vector update ghost particles and enforce periodic bcc
   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   Vec X_mean_q;
   PetscCall(VecCreateGhostWithArray(PETSC_COMM_WORLD, n_dof_local,
@@ -576,7 +576,7 @@ PetscErrorCode VecFixMeanPositionRHS(Vec RHS, Vec mean_q, Vec mean_q_ref,
 
   PetscFunctionBeginUser;
 
-  //! @brief Auxiliar atomistic variables
+  //! @brief Auxiliar particle variables
   unsigned int dim = NumberDimensions;
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -607,7 +607,7 @@ PetscErrorCode VecFixMeanPositionRHS(Vec RHS, Vec mean_q, Vec mean_q_ref,
   PetscCall(VecGetArrayRead(mean_q_ref_loc, &mean_q_ref_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   Loop over atoms
+   Loop over particles
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 #pragma omp parallel for schedule(runtime)
   for (int site_i = 0; site_i < n_sites; site_i++) {
@@ -651,7 +651,7 @@ PetscErrorCode DMSwarmFixChemicalMultiplierBox(
   //! Number of local physical sites
   PetscInt n_sites_local = simulation.n_sites_local();
 
-  //! Get atomistic coordinates
+  //! Get particle coordinates
   PetscScalar* mean_q_ptr;
   PetscCall(DMSwarmGetField(simulation.dm(), "mean-q", NULL, NULL,
                             (void**)&mean_q_ptr));
@@ -661,13 +661,13 @@ PetscErrorCode DMSwarmFixChemicalMultiplierBox(
   PetscCall(DMSwarmGetField(simulation.dm(), "idx-bcc-gamma", NULL,
                             NULL, (void**)&idx_bcc_gamma_ptr));
 
-  //!  Get the indx of the diffusive atoms
+  //!  Get the indx of the diffusive particles
   PetscInt* idx_diff_ptr;
   PetscCall(DMSwarmGetField(simulation.dm(), "idx-diff", NULL, NULL,
                             (void**)&idx_diff_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   Loop over atoms
+   Loop over particles
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 #pragma omp parallel for schedule(runtime)
   for (int site_i = 0; site_i < n_sites_local; site_i++) {
@@ -694,7 +694,7 @@ PetscErrorCode DMSwarmFixChemicalMultiplierBox(
                                 NULL, NULL, (void**)&idx_bcc_gamma_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    Restore the indx of the diffusive atoms
+    Restore the indx of the diffusive particles
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscCall(DMSwarmRestoreField(simulation.dm(), "idx-diff", NULL,
                                 NULL, (void**)&idx_diff_ptr));
@@ -717,7 +717,7 @@ PetscErrorCode DMSwarmFixThermalMultiplierBox(Simulation& simulation,
   //! Number of local physical sites
   PetscInt n_sites_local = simulation.n_sites_local();
 
-  //! Get atomistic coordinates
+  //! Get particle coordinates
   PetscScalar* mean_q_ptr;
   PetscCall(DMSwarmGetField(simulation.dm(), "mean-q", NULL, NULL,
                             (void**)&mean_q_ptr));
@@ -728,7 +728,7 @@ PetscErrorCode DMSwarmFixThermalMultiplierBox(Simulation& simulation,
                             NULL, (void**)&idx_bcc_beta_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   Loop over atoms
+   Loop over particles
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 #pragma omp parallel for schedule(runtime)
   for (int site_i = 0; site_i < n_sites_local; site_i++) {

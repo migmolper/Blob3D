@@ -30,7 +30,7 @@ bool In_Out_Mesh(const Eigen::Vector3d mean_q, const PetscScalar el_coords[]);
 /**
  * @brief Closed brick test [lw, up] on each axis.
  *
- * Use for user-defined BC/fix regions where boundary atoms must be included.
+ * Use for user-defined BC/fix regions where boundary particles must be included.
  *
  * @param mean_q Point coordinates.
  * @param el_coords {x_lw, y_lw, z_lw, x_up, y_up, z_up}.
