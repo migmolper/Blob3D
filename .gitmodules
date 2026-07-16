@@ -1,0 +1,9 @@
+[submodule ".github/doxygen-awesome-css"]
+	path = .github/doxygen-awesome-css
+	url = https://github.com/jothepro/doxygen-awesome-css.git
+[submodule "external/CMake-codecov"]
+	path = external/CMake-codecov
+	url = https://github.com/RWTH-HPC/CMake-codecov.git
+[submodule "external/eigen3"]
+	path = external/eigen3
+	url = https://gitlab.com/libeigen/eigen.git

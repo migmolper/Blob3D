@@ -1,0 +1,378 @@
+\documentclass{article}
+\usepackage[a4paper,width=150mm,top=25mm,bottom=25mm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{appendix}
+
+
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+%\usepackage{biblatex} %Imports biblatex package
+\usepackage{cleveref}
+\usepackage{natbib}
+
+%\usepackage[margin=1.5cm]{geometry}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+%\usepackage{amssymb}
+\usepackage[dvipsnames]{xcolor}
+
+
+    \newcommand{\mbs}[1]{\boldsymbol{#1}}
+    \newcommand{\mbb}[1]{\mathbb{#1}}
+    \newcommand{\mbf}[1]{\mathbf{#1}}
+
+    \def\bA{{\mbs{A}}} \def\bB{{\mbs{B}}} \def\bC{{\mbs{C}}}
+    \def\bD{{\mbs{D}}} \def\bE{{\mbs{E}}} \def\bF{{\mbs{F}}}
+    \def\bG{{\mbs{G}}} \def\bH{{\mbs{H}}} \def\bI{{\mbs{I}}}
+    \def\bJ{{\mbs{J}}} \def\bK{{\mbs{K}}} \def\bL{{\mbs{L}}}
+    \def\bM{{\mbs{M}}} \def\bN{{\mbs{N}}} \def\bO{{\mbs{O}}}
+    \def\bP{{\mbs{P}}} \def\bQ{{\mbs{Q}}} \def\bR{{\mbs{R}}}
+    \def\bS{{\mbs{S}}} \def\bT{{\mbs{T}}} \def\bU{{\mbs{U}}}
+    \def\bV{{\mbs{V}}} \def\bW{{\mbs{W}}} \def\bX{{\mbs{X}}}
+    \def\bY{{\mbs{Y}}} \def\bZ{{\mbs{Z}}}
+
+    \def\ba{{\mbs{a}}} \def\bb{{\mbs{b}}} \def\bc{{\mbs{c}}}
+    \def\bd{{\mbs{d}}} \def\be{{\mbs{e}}} \def\fb{{\mbs{f}}}
+    \def\bg{{\mbs{g}}} \def\bh{{\mbs{h}}} \def\bi{{\mbs{i}}}
+    \def\bj{{\mbs{j}}} \def\bk{{\mbs{k}}} \def\bl{{\mbs{l}}}
+    \def\bm{{\mbs{m}}} \def\bn{{\mbs{n}}} \def\bo{{\mbs{o}}}
+    \def\bp{{\mbs{p}}} \def\bq{{\mbs{q}}} \def\br{{\mbs{r}}}
+    \def\bs{{\mbs{s}}} \def\bt{{\mbs{t}}} \def\bu{{\mbs{u}}}
+    \def\bv{{\mbs{v}}} \def\bw{{\mbs{w}}} \def\bx{{\mbs{x}}}
+    \def\by{{\mbs{y}}} \def\bz{{\mbs{z}}}
+
+\graphicspath {
+    {./}
+    {./Figures/}
+    }
+
+    \def\ljump{\lbrack\!\lbrack}
+    \def\rjump{\rbrack\!\rbrack}
+
+    \newtheorem{theorem}{Theorem}[section]
+    \newtheorem{corollary}{Corollary}[theorem]
+    \newtheorem{proposition}{Proposition}[theorem]
+    \newtheorem{lemma}{Lemma}[theorem]
+    \newtheorem{claim}{Claim}[section]
+    \newtheorem{definition}{Definition}[section]
+    \newtheorem{axiom}{Axiom}[section]
+    \newtheorem{problem}{Problem}[section]
+    \newtheorem{question}{Question}[section]
+
+\newcommand\meanfield[1]{\langle{#1}\rangle_0}
+
+\title{SOLERA Chemical Algorithms}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+%\section{Chemical algorithms}
+
+\begin{algorithm}
+    \caption{List of diffusive sites}\label{alg:diffusive-sites}
+    \begin{algorithmic}
+    \State $I_{\textit{diffusive-sites}} = [\ ]$
+    \State $N_{\textit{diffusive-sites}} = 0$
+    \vspace{0.2cm}  
+    \For{$i\, \in I_{\text{Mg}} \cup I_{\text{H}}$} 
+        \vspace{0.2cm}  
+        \State $\text{Local-molar-frac}\ =\ 0$
+        \vspace{0.2cm}  
+        \If{$(i \in I_{\text{H}}) \quad \text{and} \quad (\chi_i > \chi_{\text{min}})$}
+            \State $\text{Local-molar-frac}\ \gets \text{Local-molar-frac}\ +\ \chi_i$ 
+        \EndIf
+        \vspace{0.2cm}        
+        \State $\text{Local-molar-frac}\ \gets \text{Local-molar-frac}\ +\ \chi_i$ 
+        \For{$j\, \in \textit{Neighbours}\ (i)$} 
+            \If{$(j \in I_{\text{H}})  \quad \text{and} \quad (|r_{ij}| < r_{\text{cut-off-Eb}}) \quad \text{and} \quad (\chi_j > \chi_{\text{min}})$}
+                \State $\text{Local-molar-frac}\ \gets \text{Local-molar-frac}\ +\ \chi_j$ 
+            \EndIf
+       \EndFor
+        \vspace{0.2cm}     
+        \If{$\text{Local-molar-frac}\ >\ \chi_{\text{min}}$}
+            \State $I_{\textit{diffusive-sites}} (N_{\textit{diffusive-sites}})\ =\ i$
+            \State $N_{\textit{diffusive-sites}}\ \gets N_{\textit{diffusive-sites}}\ +\ 1$ 
+        \EndIf
+    \EndFor
+    \end{algorithmic}
+    \end{algorithm}
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    \begin{algorithm}
+    \caption{List of diffusive neighbors}\label{alg:list-diffusive-neighbors}
+    \begin{algorithmic}
+    \Require
+    \State $I_{\textit{diffusive-sites}}$
+    \State $I_{\textit{diffusive-neighs}} = [\ ]$
+    \vspace{0.2cm}  
+    \For{$i_H\, \in I_{\text{Mg}} \cup I_{\textit{diffusive-sites}}$} 
+        \vspace{0.2cm}  
+        \State $i = I_{\textit{diffusive-sites}}(i_H)$
+        \State $N_{\textit{diffusive-neighs},i}\ =\ 0$
+        \vspace{0.2cm}        
+        \For{$j\, \in \textit{Neighbours}\ (i)$} 
+            \If{$(j \in I_{\text{H}})  \quad \text{and} \quad (|r_{ij}| < r_{\text{cut-off-Eb}})$}
+                \If{$((\chi_i > 1 - \chi_{\text{min}}) \quad \text{and} \quad (\chi_j > 1 - \chi_{\text{min}}))\ \quad \text{or} \quad 
+                ((\chi_i < \chi_{\text{min}}) \text{and} (\chi_j < \chi_{\text{min}}))$}
+                    \State  $I_{\textit{diffusive-neighs}}(i_H, N_{\textit{diffusive-neighs},i_H}) = j$
+                    \State  $N_{\textit{diffusive-neighs}}\ \gets N_{\textit{diffusive-neighs},i_H}\ +\ 1$ 
+                \Else
+                \EndIf
+            \EndIf
+       \EndFor
+        \vspace{0.2cm}     
+    \EndFor
+    \end{algorithmic}
+    \end{algorithm}
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    \begin{algorithm}
+    \caption{Energy barrier algorithm between sites $i$ and $j$ (Newton-Raphson)}\label{alg:Energy-barrier}
+    \begin{algorithmic}
+    \Require 
+    \State $\chi_u = 1$ and $\chi_j = 0$ \Comment{Enforce critical state conditions}
+    \State $\bar{\mathbf{q}}_u^{trial}$ \Comment{Initial value of the site $u$}
+    \State $\mathbf{d}^{trial}$ \Comment{Initial search direction}  
+    \State $I_{\text{sbd}(i)} \coloneqq \mathcal{S}(\bar{\mathbf{q}}_i,R) $ \Comment{Subdomain of atomic sites centered at the site $i$}
+    \vspace{0.5cm}  
+    \While{Convergence == False}
+    \State $\text{Iter} \gets \text{Iter} + 1$ \Comment{Update number of iterations}  \vspace{0.5cm}  
+    \If{$\text{Iter} > \text{MaxIter}$}
+        \State Break 
+    \Else
+        \State $\bar{\mathbf{q}}_u \gets \bar{\mathbf{q}}_u + \mathbf{d}$ \Comment{Update trial-site position}     \vspace{0.5cm}
+        \State Solve $\frac{d}{d \sigma_u} \meanfield{\mathcal{L}}(\{\bar{\mathbf{q}}\},\{\sigma\}) = 0$ \Comment{Local relaxation of $\sigma_u$}  \vspace{0.5cm}
+        \State Evaluate locally the potential and its derivatives:     \vspace{0.5cm}
+        \State $\meanfield{V} = \sum_{i\in{I_{\text{sbd}(i)}}} \meanfield{V_i}$   \vspace{0.5cm}
+        \State $\frac{d}{d \bar{\mathbf{q}}_u} \meanfield{V} = \sum_{i\in{I_{\text{sbd}(i)}}} \meanfield{\frac{d V_i}{d \mathbf{q}_u}} = \nabla_u \meanfield{V}$  \vspace{0.5cm}
+        \State $\frac{d^2}{d \bar{\mathbf{q}}_u^2} \meanfield{V} = \sum_{i\in{I_{\text{sbd}(i)}}} \meanfield{\frac{d^2 V_i}{d \mathbf{q}_u}^2} = \text{H}_u \meanfield{V}$     \vspace{0.5cm}    
+        \If{$\parallel \nabla_u \meanfield{V} \parallel \leq \textit{Tol}$}
+            \State Compute eigenvalues of $\text{H}_u \meanfield{V}$: $\lambda_{I}$, $\lambda_{II}$ and $\lambda_{III}$ \vspace{0.5cm} 
+            \If{$\lambda_{I} < 0 $ or $\lambda_{II} < 0 $ or $\lambda_{III} < 0 $}
+                \State Convergence = True
+            \EndIf
+        \EndIf   \vspace{0.5cm}  
+        \If{Convergence == False}
+           \State $\mathbf{d} = - \frac{\nabla_u \meanfield{V}}{\text{H}_u \meanfield{V}}$ \Comment{Update search direction} 
+        \EndIf  \vspace{0.5cm}  
+    \EndIf
+    \EndWhile
+    \end{algorithmic}
+    \end{algorithm}
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    \begin{algorithm}
+    \caption{Energy barrier algorithm between sites i and j (Meanfield Approximation)}\label{alg:explicit-master-equation}
+    \begin{algorithmic}
+        \State Get distance between site $i$ and $j$: $r_{ij}$\\
+        
+        \State Save physical values: ($\gamma_i$, $\gamma_j$) ($\chi_i$, $\chi_j$) and ($\sigma_i$, $\sigma_j$)\\
+    
+        \State Set and compute critical state values for site $i$:
+        \begin{align*}
+        &\text{Set}: (\chi_i^{cs} = 1, \chi_j^{cs} = 0), (\gamma_j^{cs} = 0), (\sigma_j^{cs} = 0) \\
+        &\sigma^{cs}_i \leftarrow \frac{\partial \mathcal{L}_0[\{h_0\}, \{\gamma\}]}{\partial \bar{\sigma}_i} = 0\\
+        &\gamma_i^{cs} = \frac{3}{2}\ +\ \text{log}\left(\frac{\chi_i}{1 - \chi_i}\right) +\ \beta \frac{\partial \langle V \rangle_0}{\partial \chi_i}(\{\bar{\textbf{q}}\},\{\bar{\sigma}\}) \\
+        \end{align*}
+    \State Compute chemical potential and spring constant for site $i$:
+    \begin{equation*}
+        \kappa_i^{cs} = \frac{1}{\beta (\sigma_i^{cs})^2},\ \quad \mu_i^{cs} = \gamma_i^{cs} / \beta
+    \end{equation*}\\
+    
+        \State Set and compute critical state values for site $j$:
+        \begin{align*}
+        &\text{Set}: (\chi_i^{cs} = 0, \chi_j^{cs} = 1), (\gamma_i^{cs} = 0), (\sigma_i^{cs} = 0) \\
+        &\sigma^{cs}_j \leftarrow \frac{\partial \mathcal{L}_0[\{h_0\}, \{\gamma\}]}{\partial \bar{\sigma}_j} = 0\\
+        &\gamma_j^{cs} = \frac{3}{2}\ +\ \text{log}\left(\frac{\chi_j}{1 - \chi_j}\right) +\ \beta \frac{\partial \langle V \rangle_0}{\partial \chi_j}(\{\bar{\textbf{q}}\},\{\bar{\sigma}\}) \\
+        \end{align*}
+    \State Compute chemical potential and spring constant for site $j$:
+    \begin{equation*}
+        \kappa_j^{cs} = \frac{1}{\beta (\sigma_j^{cs})^2},\ \quad \mu_j^{cs} = \gamma_j^{cs} / \beta
+    \end{equation*}\\
+    
+    \State If site $i$ or $j$ has a chemical boundary condition, substitute the chemical potential by the environmental value $\mu_{env}$\\
+    
+    \State Compute saddle point with the Meanfield Approximation formula using $\kappa_i^{cs}$, $\kappa_j^{cs}$, $\mu_i^{cs}$, $\mu_j^{cs}$:
+    \begin{equation*}
+    \xi \to \frac{\sqrt{\kappa _i r_{\text{ij}}^2 \kappa _j+2 \left(\kappa _i-\kappa _j\right) \left(\mu _i-\mu _j\right)}-r_{\text{ij}} \kappa _j}{r_{\text{ij}} \left(\kappa _i-\kappa _j\right)}
+    \end{equation*}\\
+    
+    \State Compute the values of the energy barrier:
+    \begin{equation*}
+        E_b^{i \rightarrow j}\, =\, \frac{1}{2} \kappa^{cs}_i\, \xi^2\, |r_{ij}|^2\ \quad \text{and} \quad E_b^{j \rightarrow i}\, =\, \frac{1}{2} \kappa^{cs}_j\, (1 - \xi)^2\, |r_{ij}|^2
+    \end{equation*}\\
+    
+    \State Compute the values of the hopping frequency:
+    \begin{equation*}
+        \nu_i = \sqrt{\kappa_i^{cs}/m_H}\ \quad \text{and} \quad nu_j = \sqrt{\kappa_j^{cs}/m_H} 
+    \end{equation*}\\
+    
+    \State Restore physical values: ($\gamma_i$, $\gamma_j$) ($\chi_i$, $\chi_j$) and ($\sigma_i$, $\sigma_j$)\\
+    
+    \State \textbf{Return}: $E_b^{i \rightarrow j}$, $E_b^{j \rightarrow i}$, $\nu_i$, $\nu_j$
+    
+    \end{algorithmic}
+    \end{algorithm}
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    \begin{algorithm}
+    \caption{Explicit evaluation of the Master Equation (Forward-Euler)}\label{alg:explicit-master-equation}
+    \begin{algorithmic}
+    
+    \State Get chemical connectivity: $I_{\textit{diffusive-sites}}$,\ $I_{\textit{diffusive-neighs}}$ \\
+    
+    \State Evaluate thermo-mechanical equilibrium to compute: $\{\bar{\textbf{q}}\}^{k+1}$,\ $\{\bar{\sigma}\}^{k+1}$:
+    \begin{equation*}
+        \frac{\partial \mathcal{L}_0[\{h_0\}^k, \{\gamma\}^k]}{\partial \bar{\textbf{q}}_i} = 0 \qquad \text{and} \qquad \frac{\partial \mathcal{L}_0[\{h_0\}^k, \{\gamma\}^k]}{\partial \bar{\sigma}_i} = 0
+    \end{equation*}\\
+    
+    \State Update the chemical multiplier $\{\gamma\}$
+    \begin{equation*}
+        \gamma_i^{k+1} = \frac{3}{2}\ +\ \text{log}\left(\frac{\chi_i^{k}}{1 - \chi_i^{k}}\right) + \beta \frac{\partial \langle V \rangle_0}{\partial \chi_i^k}(\{\bar{\textbf{q}}\}^{k+1},\{\bar{\sigma}\}^{k+1})\ \quad \forall i \in I_{\text{I}}
+    \end{equation*}
+    
+    \State Set to zero $\{\dot{\chi}\}$\\
+    
+    \vspace{0.2cm}  
+    \For{$i_H\, \in I_{\textit{diffusive-sites}}$} 
+        \vspace{0.2cm}  
+    
+        \State $i = I_{\textit{diffusive-sites}}(i_H)$ \Comment{Get the global index of the site $i_H$}\\
+        
+        \State R = R$_{cutoff-adp}$ + R$_{cutoff-Eb}$ \Comment{Extended support to evaluate the energy barrier} \\
+    
+        \State Get extended local subdomain of site $i$:
+        \begin{equation*}
+            I_{\text{sbd}(i)}^{eb} = \mathcal{S}(\bar{\mathbf{q}}_i,R)
+        \end{equation*}\\
+    
+        \State $I_{\text{sbd,diff}(i)} = I_{\textit{diffusive-neighs}}(i_H, N_{\textit{diffusive-neighs},i_H})$ \\
+        \vspace{0.2cm}        
+        \For{$j_H\, \in I_{\text{sbd,diff}(i)}$} 
+    
+            \State $j = I_{\textit{diffusive-sites}}(j_H)$ \Comment{Get the global index of the site $j_H$}\\
+    
+            \State Outputs $\Leftarrow$ Evaluate-Energy-Barrier($\{\bar{\textbf{q}}\}^{k+1}$,\ $\{\bar{\sigma}\}^{k+1}$,\ $\{\chi\}^k$, $\{\gamma\}^{k+1}$, $I_{\text{sbd}(i)}$). \\
+            
+            \State Outputs $\Rightarrow$ Energy barrier: (E$_{b, i \rightarrow j}$, E$_{b, j \rightarrow i}$) and frequency: ($\nu_i$, $\nu_i$) \\
+    
+            \State Evaluate transition rates:
+            \begin{equation*}
+                f_{ij} = \nu_i {\rm e}^{-\beta E_{b,i \rightarrow j}}\ \qquad \text{and}  \qquad f_{ji} = \nu_j {\rm e}^{-\beta E_{b,j \rightarrow i}}
+            \end{equation*}\\
+    
+            \State Evaluate hopping probability:
+            \begin{equation*}
+                 \psi_{i\to j} = x_i (1-x_j) f_{i\to j} \ \qquad \text{and}  \qquad \psi_{j\to i} = x_j (1-x_i) f_{j\to i} 
+            \end{equation*}\\ 
+    
+            \State Evaluate contribution of site $j$ to site $i$ (incrementally):
+            \begin{equation*}
+            \dot{\chi}_i \leftarrow \dot{\chi}_i + \bigg(\psi_{j\to i} -\psi_{i\to j}\bigg)
+            \end{equation*}    
+       \EndFor \\
+       \State Insert value in the global vector:
+       \begin{equation*}
+           \{\dot{\chi}\} \leftarrow \dot{\chi}_i
+       \end{equation*}
+    
+        \vspace{0.2cm}     
+    \EndFor\\
+    
+    \State Compute $\Delta t$ for a Courant number (C) of 0.1:
+    \begin{equation*}
+        \Delta t = \frac{C}{\text{max} \{\dot{\chi}\}}
+    \end{equation*}
+    
+    \State Solve master equation explicitly (Forward Euler):
+    \begin{equation*}
+        \{\chi\}_{k+1} \leftarrow \{\chi\}_{k} + \Delta t\, \{\dot{\chi}\} (\{\bar{\textbf{q}}\}^{k+1},\ \{\bar{\sigma}\}^{k+1},\ \{\chi\}^k,\ \{\gamma\}^{k+1})
+    \end{equation*}
+    \end{algorithmic}
+    \end{algorithm}
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    \begin{algorithm}
+        \caption{Implicit evaluation of the Master Equation (Backward-Euler)}\label{alg:Implicit-master-equation}
+        \begin{algorithmic}
+        
+        \State Get chemical connectivity: $I_{\textit{diffusive-sites}}$,\ $I_{\textit{diffusive-neighs}}$ \\
+        
+        \State Evaluate thermo-mechanical equilibrium to compute: $\{\bar{\textbf{q}}\}^{k+1}$,\ $\{\bar{\sigma}\}^{k+1}$:
+        \begin{equation*}
+            \frac{\partial \mathcal{L}_0[\{h_0\}^k, \{\gamma\}^k]}{\partial \bar{\textbf{q}}_i} = 0 \qquad \text{and} \qquad \frac{\partial \mathcal{L}_0[\{h_0\}^k, \{\gamma\}^k]}{\partial \bar{\sigma}_i} = 0
+        \end{equation*}\\
+        
+        \State Update the chemical multiplier $\{\gamma\}$
+        \begin{equation*}
+            \gamma_i^{k+1} = \frac{3}{2}\ +\ \text{log}\left(\frac{\chi_i^{k}}{1 - \chi_i^{k}}\right) + \beta \frac{\partial \langle V \rangle_0}{\partial \chi_i^k}(\{\bar{\textbf{q}}\}^{k+1},\{\bar{\sigma}\}^{k+1})\ \quad \forall i \in I_{\text{I}}
+        \end{equation*}
+        
+        \State Set to zero the diffusivity matrix $\left[\textbf{D}\right]$\\
+        
+        \vspace{0.2cm}  
+        \For{$i_H\, \in I_{\textit{diffusive-sites}}$} 
+            \vspace{0.2cm}  
+        
+            \State $i = I_{\textit{diffusive-sites}}(i_H)$ \Comment{Get the global index of the site $i_H$}\\
+            
+            \State R = R$_{cutoff-adp}$ + R$_{cutoff-Eb}$ \Comment{Extended support to evaluate the energy barrier} \\
+        
+            \State Get extended local subdomain of site $i$:
+            \begin{equation*}
+                I_{\text{sbd}(i)}^{eb} = \mathcal{S}(\bar{\mathbf{q}}_i,R)
+            \end{equation*}\\
+        
+            \State $I_{\text{sbd,diff}(i)} = I_{\textit{diffusive-neighs}}(i_H, N_{\textit{diffusive-neighs},i_H})$ \\
+            \vspace{0.2cm}        
+            \For{$j_H\, \in I_{\text{sbd,diff}(i)}$} 
+        
+                \State $j = I_{\textit{diffusive-sites}}(j_H)$ \Comment{Get the global index of the site $j_H$}\\
+        
+                \State Outputs $\Leftarrow$ Evaluate-Energy-Barrier($\{\bar{\textbf{q}}\}^{k+1}$,\ $\{\bar{\sigma}\}^{k+1}$,\ $\{\chi\}^k$, $\{\gamma\}^{k+1}$, $I_{\text{sbd}(i)}$). \\
+                
+                \State Outputs $\Rightarrow$ Energy barrier: (E$_{b, i \rightarrow j}$, E$_{b, j \rightarrow i}$) and frequency: ($\nu_i$, $\nu_i$) \\
+        
+                \State Evaluate transition rates:
+                \begin{equation*}
+                    f_{ij} = \nu_i {\rm e}^{-\beta E_{b,i \rightarrow j}}\ \qquad \text{and}  \qquad f_{ji} = \nu_j {\rm e}^{-\beta E_{b,j \rightarrow i}}
+                \end{equation*}\\
+    
+                \State Set transition rate component $ji$:
+                \begin{equation*}
+                    \left[\textbf{D}\right]_{ji} \leftarrow f_{ji}
+                \end{equation*}\\
+    
+                \State If $i \neq j$, set the transition rate component $ii$:
+                \begin{eqnarray*}
+                    \left[\textbf{D}\right]_{ii} \leftarrow  \left[\textbf{D}\right]_{ii} + f_{ij}
+                \end{eqnarray*}
+         
+           \EndFor \\
+        
+            \vspace{0.2cm}     
+        \EndFor\\
+        
+        \State Impose the chemical boundary condition setting to zero the corresponding row.\\
+        
+        \State Solve master equation implicitly (Backward Euler):
+        \begin{equation*}
+            \{\chi\}_{k+1}\ \leftarrow\ \frac{\{\chi\}_{k+1} - \{\chi\}_{k}}{\Delta t}\ =\  \left[\textbf{D}\right] (\{\bar{\textbf{q}}\}^{k+1},\ \{\bar{\sigma}\}^{k+1},\ \{\chi\}^k,\ \{\gamma\}^{k+1}) \cdot \{\chi\}_{k+1}
+        \end{equation*}
+        \end{algorithmic}
+        \end{algorithm}
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}

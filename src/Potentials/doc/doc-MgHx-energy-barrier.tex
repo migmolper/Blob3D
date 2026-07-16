@@ -1,0 +1,165 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{makeidx}
+\usepackage{graphicx}
+\usepackage[margin=1.5cm]{geometry}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage[dvipsnames]{xcolor}
+
+
+\author{Pilar Ariza}
+\title{Notes on the Energy barrier calculation}
+\begin{document}
+
+\maketitle
+
+
+
+\section{Calculation of energy barriers by a Hessian algorithm}
+
+\subsection{Notation}
+
+\begin{itemize}
+  \item  site $i$ is occupied, $\mathbf{q}^i$
+  \item  site $j$ is empty, $\mathbf{q}^j$
+  \item  unknown position, $\mathbf{q}^u$
+\end{itemize}
+
+\subsection{Equations}
+In a first approach, the functional will be
+\begin{equation}
+E(\bq^u) = E _{i{\to}j} =E (..., \bq^u, ...) - E (..., \bq^i, ...)
+\end{equation}
+and its Hessian writes as
+\begin{equation}
+H_{\alpha \beta}= \frac{\partial ^2 E(\bq^u)}{\partial q^u _{\alpha} \partial q^u _{\beta}}
+\end{equation}
+with $\alpha$, $\beta = 1, 2, 3$.
+The stationary or critical points, $\bq^u$, are at
+\begin{equation}
+\frac{\partial E(\bq^u)}{\partial q^u _{\alpha}} = 0
+\end{equation}
+with $\alpha$= 1, 2, 3. Moreover, if
+\begin{equation}
+\det(\bH f(\bq^u))<0,
+\end{equation}
+$\bq^u$ is a saddle point.
+
+\subsection{Hessian}
+Given a smooth function $f : \mathbb{R}^n \rightarrow \mathbb{R}$, its second order Taylor expansion writes
+\begin{equation}
+f(\bx + \Delta \bx)=f(\bx)+\mathbf{\nabla} f(\bx) \Delta \bx+\frac{1}{2} \Delta \bx^T \bH f(\bx) \Delta \bx + \mathcal{O}(|\Delta \bx|^3)
+\end{equation}
+where $\mathbf{\nabla} f(\bx)$ is the gradient of $f$ at $\bx$ ($\frac{\partial f}{\partial x _{\alpha}} (x)$), $\bH f(\bx)$ is the Hessian matrix of $f$ at $\bx$ (symmetric), and $\Delta \bx$ is some small displacement.
+
+Suppose we have a critical point at $\bx=\bq^u$, then $\mathbf{\nabla} f(\bx)=\mbf{0}$ and the Taylor expansion writes as
+\begin{equation}
+f(\bq^u + \mbf{\Delta} \bx)=f(\bq^u)+\frac{1}{2} \Delta x^T \bH f(\bq^u) \Delta \bx + \mathcal{O}(|\Delta \bx|^3).
+\end{equation}
+For small displacements $\mbf{\Delta} \bx$, the Hessian tells how the function behaves around the critical point.
+\begin{itemize}
+  \item  The Hessian $\bH f(\bq^u)$ is positive definite if and only if $\Delta x^T \bH f(\bq^u) \Delta \bx >$0 for $\Delta \bx \neq 0$. Equivalently, this is true if and only if all the eigenvalues of $\bH f(\bq^u)$ are positive. Then no matter which direction you move away from the critical point, the value of $f(\bq^u + \mbf{\Delta} \bx)$ grows (for small $|\Delta \bx|$), so $\bq^u$ is a local minimum.
+  \item  Likewise, the Hessian $\bH f(\bq^u)$ is negative definite if and only if $\Delta x^T \bH f(\bq^u) \Delta \bx <$0 for $\Delta \bx \neq 0$. Equivalently, this is true if and only if all the eigenvalues of $\bH f(\bq^u)$ are negative. Then no matter which direction you move away from the critical point, the value of $f(\bq^u + \mbf{\Delta} \bx)$ decreases (for small $|\Delta \bx|$), so $\bq^u$ is a local maximum.
+  \item  Now suppose that the Hessian $\bH f(\bq^u)$ has mixed positive and negative (but all nonzero) eigenvalues, i.e., $\bH$ is indefinite. Then (for small $|\Delta \bx|$) the value of $f(\bq^u + \mbf{\Delta} \bx)$ decreases or increases as you move away from the critical point, depending on which direction you take, so $\bq^u$ is a saddle point.
+  \item Lastly, suppose that there exists some $\Delta \bx \neq 0$ such that $\bH f(\bq^u) \Delta \bx <$0. This is true if and only if $\bH f(\bq^u)$ has a 0 eigenvalue. In this case the test fails: along this direction we are not really sure whether the function $f$ is increasing or decreasing as we move away from $\bq^u$; our second order approximation is not good enough and we need higher order data to decide.
+\end{itemize}
+Since we are working in $ \mathbb{R}^3$, we are going to have three eigenvalues, $\lambda_1$, $\lambda_2$ and $\lambda_3$. The determinant of a matrix is the product of its eigenvalues, and the trace is their sum: $\det(\bH f(\bq^u))= \lambda_1 \lambda_2 \lambda_3$ and $tr(\bH f(\bq^u))= \lambda_1 + \lambda_2 + \lambda_3$.
+
+Thus, if $\bq^u$ is a saddle point,
+\begin{equation}
+\det(\bH f(\bq^u))<0.
+\end{equation}
+Also, if none of the leading principal minors of the Hessian is zero and the Hessian is not positive definite, nor negative definite, then the Hessian is indefinite. Thus,
+\begin{eqnarray}
+% \nonumber % Remove numbering (before each equation)
+  \det(H_{11}) &\neq& 0 \\
+  \det\begin{pmatrix}
+         H_{11} & H_{12} \\
+         H_{21} & H_{22} \\
+       \end{pmatrix}
+  &\neq& 0 \\
+  \det(\bH) &\neq& 0
+\end{eqnarray}
+The stationary or critical points, $\bq^u$, are at
+\begin{equation}
+\frac{\partial f}{\partial x _{\alpha}} (\bq^u) = 0
+\end{equation}
+with $\alpha$= 1, 2, 3.
+
+\subsection{Eigenvalues and Eigenvectors}
+\begin{equation}\label{eigen}
+\det( \bH f(\bq^u) -\lambda \bI)=0
+\end{equation}
+In particular, in $ \mathbb{R}^3$ Equation~(\ref{eigen}) writes as
+\begin{eqnarray}
+&&-\lambda^3+\lambda^2(H_{11}+H_{22}+H_{33})\nonumber\\
+&&-\lambda(H_{11}H_{22}+H_{11}H_{33}+H_{22}H_{33}-H_{12}^2-H_{13}^2-H_{23}^2)\nonumber\\
+&&+H_{11}H_{22}H_{33}+2H_{12}H_{13}H_{23}-H_{22}H_{13}^2-H_{11}H_{23}^2-H_{33}H_{12}^2=0
+\end{eqnarray}
+If $\bd$ is an eigenvector, its corresponding eigenvalue will be the derivative in that direction
+\begin{equation}
+\bd_{\alpha}^T \bH \bd_{\alpha}= \lambda_{\alpha}
+\end{equation}
+with $\alpha$= 1, 2, 3.
+
+\subsection{Energy barrier}
+\label{Energy barrier}
+The energy barrier is the minimum energy needed for an atom to move from one stable position to another, in our case the energy barrier from $i$ to $j$ is the energy that the atom need to realize the movement from position lattice site $i$ to lattice site $j$. In a defined sample of atoms, each atom will have different kinetic energies so some atoms will have enough energy to overcome the energy barrier and complete the motion and others will not. The energy barrier of a diffusion phenomena is related to its rate, if the energy barrier is high, only a small group of atoms will be able to complete the diffusion.
+\\
+The energy barrier can be represented as we see in Fig.\ref{nombreDeLaFigura3}, where the $x-$axis represents the portion of distance between the two stable position studied and the $y-$axis represents the difference of energy between the actual point in the path, we will call it $u$, and the initial point $i$. The initial point in the  $y-$axis is the lattice site $i$ and the final point is the lattice site $j$. The maximum difference of energy in Fig.\ref{nombreDeLaFigura3} is the energy barrier. In order to calculate the real energy barrier we need to find the maximum difference of energy in the minimum energy path between $i$ and $j$. 
+
+The energy minimization usually has the aim to find the positions of a set of atoms that reach the energy minimum. In the pursuit of the energy barrier we look for optimize a transition states, which is a saddle point on the potential energy surface[ref1wik]. Our goal is to find that saddle point if possible or a good approximation of it, this point is the peak of difference energy in Fig.\ref{nombreDeLaFigura3}
+
+%\begin{figure}[T]
+%\centering
+%\includegraphics[scale=0.4]{Figures/test-grap.pdf}
+%\caption{energy barrier graphs}
+%\label{nombreDeLaFigura3}
+%\end{figure}
+
+
+
+\begin{algorithm}
+    \caption{Energy barrier calculation}\label{alg:relaxation}
+    \begin{algorithmic}[1]
+    
+    \State \phantom{abab}Create an initial guess, $u$, in the middle of the path from atom $i$ to $j$, $\forall$ $i,j \in I^H $
+    \State \phantom{abab}$x_i^0=x_i$, $x_j^0=x_j$
+    \State \phantom{abab}$x_i$=1, $x_j$=0, $x_u$=0
+    \State \phantom{abab}$E_i$ = $\mathcal{F}(\{\textbf{\={q}}\},\{w\}, \{x\})$, we calculate the energy of position $i$.
+    \State \phantom{abab}$x_i$=0, $x_j$=0, $x_u$=1
+    
+    \State \phantom{abab}\textbf{Begin}
+    
+    \State \phantom{ababab}\textbf{for} $m \gets 0$: $m<m_{max}$ \textbf{do}
+    \State \phantom{abababab}$f_u=\partial \mathcal{F}/\partial q_u$
+    \State \phantom{abababab}$\textbf{if}$ $f_u< \epsilon$ $\textbf{then}$ $\textbf{break}$
+    \State \phantom{abababab}$q_u^{m+1}=q_u^m-\frac{\mathcal{F}'(q_u^m)}{\mathcal{H}(q_u^m)}$, we apply the Newton–Raphson method to update the position of the guess $u$.
+    \State \phantom{abab}\textbf{End}
+    
+    Now we have found a critical point. To specify which type of critical point it is, we calculate the eigenvalues, $\lambda_i$, of the Hessian $\mathcal{H}\mathcal{F}(\textbf{\emph{q}}_u)$. 
+    \State \phantom{abab}$det( \mathcal{H}\mathcal{F}(\textbf{\emph{q}}_u) -\lambda \textbf{\emph{I}})=0$.
+    
+    In particular, in $ \mathbb{R}^3$ it stays as:
+     
+    $-\lambda^3+\lambda^2(\mathcal{H}_{11}+\mathcal{H}_{22}+\mathcal{H}_{33})-\lambda(\mathcal{H}_{11}\mathcal{H}_{22}+\mathcal{H}_{11}\mathcal{H}_{33}-\mathcal{H}_{12}^2-\mathcal{H}_{13}^2-\mathcal{H}_{23}^2) + \mathcal{H}_{11}\mathcal{H}_{22}\mathcal{H}_{33} +2\mathcal{H}_{12}\mathcal{H}_{13}\mathcal{H}_{23}-
+    \phantom{abab} \mathcal{H}_{22}\mathcal{H}_{13}^2 -\mathcal{H}_{11}\mathcal{H}_{23}^2-\mathcal{H}_{33}\mathcal{H}_{12} = 0$. From here we obtain $\lambda_1$, $\lambda_2$ and $\lambda_3$
+    \begin{itemize}
+    \item If all the eigenvalues are positive, the critical point is a maximum. Then, we initiate the algorithm again, but approaching the guess point 10$\%$ closer to atom $j$ (this option is highly unlikely to occur).
+    \item If all the eigenvalues are negative, the critical point is a minimum.
+    \item If some eigenvalues are positive and others negative, the critical point is a saddle point.
+    \end{itemize}
+    
+    \State \phantom{abab}$E_u$ = $\mathcal{F}(\{\textbf{\={q}}\},\{w\}, \{x\})$, we compute the energy for position $u$.
+    \State \phantom{abab}${E^b}_{i\rightarrow j}$ = $E_u-E_i$, we have found the energy barrier.
+    \State \phantom{abab}$x_i=x_i^0$, $x_j=x_j^0$, $x_u= 0$
+    \end{algorithmic}
+    \end{algorithm}
+    
+
+\end{document}

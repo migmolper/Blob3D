@@ -1,0 +1,1056 @@
+\documentclass{article}
+\usepackage[a4paper,width=180mm,top=25mm,bottom=25mm]{geometry}
+\usepackage[utf8]{inputenc}
+
+%%%% Standard Packages
+\usepackage{lineno}
+\usepackage[hidelinks]{hyperref} 
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{svg}
+\usepackage{cleveref}
+\usepackage[fleqn,tbtags]{mathtools}
+\usepackage{amsfonts}
+\usepackage{standalone}
+\usepackage{environ}
+\usepackage{slashed}
+\usepackage{textcomp}
+%\usepackage{subfig}
+\usepackage{subfigure}
+\usepackage{soul}
+\usepackage{xstring}
+\usepackage{glossaries}
+\usepackage{comment}
+\makeglossaries
+\usepackage{Lib-Notation} %% User define package for continuum mechanics
+
+\title{Notes on the ADP potential for the Mg-H system}
+\author{Documentation for SOLERA}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Mean-field free entropy for the Mg-H system}
+
+
+\begin{equation}
+    \mathcal{L}_0[\{h_0\}, \{\gamma\}]
+    =
+    k_{\rm B} \log{\Xi_0}
+    +
+    \frac{1}{T}
+    \Big(
+        \langle V \rangle_0
+        +
+        \sum_{i\in{I_\text{M} \cup I_\text{H}}}
+        \frac{1}{2m_i} |\bar{p}_i|^2
+    \Big)
+    +
+    \frac{1}{2} N k_{\rm B}
+    -
+    k_B
+    \Big(
+        \sum_{i \in I_\text{M}}
+        \gamma_i
+        +
+        \sum_{i \in I_\text{H}}
+        \gamma_i \frac{{\rm e}^{\bar{\gamma}_{i}+\gamma_i}}{1 + {\rm e}^{\bar{\gamma}_{i}+\gamma_i}}
+    \Big),
+\end{equation}
+where $\Xi_0$ is the meanfield grand-canonical partition function:
+\begin{equation}
+    \mathnormal{\Xi}_0
+    =
+    \left(
+        \prod_{i\in{I_\text{M}}}
+        \Big(\dfrac{\bar{\sigma}_i\sqrt{k_{\text{B}}T m_{\text{M}}}}{\hbar}\Big)^3
+    \right)
+    \left(
+        \prod_{i\in{I_\text{H}}}
+        \Big(\dfrac{\bar{\sigma}_i\sqrt{k_{\text{B}}T m_{\text{H}}}}{\hbar}\Big)^3
+        \Big( 1 + {\rm e}^{\bar{\gamma}_{i}+\gamma_i}\Big)
+    \right).
+\label{eq:trialpartfun_MH}
+\end{equation}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Meanfield integral}
+
+We recall from (\ref{eq:ESM:av}) that
+\begin{equation}
+    \langle V \rangle_0
+    =
+    \sum_{\{{n}\}\in\mathcal{O}_{NM}} \frac{1}{h^{3N}}
+    \int_{\Gamma}
+    V(\{{q}\}, \{{n}\})
+    \;
+    \rho_0(\{{q}\}, \{{p}\}, \{{n}\})
+    \, dq \, dp ,
+\end{equation}
+which in view of (\ref{eq:trialP_MH}) reduces to
+\begin{equation}
+\label{eq:mean-field-potential-jensen}
+    \langle V \rangle_0
+    =
+    \sum_{\{{n}\}\in\mathcal{O}_{NM}}
+    \int
+        V_i(\{{q}\}, \{{n}\})
+        \Bigg(
+            \prod_{j\in{I_\text{M} \cup I_\text{H}}}
+            \frac{1}{(\sqrt{2\pi}\sigma_j)^3}
+            \exp
+            \Big(
+                -
+                \frac{1}{2\bar{\sigma}_j^2}|{q}_j - \bar{{q}}_j|^2
+            \Big)
+        \Bigg)
+        \Bigg(
+            \prod_{j\in I_\text{H}}
+            \frac
+            {
+                {\rm e}^{(\bar{\gamma}_{j}+\gamma_j) n_i}
+            }
+            {
+                1 + {\rm e}^{\bar{\gamma}_{i}+\gamma_i}
+            }
+        \Bigg)
+    \, dq .
+\end{equation}
+We resort to two approximations to evaluate the requisite phase average. In order to avoid occupancy sums of combinatorial complexity, we apply Jensen's inequality as an equality, with the result
+\begin{equation}
+    \langle V \rangle_0
+    \approx
+    \int
+        V(\{{q}\}, \{{x}\})
+        \Bigg(
+            \prod_{j\in{I_\text{M} \cup I_\text{H}}}
+            \frac{1}{(\sqrt{2\pi}\sigma_j)^3}
+            \exp
+            \Big(
+                -
+                \frac{1}{2\bar{\sigma}_j^2}|{q}_j - \bar{{q}}_j|^2
+            \Big)
+        \Bigg)
+    \, dq .
+\end{equation}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Angular-dependent interatomic potential for the Mg-H system}
+
+The Angular-Dependent interatomic Potential (ADP) is a class of many-body potentials developed by Mishin {\it et al.} as an extension of the Embedded-Atom Method (EAM) potentials. For binary systems such as metal-hydrogen (M-H), and assuming that the occupancy of the metal sites is fixed, $n_i = 1$, and the occupancy of the hydrogen sites may vary, $n_i \in \left(0, 1\right)$ the potential carries the form:
+\begin{equation}
+\begin{split}
+    V(\{\gls{atomic-position}\} , \{\gls{molar-fraction}\})\ =\ &\sum_{i} \gls{molar-fraction}_i \gls{embedding-energy}_i \ +\ \frac{1}{2} \sum_{i} \sum_{j \neq i} \gls{molar-fraction}_i \gls{molar-fraction}_j \gls{pair-energy}_{i,j}\ +\ \frac{1}{2} \sum_{i} \left(\gls{di-distortion}_i\ \cdot\ \gls{di-distortion}_i \right)\ \\ 
+    +\ \frac{1}{2} &\sum_{i} \left(\gls{quadru-distortion}_i\ \colon\ \gls{quadru-distortion}_i\right)\ -\ \frac{1}{6} \sum_{i} \left(\text{tr} \gls{quadru-distortion}_i\right)^2    
+\end{split}
+\end{equation}\\
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{comment}
+\section{Notation}
+
+\begin{equation}
+    A B\ =\ A_{ik} B_{kj}\ =\ C_{ij}\ =\ C 
+\end{equation}
+
+\begin{equation}
+    A \cdot \textbf{b}\ =\ A{ij} \cdot b_{j}\ =\ c_{i}\ =\ \textbf{c} 
+\end{equation}
+
+\begin{equation}
+    A : B\ =\ A_{ij} : B_{ij}\ =\ c  
+\end{equation}
+
+\begin{equation}
+    \mathbb{A} \cdot \textbf{b}\ =\ A_{ikj} \cdot b_{k}\ =\ C_{ij}\ =\ C 
+\end{equation}
+
+\begin{equation}
+    \textbf{a} \otimes \textbf{b}\ =\ a_{i} \otimes b_{j}\ =\ C_{ij}
+\end{equation}
+
+\begin{equation}
+  A \oplus \textbf{b}\ =\ A_{ij} \oplus b_{k}\ =\ C_{ikj}\ =\ \mathbb{C} 
+\end{equation}    
+\end{comment}
+
+\section{Distance terms}
+
+Let us define the vectorial space $\mathcal{V} \in \mathbb{R}^{dim}$. We will refer to the distance between any two atomic positions $i$ and $j$ as $\gls{distance-vec}_{ij} \in \mathcal{V}$:
+\begin{equation}
+\gls{distance-vec}_{ij}\ =\ \gls{atomic-position}_i\ -\ \gls{atomic-position}_j\ \in \mathcal{V},
+\end{equation}
+with Euclidean norm:
+\begin{equation}
+    \| \gls{distance-vec}_{ij} \|\ =\ \sqrt{\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}}\ \in \mathbb{R}.
+\end{equation}
+The gradient of the norm $\| \gls{distance-vec}_{ij} \|$ can be computed as:
+\begin{equation}
+    \frac{d \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij}}\ =\ \frac{\gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|}.
+\end{equation}
+Therefore:
+\begin{equation}
+    \frac{d \| \gls{distance-vec}_{ij} \| }{d \gls{atomic-position}_i}\ =\ \frac{d \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij}} \frac{d \gls{distance-vec}_{ij}}{d \gls{atomic-position}_i}\ =\ \frac{\gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|} \quad \text{and} \quad \frac{d \| \gls{distance-vec}_{ij} \| }{d \gls{atomic-position}_i}\ =\ - \frac{\gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|}.
+\end{equation}
+On the other hand, the hessian of norm $\| \gls{distance-vec}_{ij} \|$ has the following expression:
+\begin{equation}
+\begin{split}
+    \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij}^2}\ =\ \frac{d}{d \gls{distance-vec}_{ij}} \left(  \frac{\gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|} \right) =\ \frac{1}{\| \gls{distance-vec}_{ij} \| } \gls{metric-tensor}\ -\ \frac{1}{\| \gls{distance-vec}_{ij} \|} \left(\frac{\gls{distance-vec}_{ij}  \otimes \gls{distance-vec}_{ij} }{\| \gls{distance-vec}_{ij} \|^2}\right)
+\end{split}
+\end{equation}\\
+Therefore:
+\begin{equation}
+    \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{atomic-position}_i^2}\ =\ \frac{d}{d \gls{atomic-position}_i} \left( \frac{d \| \gls{distance-vec}_{ij} \| }{d \gls{atomic-position}_i} \right)\ =\ \frac{d}{d \gls{atomic-position}_i}\left( \frac{\gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|} \right)\ =\ \frac{d}{d \gls{distance-vec}_{ij}}\left( \frac{\gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|} \right) \frac{d \gls{distance-vec}_{ij}}{d \gls{atomic-position}_i}\ =\ \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij}^2}
+\end{equation}
+The remaining terms are obtained similarly:
+\begin{equation}
+    \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{atomic-position}_i d \gls{atomic-position}_j}\ =\ - \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij}^2}, \quad \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{atomic-position}_j d \gls{atomic-position}_i}\ =\ - \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij} d \gls{distance-vec}_{ij}}, \quad \text{and} \quad \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{atomic-position}_j^2}\ =\ \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij} d \gls{distance-vec}_{ij}}
+\end{equation}
+For the sake of the clarity on the subsequent developments, we will not expand the expression $\frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij}^2}$. Instead we will leave the derivative. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Energy density derivatives}
+
+$\bar{\rho}_i$ is
+\begin{equation}
+\bar{\rho}_i = \sum_{j, j \neq i} n_j \rho_j
+\end{equation}
+Taking derivatives of $\bar{\rho}_{i}$ with respect to $\gls{atomic-position}_i$ and $\gls{atomic-position}_j$
+\begin{equation}
+\frac{\partial \bar{\rho}_i}{\partial \gls{atomic-position}_i} = \sum_{j, j \neq i} n_j\, d\rho_j\, \frac{\gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|} 
+\end{equation}
+\begin{equation}
+\frac{\partial \bar{\rho}_i}{\partial \gls{atomic-position}_j} = - \sum_{j, j \neq i} n_j\, d\rho_j\, \frac{\gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|} 
+\end{equation}
+Second order derivatives of $\bar{\rho}_{i}$
+\begin{equation}
+\frac{\partial^2 \bar{\rho}_i}{\partial \gls{atomic-position}_i^2} = \sum_{j, j \neq i} n_j\, d^2\rho_j\, \frac{\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|^2}\, +\, n_j\, d\rho_j\, \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij}^2}
+\end{equation}
+\begin{equation}
+\frac{\partial^2 \bar{\rho}_i}{\partial \gls{atomic-position}_i \partial \gls{atomic-position}_j} = - \sum_{j, j \neq i} n_j\, d^2\rho_j\, \frac{\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|^2}\, +\, n_j\, d\rho_j\, \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij}^2}
+\end{equation}
+\begin{equation}
+\frac{\partial^2 \bar{\rho}_i}{\partial \gls{atomic-position}_j \partial \gls{atomic-position}_i} = - \sum_{j, j \neq i} n_j\, d^2\rho_j\, \frac{\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|^2}\, +\, n_j\, d\rho_j\, \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij}^2}
+\end{equation}
+\begin{equation}
+\frac{\partial^2 \bar{\rho}_i}{\partial \gls{atomic-position}_j^2} = \sum_{j, j \neq i} n_j\, d^2\rho_j\, \frac{\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|^2}\, +\, n_j\, d\rho_j\, \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij}^2}
+\end{equation}
+Additionally we can compute the derivatives of $\bar{\rho}_{i}$ with respect the occupancy vector $\{n\}$:
+\begin{equation}
+    \frac{\partial \bar{\rho}_{i}}{\partial n_{i^{*}}}\ =\ \rho_{i},\ \quad j \equiv i^{*}
+\end{equation}
+\begin{equation}
+    \frac{\partial \bar{\rho}_{i}}{\partial n_{i^{*}}}\ =\ 0,\ \quad j \neq i^{*}
+\end{equation}
+
+\begin{comment}
+\begin{equation}
+\begin{split}
+\bar{\gls{energy-density}}_{i}\ =\ \sum_{\substack{j \in \mathcal{B}_i(r_\text{c}) \\ j \neq i}} \gls{molar-fraction}_j\ \gls{energy-density}\ (\| \gls{distance-vec}_{ij} \|) =\ \sum_{\substack{j\ \in\ \mathbb{S}_i^1(r_c) \cap I_{Mg}\ \\ j \neq i}} \gls{energy-density}\ (\| \gls{distance-vec}_{ij} \|)\ +\  \sum_{\substack{j\ \in\ \mathbb{S}_i^1(r_c) \cap I_{H}\ \\ j \neq i}} \gls{molar-fraction}_j\ \gls{energy-density}\ (\| \gls{distance-vec}_{ij} \|)    
+\end{split}
+\end{equation}
+
+This is the gradient
+\begin{equation}
+\begin{split}
+\gls{D-energy-density}_{i}\ &=\ \sum_{\substack{j \in \mathcal{B}_i(r_\text{c}) \\ j \neq i}} \gls{molar-fraction}_j\ \frac{d \gls{energy-density}\ (\| \gls{distance-vec}_{ij} \|)}{d \| \gls{distance-vec}_{ij} \|}\ \frac{d \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij}}\ =\  \sum_{\substack{j \in \mathcal{B}_i(r_\text{c}) \\ j \neq i}} \gls{molar-fraction}_j\ \frac{d \gls{energy-density}\ (\| \gls{distance-vec}_{ij} \|)}{d \| \gls{distance-vec}_{ij} \|}\ \frac{\gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|} \\
+&=\ \sum_{\substack{j \in I_{Mg}\ \\ j \neq i}} \frac{d \gls{energy-density}\ (\| \gls{distance-vec}_{ij} \|)}{d \| \gls{distance-vec}_{ij} \|}\ \frac{\gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|}\ +\ \sum_{\substack{j \in I_{H}\ \\ j \neq i}} \gls{molar-fraction}_j\ \frac{d \gls{energy-density}\ (\| \gls{distance-vec}_{ij} \|)}{d \| \gls{distance-vec}_{ij} \|}\ \frac{\gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|}
+\end{split}
+\end{equation}
+
+This is the hessian
+\begin{equation}
+\begin{split}
+\text{D}_{\gls{distance-vec}} \text{D}_{\gls{distance-vec}}\bar{\gls{energy-density}}_{i}\ &=\  \sum_{\substack{j \in \mathcal{B}_i(r_\text{c}) \\ j \neq i}} \gls{molar-fraction}_j\ \frac{d^2 \gls{energy-density}\ (\| \gls{distance-vec}_{ij} \|)}{d \| \gls{distance-vec}_{ij} \|^2}\ \left(\frac{d \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij}} \otimes \frac{d \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij}}\right)\ +\ \gls{molar-fraction}_j\ \frac{d \gls{energy-density}\ (\| \gls{distance-vec}_{ij} \|)}{d \| \gls{distance-vec}_{ij} \|}\ \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij} d \gls{distance-vec}_{ij}}\ \\
+&=\ \sum_{\substack{j \in I_{Mg}\ \\ j \neq i}} \frac{d^2 \gls{energy-density}\ (\| \gls{distance-vec}_{ij} \|)}{d \| \gls{distance-vec}_{ij} \|^2}\ \left(\frac{\gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|} \otimes \frac{\gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|}\right)\ +\  \frac{d \gls{energy-density}\ (\| \gls{distance-vec}_{ij} \|)}{d \| \gls{distance-vec}_{ij} \|}\ \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij} d \gls{distance-vec}_{ij}}\ \\
+&+\ \sum_{\substack{j \in I_{H}\ \\ j \neq i}} \gls{molar-fraction}_j\ \frac{d^2 \gls{energy-density}\ (\| \gls{distance-vec}_{ij} \|)}{d \| \gls{distance-vec}_{ij} \|^2}\ \left(\frac{\gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|} \otimes \frac{\gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|}\right)\ +\ \gls{molar-fraction}_j\ \frac{d \gls{energy-density}\ (\| \gls{distance-vec}_{ij} \|)}{d \| \gls{distance-vec}_{ij} \|}\ \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij} d \gls{distance-vec}_{ij}}\    
+\end{split}
+\end{equation}
+\end{comment}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Embedding energy term of the \acrshort{adp}}
+
+The contribution of the embedding energy \gls{embedding-energy} to the \acrshort{adp} is given by:
+\begin{equation}
+\label{eq:embedding-term}
+ V^{\gls{embedding-energy}}\ =\ \sum_{i} \gls{molar-fraction}_i\ \gls{embedding-energy}_i\ (\bar{\gls{energy-density}}_{i})\ =\ \sum_{i} V^{\gls{embedding-energy}}_i
+\end{equation}
+Introducing the species, Magnesium ($I_{Mg}$) and Hydrogen ($I_{H}$), where the occupancy of the Magnesium sites is fixed, $n_i\ =\ 1$, and the occupancy of the Hydrogen sites may vary, $n_i\ \in\ \left(0, 1\right)$:
+\begin{equation}
+V^{\gls{embedding-energy}}\ =\ \sum_{i \in I_{Mg}} \gls{embedding-energy}_i\ (\bar{\gls{energy-density}}_{i})\ +\ \sum_{i \in I_{H}} \gls{molar-fraction}_i\ \gls{embedding-energy}_i\ (\bar{\gls{energy-density}}_{i})
+\end{equation}
+Taking derivatives of $V^{\gls{embedding-energy}}_i$ with respect to $\gls{atomic-position}_i$:
+\begin{equation}
+\label{eq:Dr-embedding-term}
+\frac{\partial V^{\gls{embedding-energy}}_i}{\partial \gls{atomic-position}_i}\ =\ \gls{molar-fraction}_i\ \gls{D-embedding-energy-i}\ \frac{\partial \bar{\rho}_i}{\partial \gls{atomic-position}_i}\
+\end{equation}
+Second order derivative of $V^{\gls{embedding-energy}}_i$ with respect to $\gls{atomic-position}_i$:
+\begin{equation}
+\label{eq:DrDr-embedding-term}
+\frac{\partial^2 V^{\gls{embedding-energy}}_i}{\partial \gls{atomic-position}_i^2}\ =\ \gls{molar-fraction}_i\ \frac{\partial^2  \gls{embedding-energy}_i}{\partial \bar{\gls{energy-density}}_{i}^2}\ \left(\frac{\partial \bar{\rho}_i}{\partial \gls{atomic-position}_i} \otimes \frac{\partial \bar{\rho}_i}{\partial \gls{atomic-position}_i}\right)\ +\ \gls{molar-fraction}_i\ \frac{\partial \gls{embedding-energy}_i}{\partial \bar{\gls{energy-density}}_{i}}\  \frac{\partial^2 \bar{\rho}_i}{\partial \gls{atomic-position}_i^2}
+\end{equation}
+Additionally we can compute the derivatives of $V^{\gls{embedding-energy}}_i$ with respect the occupancy vector $\{n\} = \{n_i , n_j\}$:
+\begin{equation}
+    \frac{\partial V^{\gls{embedding-energy}}_i}{\partial n_i}\ =\ \gls{embedding-energy}_i\ (\bar{\gls{energy-density}}_{i})\ +\ \gls{molar-fraction}_i\ \gls{D-embedding-energy-i}\ \frac{\partial \bar{\rho}_i}{\partial n_i}\
+\end{equation}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{Pair energy term of the \acrshort{adp}}
+
+The contribution of the pair energy \gls{pair-energy} to the \acrshort{adp} is given by:
+\begin{equation}
+\label{eq:pairing-term}
+ V^{\gls{pair-energy}}\ =\ \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H}} \sum_{\substack{j \in \mathcal{B}_i(r_\text{c}) \\ j \neq i}} \gls{molar-fraction}_i \gls{molar-fraction}_j\ \gls{pair-energy}_{ij}\ =\ \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H}} \sum_{\substack{j \in \mathcal{B}_i(r_\text{c}) \\ j \neq i}} V^{\phi}_{ij}.
+\end{equation}
+Where $\gls{pair-energy}_{ij}$ is experimentally-fitted 5th-order polinomia which depends on $\| \gls{distance-vec}_{ij} \|$. Introducing the species, Magnesium ($I_{Mg}$) and Hydrogen ($I_{H}$), where the occupancy of the Magnesium sites is fixed, $n_i\ =\ 1$, and the occupancy of the Hydrogen sites may vary, $n_i\ \in\ \left(0, 1\right)$:
+\begin{equation}
+V^{\gls{pair-energy}}\ =\ \frac{1}{2} \sum_{\substack{i , j \in I_{Mg} \\ j \neq i}} \gls{pair-energy}_{ij}\ +\ \frac{1}{2} \sum_{\substack{i \in I_{Mg}, j \in I_{H}\ \\ j \neq i}} \gls{molar-fraction}_i\ \gls{pair-energy}_{ij}\ +\ \frac{1}{2} \sum_{\substack{i \in I_{H}, j \in I_{Mg}\ \\ j \neq i}} \gls{molar-fraction}_i\ \gls{pair-energy}_{ij}\ +\ \frac{1}{2} \sum_{\substack{i, j \in I_{H}\ \\ j \neq i}} \gls{molar-fraction}_i \gls{molar-fraction}_j\ \gls{pair-energy}_{ij} \\      
+\end{equation}
+Taking derivatives of $V^{\phi}_{ij}$ with respect the position vector $\{\gls{atomic-position}\} = \{\gls{atomic-position}_i, \gls{atomic-position}_j\}$:
+\begin{equation}
+\frac{\partial V^{\phi}_{ij}}{\partial \gls{atomic-position}_i} = \frac{1}{2}\ (n_i n_j \frac{d \gls{pair-energy}_{ij}}{ d \| \gls{distance-vec}_{ij} \|})\ \frac{\gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|}  
+\end{equation}
+\begin{equation}
+\frac{\partial V^{\phi}_{ij}}{\partial \gls{atomic-position}_{j}} = - \frac{1}{2}\ (n_i n_j \frac{d \gls{pair-energy}_{ij}}{ d \| \gls{distance-vec}_{ij} \|})\ \frac{\gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|}  
+\end{equation}
+Second order derivatives of $V^{\phi}_{i j}$:
+\begin{equation}
+\frac{\partial^2 V^{\phi}_{i j}}{\partial \gls{atomic-position}_i^2} = \frac{1}{2}  (n_i n_j \frac{d^2 \gls{pair-energy}_{ij}}{ d \| \gls{distance-vec}_{ij} \|^2}) \frac{\gls{distance-vec}_{ij}  \otimes \gls{distance-vec}_{ij} }{\| \gls{distance-vec}_{ij} \|^2} + \frac{1}{2} (n_i n_j \frac{d \gls{pair-energy}_{ij}}{ d \| \gls{distance-vec}_{ij} \|}) \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij}^2}
+\end{equation}
+
+\begin{equation}
+\frac{\partial^2 V^{\phi}_{i j}}{\partial \gls{atomic-position}_i \partial \gls{atomic-position}_j} = - \frac{1}{2}  (n_i n_j \frac{d^2 \gls{pair-energy}_{ij}}{ d \| \gls{distance-vec}_{ij} \|^2}) \frac{\gls{distance-vec}_{ij}  \otimes \gls{distance-vec}_{ij} }{\| \gls{distance-vec}_{ij} \|^2} - \frac{1}{2} (n_i n_j \frac{d \gls{pair-energy}_{ij}}{ d \| \gls{distance-vec}_{ij} \|}) \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij}^2}
+\end{equation}
+
+\begin{equation}
+\frac{\partial^2 V^{\phi}_{i j}}{\partial \gls{atomic-position}_j \partial \gls{atomic-position}_i} = - \frac{1}{2}  (n_i n_j \frac{d^2 \gls{pair-energy}_{ij}}{ d \| \gls{distance-vec}_{ij} \|^2}) \frac{\gls{distance-vec}_{ij}  \otimes \gls{distance-vec}_{ij} }{\| \gls{distance-vec}_{ij} \|^2} - \frac{1}{2} (n_i n_j \frac{d \gls{pair-energy}_{ij}}{ d \| \gls{distance-vec}_{ij} \|}) \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij}^2}
+\end{equation}
+
+\begin{equation}
+\frac{\partial^2 V^{\phi}_{i j}}{\partial \gls{atomic-position}_j^2} = \frac{1}{2}  (n_i n_j \frac{d^2 \gls{pair-energy}_{ij}}{ d \| \gls{distance-vec}_{ij} \|^2}) \frac{\gls{distance-vec}_{ij}  \otimes \gls{distance-vec}_{ij} }{\| \gls{distance-vec}_{ij} \|^2} + \frac{1}{2} (n_i n_j \frac{d \gls{pair-energy}_{ij}}{ d \| \gls{distance-vec}_{ij} \|}) \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij}^2}
+\end{equation}
+Additionally we can compute the derivatives of $V^{\phi}_{i j}$ with respect the occupancy vector $\{n\} = \{n_i , n_j\}$:
+\begin{equation}
+    \frac{\partial V^{\gls{pair-energy}}_{ij}}{\partial \gls{molar-fraction}_{i^*}}\ =\ \frac{1}{2}\ \gls{molar-fraction}_j\ \gls{pair-energy}_{ij},\ \quad i^{*} \equiv i
+\end{equation}
+
+\begin{equation}
+    \frac{\partial V^{\gls{pair-energy}}_{ij}}{\partial \gls{molar-fraction}_{i^*}}\ =\ \frac{1}{2}\ \gls{molar-fraction}_i\ \gls{pair-energy}_{ij},\ \quad i^{*} \equiv j
+\end{equation}
+
+\begin{comment}
+The directional derivative $\text{D}_{\gls{distance-vec}} \square$ of \cref{eq:pairing-term} is:
+\begin{equation}
+\label{eq:Dr-pairing-term}
+    \text{D}_{\gls{distance-vec}}V^{\gls{pair-energy}}\ =\ \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H}} \sum_{\substack{j \\ j \neq i}} \gls{molar-fraction}_i \gls{molar-fraction}_j\ \frac{d \gls{pair-energy}_{ij}}{d \| \gls{distance-vec}_{ij} \|} \frac{d \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij}}\ =\ \frac{1}{2} \sum_{\substack{i , j \\ j \neq i}} \gls{molar-fraction}_i \gls{molar-fraction}_j\ \frac{d \gls{pair-energy}_{ij}}{d \| \gls{distance-vec}_{ij} \|} \gls{normalized-distance-vec}_{ij}\ 
+\end{equation}
+
+Gathering terms in \cref{eq:Dr-pairing-term} for the two different species in the system:
+\begin{equation}
+\label{eq:Dr-pairing-term-species}
+\begin{split}
+\text{D}_{\gls{distance-vec}}V^{\gls{pair-energy}}\ =\ \frac{1}{2} \sum_{\substack{i , j \in I_{Mg} \\ j \neq i}} \frac{d \gls{pair-energy}_{ij}}{d \| \gls{distance-vec}_{ij} \|} \gls{normalized-distance-vec}_{ij}\ +\ \sum_{\substack{i \in I_{H}, j \in I_{Mg}\ \\ j \neq i}} \gls{molar-fraction}_i\ \frac{d \gls{pair-energy}_{ij}}{d \| \gls{distance-vec}_{ij} \|} \gls{normalized-distance-vec}_{ij}\ +\ \frac{1}{2} \sum_{\substack{i, j \in I_{H}\ \\ j \neq i}} \gls{molar-fraction}_i \gls{molar-fraction}_j\ \frac{d \gls{pair-energy}_{ij}}{d \| \gls{distance-vec}_{ij} \|} \gls{normalized-distance-vec}_{ij}       
+\end{split} 
+\end{equation}
+
+Taking the second directional directional derivative $\text{D}_{\gls{distance-vec}}\text{D}_{\gls{distance-vec}} \square$ of \cref{eq:pairing-term}, the contribution of \gls{pair-energy} is obtained:
+\begin{equation}
+\begin{split}
+\label{eq:DrDr-pairing-term}
+\text{D}_{\gls{distance-vec}} \text{D}_{\gls{distance-vec}}V^{\gls{pair-energy}}\ =\ \frac{1}{2} \sum_{\substack{i , j \\ j \neq i}} &\gls{molar-fraction}_i \gls{molar-fraction}_j\ \frac{d^2 \gls{pair-energy}_{ij}}{d \| \gls{distance-vec}_{ij} \|^2} \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{normalized-distance-vec}_{ij}\right)\ +\ \gls{molar-fraction}_i \gls{molar-fraction}_j\ \frac{d \gls{pair-energy}_{ij}}{d \| \gls{distance-vec}_{ij} \|} \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij} d \gls{distance-vec}_{ij}}  
+\end{split}
+\end{equation}
+
+Gathering terms in \cref{eq:DrDr-pairing-term} for the two different species in the system:
+\begin{equation}
+\label{eq:DrDr-pairing-term-species}
+\begin{split}
+&\text{D}_{\gls{distance-vec}} \text{D}_{\gls{distance-vec}}V^{\gls{pair-energy}}\ =\ \frac{1}{2} \sum_{\substack{i , j \in I_{Mg} \\ j \neq i}} \frac{d^2 \gls{pair-energy}_{ij}}{d \| \gls{distance-vec}_{ij} \|^2} \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{normalized-distance-vec}_{ij}\right)\ +\ \frac{d \gls{pair-energy}_{ij}}{d \| \gls{distance-vec}_{ij} \|} \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij} d \gls{distance-vec}_{ij}}\\ 
+&+\ \frac{1}{2} \sum_{\substack{i \in I_{H}, j \in I_{Mg} \\ j \neq i}} \gls{molar-fraction}_i\ \frac{d^2 \gls{pair-energy}_{ij}}{d \| \gls{distance-vec}_{ij} \|^2} \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{normalized-distance-vec}_{ij}\right)\ +\ \gls{molar-fraction}_i\ \frac{d \gls{pair-energy}_{ij}}{d \| \gls{distance-vec}_{ij} \|} \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij} d \gls{distance-vec}_{ij}} \\ 
+&+\ \frac{1}{2} \sum_{\substack{i , j \in I_{H} \\ j \neq i}} \gls{molar-fraction}_i \gls{molar-fraction}_j\ \frac{d^2 \gls{pair-energy}_{ij}}{d \| \gls{distance-vec}_{ij} \|^2} \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{normalized-distance-vec}_{ij}\right)\ +\ \gls{molar-fraction}_i \gls{molar-fraction}_j\ \frac{d \gls{pair-energy}_{ij}}{d \| \gls{distance-vec}_{ij} \|} \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij} d \gls{distance-vec}_{ij}} 
+\end{split}
+\end{equation}
+
+\end{comment}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{The Dipole \gls{di-distortion} contribution to the potential}
+
+The contribution of the dipole distortion \gls{di-distortion} to the \acrshort{adp} is given by:
+\begin{align}
+\label{eq:dipole-distortion-term}
+&V^{\gls{di-distortion}}\ =\ \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H} } \left(\gls{di-distortion}_i \cdot \gls{di-distortion}_i \right),\quad \text{where}\\
+\label{eq:dipole-distortion}
+&\gls{di-distortion}_i\ =\ \sum_{\substack{j \in \mathcal{B}_i(r_\text{c}) \\ j \neq i}} \gls{molar-fraction}_i\gls{molar-fraction}_j\ u_{ij}\ \gls{distance-vec}_{ij}  
+\end{align}
+Where $u_{ij}$ is experimentally-fitted 5th-order polinomia which depends on $\| \gls{distance-vec}_{ij} \|$. Introducing \cref{eq:dipole-distortion} into \cref{eq:dipole-distortion-term} the former can be expressed as the product of two summation. After some algebra it is possible to reduce it to the summation of individual potential which depends of the atomistic information of three sites:
+\begin{equation}
+\label{eq:dipole-distortion-term-a}
+\begin{split}
+V^{\gls{di-distortion}}\ &=\ \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H} } \left( \sum_{\substack{j_1 \in \mathcal{B}_i(r_\text{c}) \\ j_1 \neq i}} \gls{molar-fraction}_i\gls{molar-fraction}_{j_i}\ u_{ij_1}\ \gls{distance-vec}_{ij_1} \right) \cdot \left(\sum_{\substack{j_2 \in \mathcal{B}_i(r_\text{c}) \\ j_2 \neq i}} \gls{molar-fraction}_i\gls{molar-fraction}_{j_2}\ u_{ij_2}\ \gls{distance-vec}_{ij_2} \right)\\
+&=\ \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H} } \sum_{\substack{j_1,j_2 \in \mathcal{B}_i(r_\text{c}) \\ j_1,j_2 \neq i}} \gls{di-distortion}_{ij_1} \cdot \gls{di-distortion}_{ij_2}\\
+&=\ \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H} } \sum_{\substack{j_1,j_2 \in \mathcal{B}_i(r_\text{c}) \\ j_1,j_2 \neq i}} \left(\gls{molar-fraction}_i\gls{molar-fraction}_{j_1}\ u_{ij_1}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_{j_2}\ u_{ij_2}\right)\ \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2}\right) \\
+&=\ \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H} } \sum_{\substack{j_1,j_2 \in \mathcal{B}_i(r_\text{c}) \\ j_1,j_2 \neq i}}  V^{\gls{di-distortion}}_{i,j_1,j_2}.
+\end{split}
+\end{equation}
+$\mathcal{B}_i(r_\text{c})$ denotes the set of atomic sites within a distance $r_c$ of site $i$, and $r_\text{c}$ is the cut-off distance of the ADP potential:
+\begin{equation}
+    \mathcal{B}_i(r_c)\ \coloneqq\ \mathbb{S}^1(\gls{distance-vec}_{ij}, r_c) \cap (I_{Mg} \cup I_{H}).
+\end{equation}
+Therefore $\mathcal{B}_i(r_\text{c})$ can be viewed as the set of atomistic positions which defines the neighborhood of the site $i$. Taking derivatives of $V^{\mu}_{i,j_1,j_2}$ with respect to $\gls{atomic-position}_i$, $\gls{atomic-position}_{j1}$ and $\gls{atomic-position}_{j2}$
+\begin{equation}
+\begin{split}
+\frac{\partial V^{\mu}_{i,j_1,j_2}}{\partial \gls{atomic-position}_i}\ =\ &\left(n_i n_{j_1}\ \frac{d u_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right) \left(n_i n_{j_2}\ u_{i,j_2}\right)\ \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2} \right) \frac{\gls{distance-vec}_{ij_1}}{\| \gls{distance-vec}_{ij_1} \|}\ +\ \\ 
+&\left(n_i n_{j_1}\ u_{i,j_1}\right) \left(n_i n_{j_2}\ \frac{d u_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2} \right) \frac{\gls{distance-vec}_{i j_2}}{\| \gls{distance-vec}_{i j_2} \|}\ +\ \\
+&\left(n_i n_{j_1}\ u_{i,j_1}\right) \left(n_i n_{j_2}\ u_{i,j_2}\right)\ \left(\gls{distance-vec}_{ij_2} + \gls{distance-vec}_{ij_1} \right)
+\end{split}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+\frac{\partial V^{\mu}_{i,j_1,j_2}}{\partial \gls{atomic-position}_{j_1}}\ =\ - &\left(n_i n_{j_1}\ \frac{d u_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right) \left(n_i n_{j_2}\ u_{i,j_2}\right)\ \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2} \right) \frac{\gls{distance-vec}_{ij_1}}{\| \gls{distance-vec}_{ij_1} \|}\ -\ \\ 
+&\left(n_i n_{j_1}\ u_{i,j_1}\right) \left(n_i n_{j_2}\ u_{i,j_2}\right)\ \gls{distance-vec}_{ij_2} 
+\end{split}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+\frac{\partial V^{\mu}_{i,j_1,j_2}}{\partial \gls{atomic-position}_{j_2}}\ =\ - &\left(n_i n_{j_1}\ u_{i,j_1}\right) \left(n_i n_{j_2}\ \frac{d u_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2} \right) \frac{\gls{distance-vec}_{i j_2}}{\| \gls{distance-vec}_{i j_2} \|}\ - \\
+&\left(n_i n_{j_1}\ u_{i,j_1}\right) \left(n_i n_{j_2}\ u_{i,j_2}\right)\ \gls{distance-vec}_{ij_1}
+\end{split}
+\end{equation}
+Higher order derivatives of $V^{\mu}_{i,j_1,j_2}$
+\begin{equation}
+\begin{split}
+\frac{\partial^2 V^{\mu}_{i,j_1,j_2}}{\partial \gls{atomic-position}_i^2}\ =\ &\left(n_i n_{j_1}\ \frac{d^2 u_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|^2}\right)\ \left(n_i n_{j_1}\ u_{i,j_2}\right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2}) \frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_1})}{\| \gls{distance-vec}_{ij_1} \|^2}\ + \\ 
+        &\left(n_i n_{j_1}\ \frac{d u_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ \frac{d u_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2}) \frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_1} \| \| \gls{distance-vec}_{ij_2} \|}\ +\\
+        &\left(n_i n_{j_1}\ \frac{d u_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ u_{i,j_2}\right)\ \frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_1} \|}\ +\\ 
+        &\left(n_i n_{j_1}\ \frac{d u_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ u_{i,j_2}\right)\ \frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_1})}{\| \gls{distance-vec}_{ij_1} \|}\ +\\
+        &\left(n_i n_{j_1}\ \frac{d u_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ u_{i,j_2}\right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})\ \frac{d^2 \| \gls{distance-vec}_{ij_1} \| }{d \gls{distance-vec}_{ij_1}^2}\ +\\ 
+        &\left(n_i n_{j_1}\ \frac{d u_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ \frac{d u_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2}) \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1})}{\| \gls{distance-vec}_{ij_1} \| \| \gls{distance-vec}_{ij_2} \|} +\\
+        &\left(n_i n_{j_1}\ u_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d^2 u_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|^2}\right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2}) \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_2} \|^2} +\\ 
+        &\left(n_i n_{j_1}\ u_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d u_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1})}{\| \gls{distance-vec}_{ij_2} \|} +\\ 
+        &\left(n_i n_{j_1}\ u_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d u_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\  \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_2} \|} +\\ 
+        &\left(n_i n_{j_1}\ u_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d u_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})\ \frac{d^2 \| \gls{distance-vec}_{ij_2} \| }{d \gls{distance-vec}_{ij_2}^2}\ +\\ 
+        &\left(n_i n_{j_1}\ \frac{d u_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ u_{i,j_2}\right)\ \frac{1}{\| \gls{distance-vec}_{ij_1} \|} ((\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_1}) + (\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1})) +\\ 
+        &\left(n_i n_{j_1}\ u_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d u_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ \frac{1}{\| \gls{distance-vec}_{ij_2} \|} ((\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2}) + (\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_2})) +\\ 
+        &2 \left(n_i n_{j_1}\ u_{i,j_1}\right)\ \left(n_i n_{j_2}\ u_{i,j_2}\right)\ I
+\end{split}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+\frac{\partial^2 V^{\mu}_{i,j_1,j_2}}{\partial \gls{atomic-position}_{j_1}^2}\ =\ &\left(n_i n_{j_1}\ \frac{d^2 u_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|^2}\right)\ \left(n_i n_{j_1}\ u_{i,j_2}\right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2}) \frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_1})}{\| \gls{distance-vec}_{ij_1} \|^2}\ + \\
+        &\left(n_i n_{j_1}\ \frac{d u_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ u_{i,j_2}\right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})\ \frac{d^2 \| \gls{distance-vec}_{ij_1} \| }{d \gls{distance-vec}_{ij_1}^2}\ +\\ 
+        &\left(n_i n_{j_1}\ \frac{d u_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ u_{i,j_2}\right)\ \frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_1} \|}\ +\\ 
+        &\left(n_i n_{j_1}\ \frac{d u_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ u_{i,j_2}\right)\ \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1})}{\| \gls{distance-vec}_{ij_1} \|}
+\end{split}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+\frac{\partial^2 V^{\mu}_{i,j_1,j_2}}{\partial \gls{atomic-position}_{j_1} \partial \gls{atomic-position}_{j_2}}\ =\ &\left(n_i n_{j_1}\ \frac{d u_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ \frac{d u_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2}) \frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_1} \| \| \gls{distance-vec}_{ij_2} \|}\ +\\
+        &\left(n_i n_{j_1}\ \frac{d u_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ u_{i,j_2}\right)\ \frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_1})}{\| \gls{distance-vec}_{ij_1} \|}\ +\\
+        &\left(n_i n_{j_1}\ u_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d u_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\  \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_2} \|} +\\
+        &\left(n_i n_{j_1}\ u_{i,j_1}\right)\ \left(n_i n_{j_2}\ u_{i,j_2}\right)\ I 
+\end{split}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+\frac{\partial^2 V^{\mu}_{i,j_1,j_2}}{\partial \gls{atomic-position}_{j_2} \partial \gls{atomic-position}_{j_1}}\ =\ &\left(n_i n_{j_1}\ \frac{d u_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ \frac{d u_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2}) \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1})}{\| \gls{distance-vec}_{ij_1} \| \| \gls{distance-vec}_{ij_2} \|} +\\
+        &\left(n_i n_{j_1}\ u_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d u_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\  \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_2} \|} +\\ 
+        &\left(n_i n_{j_1}\ \frac{d u_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ u_{i,j_2}\right)\ \frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_1})}{\| \gls{distance-vec}_{ij_1} \|}\ +\\
+        &\left(n_i n_{j_1}\ u_{i,j_1}\right)\ \left(n_i n_{j_2}\ u_{i,j_2}\right)\ I
+\end{split}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+\frac{\partial^2 V^{\mu}_{i,j_1,j_2}}{\partial \gls{atomic-position}_{j_2}^2}\ =\ &\left(n_i n_{j_1}\ u_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d^2 u_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|^2}\right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2}) \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_2} \|^2} +\\ 
+        &\left(n_i n_{j_1}\ u_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d u_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})\ \frac{d^2 \| \gls{distance-vec}_{ij_2} \| }{d \gls{distance-vec}_{ij_2}^2}\ +\\ 
+        &\left(n_i n_{j_1}\ u_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d u_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1})}{\| \gls{distance-vec}_{ij_2} \|} +\\ 
+        &\left(n_i n_{j_1}\ u_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d u_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ \frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_2} \|}  
+\end{split}
+\end{equation}
+Additionally we can compute the derivatives of $V^{\mu}_{i,j_1,j_2}$ with respect the occupancy vector $\{n\} = \{n_i , n_{j_1} , n_{j_2}\}$:
+\begin{equation}
+    \begin{split}
+        \frac{\partial V^{\mu}_{i,j_1,j_2}}{\partial n_{i^*}}\ =\ &\frac{1}{2} \left(\gls{molar-fraction}_{j_1}\ u_{ij_1}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_{j_2}\ u_{ij_2}\right)\ \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2}\right) \\
+        &\frac{1}{2} \left(\gls{molar-fraction}_i\gls{molar-fraction}_{j_1}\ u_{ij_1}\right)\ \left(\gls{molar-fraction}_{j_2}\ u_{ij_2}\right)\ \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2}\right),\ \quad i^{*} \equiv i
+    \end{split}
+\end{equation}
+
+\begin{equation}
+    \frac{\partial V^{\mu}_{i,j_1,j_2}}{\partial n_{i^*}}\ =\ \frac{1}{2} \left(\gls{molar-fraction}_i\ u_{ij_1}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_{j_2}\ u_{ij_2}\right)\ \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2}\right),\ \quad i^{*} \equiv j_1
+\end{equation}
+
+\begin{equation}
+    \frac{\partial V^{\mu}_{i,j_1,j_2}}{\partial n_{i^*}}\ =\ \frac{1}{2} \left(\gls{molar-fraction}_i\gls{molar-fraction}_{j_1}\ u_{ij_1}\right)\ \left(\gls{molar-fraction}_i\ u_{ij_2}\right)\ \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2}\right),\ \quad i^{*} \equiv j_2
+\end{equation}
+
+\begin{comment}
+The contribution of the dipole distortion \gls{di-distortion} to the \acrshort{adp} is given by:
+\begin{align}
+\label{eq:dipole-distortion-term}
+&V^{\gls{di-distortion}}\ =\ \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H} } \left(\gls{di-distortion}_i \cdot \gls{di-distortion}_i \right),\quad \text{where}\\
+\label{eq:dipole-distortion}
+&\gls{di-distortion}_i\ =\ \sum_{\substack{j \in \mathcal{B}_i(r_\text{c}) \\ j \neq i}} \gls{molar-fraction}_i\gls{molar-fraction}_j\ u_{ij} (\| \gls{distance-vec}_{ij} \|)\ \gls{distance-vec}_{ij}  
+\end{align}
+
+Introducing \cref{eq:dipole-distortion} into \cref{eq:dipole-distortion-term} the former can be expressed as the product of two summation. After some algebra it is possible to reduce it to the summation of individual potential which depends of the atomistic information of three sites:
+\begin{equation}
+\label{eq:dipole-distortion-term-a}
+\begin{split}
+V^{\gls{di-distortion}}\ &=\ \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H} } \left( \sum_{\substack{j \in \mathcal{B}_i(r_\text{c}) \\ j \neq i}} \gls{molar-fraction}_i\gls{molar-fraction}_j\ u_{ij}\ \gls{distance-vec}_{ij} \right) \cdot \left(\sum_{\substack{k \in \mathcal{B}_i(r_\text{c}) \\ k \neq i}} \gls{molar-fraction}_i\gls{molar-fraction}_k\ u_{ik}\ \gls{distance-vec}_{ik} \right)\\
+&=\ \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H} } \sum_{\substack{j,k \in \mathcal{B}_i(r_\text{c}) \\ j,k \neq i}} \gls{di-distortion}_{ij} \cdot \gls{di-distortion}_{ik}\\
+&=\ \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H} } \sum_{\substack{j,k \in \mathcal{B}_i(r_\text{c}) \\ j,k \neq i}} \left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ u_{ij}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ u_{ik}\right)\ \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ik}\right)
+\end{split}
+\end{equation}
+
+where $\mathcal{B}_i(r_\text{c})$ denotes the set of atomic sites within a distance $r_c$ of site $i$, and $r_\text{c}$ is the cut-off distance of the ADP potential:
+\begin{equation}
+    \mathcal{B}_i(r_c)\ \coloneqq\ \mathbb{S}^1(\gls{distance-vec}_{ij}, r_c) \cap (I_{Mg} \cup I_{H})
+\end{equation}
+therefore $\mathcal{B}_i(r_\text{c})$ can be viewed as the set of atomistic positions which defines the neighborhood of the site $i$. Following the standard rules of the infinitesimal calculus to apply the directional derivative $\text{D}_{\gls{distance-vec}} \square$, the gradient of \cref{eq:dipole-distortion-term-a} is:
+
+\begin{equation}
+\text{D}_{\gls{distance-vec}} V^{\gls{di-distortion}}\ =\ \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H} } \sum_{\substack{j,k \in \mathcal{B}_i(r_\text{c}) \\ j,k \neq i}} \text{D}_{\gls{distance-vec}}\gls{di-distortion}_{ij} \cdot \gls{di-distortion}_{ik}\ +\ \text{D}_{\gls{distance-vec}}\gls{di-distortion}_{ik} \cdot \gls{di-distortion}_{ij},
+\end{equation}
+where $\text{D}_{\gls{distance-vec}}\gls{di-distortion}_{ij} \cdot \gls{di-distortion}_{ik}$ is:
+\begin{equation}
+\begin{split}
+   \text{D}_{\gls{distance-vec}}\gls{di-distortion}_{ij} \cdot \gls{di-distortion}_{ik}\ =\ &\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ u_{ik}\right)\ \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ik}\right) \frac{\gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|}\ +\ \\
+   &\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ u_{ij}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ u_{ik}\right)\ \gls{distance-vec}_{ik}    
+\end{split}
+\end{equation}
+$\text{D}_{\gls{distance-vec}}\gls{di-distortion}_{ik} \cdot \gls{di-distortion}_{ij}$ can be obtained just by switching the index j and k. By appealing to the same arguments followed to derive the gradient the hessian of \cref{eq:dipole-distortion-term-a} is:
+
+\begin{equation}
+\begin{split}
+    \text{D}_{\gls{distance-vec}} \text{D}_{\gls{distance-vec}} V^{\gls{di-distortion}}\ =\  \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H} } \sum_{\substack{j,k \in \mathcal{B}_i(r_\text{c}) \\ j,k \neq i}} 
+    &\text{D}_{\gls{distance-vec}}\text{D}_{\gls{distance-vec}}\gls{di-distortion}_{ij} \cdot \gls{di-distortion}_{ik}\ +\ \text{D}_{\gls{distance-vec}}\gls{di-distortion}_{ij} \cdot \text{D}_{\gls{distance-vec}}\gls{di-distortion}_{ik}\ +\ \\
+    &\text{D}_{\gls{distance-vec}}\text{D}_{\gls{distance-vec}}\gls{di-distortion}_{ik} \cdot \gls{di-distortion}_{ij}\ +\ \text{D}_{\gls{distance-vec}}\gls{di-distortion}_{ik} \cdot \text{D}_{\gls{distance-vec}}\gls{di-distortion}_{ij},    
+\end{split}
+\end{equation}
+
+where $\text{D}_{\gls{distance-vec}}\text{D}_{\gls{distance-vec}}\gls{di-distortion}_{ij} \cdot \gls{di-distortion}_{ik}$ is:
+
+\begin{equation}
+\begin{split}
+    \text{D}_{\gls{distance-vec}}\text{D}_{\gls{distance-vec}}\gls{di-distortion}_{ij} \cdot \gls{di-distortion}_{ik}\ =\ &\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ \frac{d^2 u_{ij}}{d \| \gls{distance-vec}_{ij} \|^2}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ u_{ik}\right)\ \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ik}\right)\ \frac{\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|^2}\ +\ \\
+    &\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ u_{ik}\right)\ \frac{\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ik}}{\| \gls{distance-vec}_{ij} \|}\ +\ \\
+    &\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ u_{ik}\right)\ \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ik}\right)\ \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij} d \gls{distance-vec}_{ij}}\ +\ \\
+   &\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ u_{ik}\right)\ \frac{\gls{distance-vec}_{ik} \otimes \gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|}     
+\end{split}
+\end{equation}
+
+and $\text{D}_{\gls{distance-vec}}\gls{di-distortion}_{ij} \cdot \text{D}_{\gls{distance-vec}}\gls{di-distortion}_{ik}$ is:
+
+\begin{equation}
+    \begin{split}
+\text{D}_{\gls{distance-vec}}\gls{di-distortion}_{ij} \cdot \text{D}_{\gls{distance-vec}}\gls{di-distortion}_{ik}\ =\ &\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ \frac{d u_{ik}}{d \| \gls{distance-vec}_{ik} \|}\right)\ \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ik}\right) \frac{\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ik}}{\| \gls{distance-vec}_{ij} \| \| \gls{distance-vec}_{ik} \|}\ +\ \\
+&\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ u_{ik}\right)\ \frac{\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|}\ +\ \\
+&\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ u_{ij}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ \frac{d u_{ik}}{d \| \gls{distance-vec}_{ik} \|} \right)\ \frac{\gls{distance-vec}_{ik} \otimes \gls{distance-vec}_{ik}}{\| \gls{distance-vec}_{ik} \|}  +\ \\
+&\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ u_{ij}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ u_{ik}\right)\ \gls{metric-tensor}
+    \end{split}
+\end{equation}
+
+$\text{D}_{\gls{distance-vec}}\text{D}_{\gls{distance-vec}}\gls{di-distortion}_{ik} \cdot \gls{di-distortion}_{ij}$ and $\text{D}_{\gls{distance-vec}}\gls{di-distortion}_{ik} \cdot \text{D}_{\gls{distance-vec}}\gls{di-distortion}_{ij}$ can be obtained just by switching the index j and k.
+
+
+subsection{Approach 2}
+Introducing the species, Magnesium ($I_{Mg}$) and Hydrogen ($I_{H}$), where the occupancy of the Magnesium sites is fixed, $n_i\ =\ 1$, and the occupancy of the Hydrogen sites may vary, $n_i\ \in\ \left(0, 1\right)$:
+\begin{align}
+&\left[\gls{di-distortion}_{term}\right]^{Mg}_{H}\ =\ \frac{1}{2} \sum_{i \in I_{Mg}} \left(\gls{di-distortion}_i \cdot \gls{di-distortion}_i \right)\ +\ \frac{1}{2} \sum_{i \in I_{H}} \left(\gls{molar-fraction}_i\gls{di-distortion}_i\ \cdot\ \gls{molar-fraction}_i\gls{di-distortion}_i \right), \quad \text{where} \\
+&\left[\gls{di-distortion}\right]^{Mg}_{H}\ =\ \sum_{\substack{j \in I_{Mg} \\ j \neq i}} u_{ij} (\| \gls{distance-vec}_{ij} \|)\ \gls{distance-vec}_{ij}\ +\ \sum_{\substack{j \in I_{H} \\ j \neq i}} \gls{molar-fraction}_j\ u_{ij} (\| \gls{distance-vec}_{ij} \|)\ \gls{distance-vec}_{ij}   
+\end{align}
+
+The directional derivative $\text{D}_{\gls{distance-vec}} \square$ of \cref{eq:quadru-distortion-term} is:
+\begin{equation}
+\label{eq:Dr-dipole-distortion-term}
+\text{D}_{\gls{distance-vec}} \gls{di-distortion}_{term}\ =\ \sum_{i} \gls{molar-fraction}_i \text{D}_{\gls{distance-vec}}\gls{di-distortion}_i \cdot \gls{molar-fraction}_i\gls{di-distortion}_i\\    
+\end{equation}
+
+The directional derivative of \gls{di-distortion} results in the following second order tensor:
+\begin{equation}
+\label{eq:Dr-dipole-distortion}
+\begin{split}
+    \text{D}_{\gls{distance-vec}}\gls{di-distortion}_i\ &=\ \sum_{\substack{j \\ j \neq i}}  \left(\gls{molar-fraction}_j \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|}  \left(\frac{d \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij}}\ \otimes \gls{distance-vec}_{ij} \right) \right)\ +\ \gls{molar-fraction}_j\ u_{ij}\ \frac{d \gls{distance-vec}_{ij} }{d \gls{distance-vec}_{ij}} \\
+    &=\ \sum_{\substack{j \\ j \neq i}} \left(\gls{molar-fraction}_j \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|} \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{distance-vec}_{ij} \right) \right)\ +\ \gls{molar-fraction}_j\ u_{ij}\ \gls{metric-tensor}
+\end{split}
+\end{equation}
+
+Gathering terms in \cref{eq:Dr-dipole-distortion} for the two different species in the system:
+\begin{equation}
+\begin{split}
+\left[\text{D}_{\gls{distance-vec}}\gls{di-distortion}_i\right]^{Mg}_{H}\ &=\ \sum_{\substack{j \in I_{Mg} \\ j \neq i}} \left( \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|}  \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{distance-vec}_{ij} \right) \right)\ +\ u_{ij}\ \gls{metric-tensor}\\
+&+\ \sum_{\substack{j \in I_{H} \\ j \neq i}}  \left(\gls{molar-fraction}_j \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|} \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{distance-vec}_{ij} \right) \right)\ +\ \gls{molar-fraction}_j\ u_{ij}\ \gls{metric-tensor} \\    
+\end{split}
+\end{equation}
+
+Projecting \cref{eq:Dr-dipole-distortion} in the direction of \gls{di-distortion} as in \cref{eq:Dr-dipole-distortion-term} we obtain the following first order tensor for the site $i$:
+\begin{equation}
+\label{eq:Dr-dipole-distortion-term-II}
+\gls{molar-fraction}_i \text{D}_{\gls{distance-vec}}\gls{di-distortion}_i \cdot \gls{molar-fraction}_i\gls{di-distortion}_i\ =\ \sum_{\substack{j \\ j \neq i}} \gls{molar-fraction}_i \gls{molar-fraction}_j \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|} \left(\gls{distance-vec}_{ij} \cdot \gls{molar-fraction}_i\gls{di-distortion}_i\right)\ \gls{normalized-distance-vec}_{ij}\ +\ \gls{molar-fraction}_i \gls{molar-fraction}_j u_{ij}\ \left(\gls{molar-fraction}_i\gls{di-distortion}_i\right)
+\end{equation}
+
+Gathering terms in \cref{eq:Dr-dipole-distortion-term-II} for the two different species in the system:
+\begin{equation}
+\label{eq:Dr-dipole-distortion-term-II-species}
+    \left[\text{D}_{\gls{distance-vec}}\gls{di-distortion}_{term}\right]^{Mg}_{H}\ =\ \left[\gls{molar-fraction}_i \text{D}_{\gls{distance-vec}}\gls{di-distortion}_i \cdot \gls{molar-fraction}_i\gls{di-distortion}_i\right]^{Mg}_{H}\ =\ \sum_{i \in I_{Mg}} \left[\text{D}_{\gls{distance-vec}}\gls{di-distortion}_i\right]^{Mg}_{H} \cdot \gls{di-distortion}_i\ +\ \sum_{i \in I_{H}} \gls{molar-fraction}_i\left[\text{D}_{\gls{distance-vec}}\gls{di-distortion}_i\right]^{Mg}_{H} \cdot \gls{molar-fraction}_i\gls{di-distortion}_i
+\end{equation}
+
+In order to derive the hessian of the contribution we further derive \cref{eq:Dr-dipole-distortion-term}:
+\begin{equation}
+\label{eq:DrDr-dipole-distortion-term}
+    \text{D}_{\gls{distance-vec}} \text{D}_{\gls{distance-vec}}\gls{di-distortion}_{term}\ =\ \sum_{i} \gls{molar-fraction}_i \text{D}^3_{\gls{distance-vec}}\gls{di-distortion}_i \cdot \gls{molar-fraction}_i\gls{di-distortion}_i\ +\  \gls{molar-fraction}_i \text{D}_{\gls{distance-vec}}\gls{di-distortion}_i\ \gls{molar-fraction}_i\text{D}^T_{\gls{distance-vec}}\gls{di-distortion}_i
+\end{equation}
+
+The first term in \cref{eq:DrDr-dipole-distortion-term} can be identified as the contraction of the first order tensor \gls{di-distortion} over the third order tensor $\text{D}^3_{\gls{distance-vec}}\gls{di-distortion}$. The second terms is simply the matrix matrix multiplication, and therefore does not requires further explanations. On the other hand, the first is far from being trivial. 
+\begin{equation}
+\begin{split}
+\label{eq:DrDr-dipole-third-order-tensor-term}
+    \text{D}^3_{\gls{distance-vec}}\gls{di-distortion}_i\ =\ \sum_{\substack{j \\ j \neq i}} &\gls{molar-fraction}_j \frac{d^2 u_{ij}}{d \| \gls{distance-vec}_{ij} \|^2} \left(\left(\gls{normalized-distance-vec}_{ij} \otimes \gls{distance-vec}_{ij} \right) \oplus \gls{normalized-distance-vec}_{ij} \right)\ +\ \gls{molar-fraction}_j \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|} \left(\frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij} d \gls{distance-vec}_{ij}}\ \otimes \gls{distance-vec}_{ij} \right) \\ 
+    +\ &\gls{molar-fraction}_j \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|} \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{metric-tensor} \right)\ +\ n_j \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|}\   \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{metric-tensor} \right)
+\end{split}
+\end{equation}
+
+Since \cref{eq:DrDr-dipole-third-order-tensor-term} is an operator, it must be implemented as a function rather than a variable. As we can see in \cref{eq:DrDr-dipole-distortion-term}, this operator is used to project towards it the first order tensor \gls{di-distortion} to obtain as a result a second order tensor, which matches with the required dimensions of the hessian in \cref{eq:DrDr-dipole-distortion-term}. 
+\begin{equation}
+\begin{split}
+\label{eq:DrDr-dipole-third-order-tensor-term-projection}
+    \gls{molar-fraction}_i\text{D}^3_{\gls{distance-vec}}\gls{di-distortion}_i \cdot \gls{molar-fraction}_i\gls{di-distortion}_i\ =\  \sum_{\substack{j \\ j \neq i}} &\gls{molar-fraction}_i\gls{molar-fraction}_j \frac{d^2 u_{ij}}{d \| \gls{distance-vec}_{ij} \|^2} \left(\gls{distance-vec}_{ij} \cdot \gls{molar-fraction}_i\gls{di-distortion}_i\right) \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{normalized-distance-vec}_{ij} \right)\ +\ \gls{molar-fraction}_i\gls{molar-fraction}_j \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|}  \left(\gls{distance-vec}_{ij} \cdot \gls{molar-fraction}_i\gls{di-distortion}_i\right)\ \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij} d \gls{distance-vec}_{ij}} \\ 
+    +\ &\gls{molar-fraction}_i\gls{molar-fraction}_j \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|} \left(\gls{normalized-distance-vec}_{ij} \otimes \left(\gls{metric-tensor}: \gls{molar-fraction}_i\gls{di-distortion}_i \right) \right)\ +\ \gls{molar-fraction}_i\gls{molar-fraction}_j \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|} \left(\gls{normalized-distance-vec}_{ij} \otimes \left(\gls{metric-tensor}: \gls{molar-fraction}_i\gls{di-distortion}_i \right) \right)\
+\end{split}
+\end{equation}
+
+Gathering terms in \cref{eq:DrDr-dipole-third-order-tensor-term-projection} for the two different species in the system:
+\begin{equation}
+\label{eq:DrDr-dipole-third-order-tensor-term-projection-species}
+\begin{split}
+    \gls{molar-fraction}_i\left[\text{D}^3_{\gls{distance-vec}}\gls{di-distortion}_i\right]^{Mg}_{H} \cdot \gls{molar-fraction}_i\gls{di-distortion}_i\ =\  \sum_{\substack{j \in I_{Mg} \\ j \neq i}} &\gls{molar-fraction}_i \frac{d^2 u_{ij}}{d \| \gls{distance-vec}_{ij} \|^2} \left(\gls{distance-vec}_{ij} \cdot \gls{molar-fraction}_i\gls{di-distortion}_i\right) \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{normalized-distance-vec}_{ij} \right)\ +\ \gls{molar-fraction}_i \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|}  \left(\gls{distance-vec}_{ij} \cdot \gls{molar-fraction}_i\gls{di-distortion}_i\right)\ \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij} d \gls{distance-vec}_{ij}} \\ 
+    +\ &\gls{molar-fraction}_i \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|} \left(\gls{normalized-distance-vec}_{ij} \otimes \left(\gls{metric-tensor}: \gls{molar-fraction}_i\gls{di-distortion}_i \right) \right)\ 
+    +\ \gls{molar-fraction}_i \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|} \left(\gls{normalized-distance-vec}_{ij} \otimes \left(\gls{metric-tensor}: \gls{molar-fraction}_i\gls{di-distortion}_i \right) \right)\ \\
+    +\  \sum_{\substack{j \in I_{H} \\ j \neq i}} &\gls{molar-fraction}_i\gls{molar-fraction}_j \frac{d^2 u_{ij}}{d \| \gls{distance-vec}_{ij} \|^2} \left(\gls{distance-vec}_{ij} \cdot \gls{molar-fraction}_i\gls{di-distortion}_i\right) \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{normalized-distance-vec}_{ij} \right)\ +\ \gls{molar-fraction}_i\gls{molar-fraction}_j \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|}  \left(\gls{distance-vec}_{ij} \cdot \gls{molar-fraction}_i\gls{di-distortion}_i\right)\ \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij} d \gls{distance-vec}_{ij}} \\ 
+    +\ &\gls{molar-fraction}_i\gls{molar-fraction}_j \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|} \left(\gls{normalized-distance-vec}_{ij} \otimes \left(\gls{metric-tensor}: \gls{molar-fraction}_i\gls{di-distortion}_i \right) \right)\ +\ \gls{molar-fraction}_i\gls{molar-fraction}_j \frac{d u_{ij}}{d \| \gls{distance-vec}_{ij} \|} \left(\gls{normalized-distance-vec}_{ij} \otimes \left(\gls{metric-tensor}: \gls{molar-fraction}_i\gls{di-distortion}_i \right) \right)\    
+\end{split}
+\end{equation}
+
+Substituting \cref{eq:DrDr-dipole-third-order-tensor-term-projection-species} into \cref{eq:DrDr-dipole-distortion-term-species}:
+\begin{equation}
+\label{eq:DrDr-dipole-distortion-term-species}
+\begin{split}
+    \left[\text{D}_{\gls{distance-vec}} \text{D}_{\gls{distance-vec}}\gls{di-distortion}_{term}\right]^{Mg}_{H}\ =\ \sum_{i \in I_{Mg}} &\left[\text{D}^3_{\gls{distance-vec}}\gls{di-distortion}_i \cdot \gls{di-distortion}_i\right]^{Mg}_{H}\ +\ \left[\text{D}_{\gls{distance-vec}}\gls{di-distortion}_i\right]^{Mg}_{H}\ \left[\text{D}^T_{\gls{distance-vec}}\gls{di-distortion}_i\right]^{Mg}_{H} \\ 
+    +\ \sum_{i \in I_{H}} &\gls{molar-fraction}_i \left[\text{D}^3_{\gls{distance-vec}}\gls{di-distortion}_i \cdot \gls{molar-fraction}_i\gls{di-distortion}_i\right]^{Mg}_{H}\ +\  \gls{molar-fraction}_i \left[\text{D}_{\gls{distance-vec}}\gls{di-distortion}_i\right]^{Mg}_{H}\ \gls{molar-fraction}_i\left[\text{D}^T_{\gls{distance-vec}}\gls{di-distortion}_i\right]^{Mg}_{H}    
+\end{split}
+\end{equation}
+\end{comment}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{The Quadrupole (\gls{quadru-distortion}) contribution to the potential}
+
+The contribution of the quadrupole \gls{quadru-distortion} to the \acrshort{adp} is given by:
+\begin{align}
+\label{eq:quadru-distortion-term}
+&V^{\gls{quadru-distortion}} = \frac{1}{2} \bigg(\sum_{i \in I_{Mg} \cup I_{H}} \gls{quadru-distortion}_i : \gls{quadru-distortion}_i - \frac{1}{3} (\text{tr}\gls{quadru-distortion}_i)^2 \bigg), \quad \text{where} \\
+&\label{eq:quadru-distortion}
+\gls{quadru-distortion}_i\ =\ \sum_{\substack{j \in \mathcal{B}_i(r_\text{c}) \\ j \neq i}} \gls{molar-fraction}_i\gls{molar-fraction}_j\ w_{ij}\ \left(\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}\right)
+\end{align}
+Where $w_{ij}$ is experimentally-fitted 5th-order polinomia which depends on $\| \gls{distance-vec}_{ij} \|$. Introducing \cref{eq:quadru-distortion} into \cref{eq:quadru-distortion-term} it can be expressed:
+\begin{equation}
+    \label{eq:quadru-distortion-term-a}    
+    \begin{split}
+    V^{\gls{quadru-distortion}}\ = \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H}} &\left(\sum_{\substack{j_1 \in \mathcal{B}_i(r_\text{c}) \\ j_1 \neq i}} n_i n_{j_1}\ w_{ij_1}\ (\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_1}) \right) : \left(\sum_{\substack{j_2 \in \mathcal{B}_i(r_\text{c}) \\ j_2 \neq i}} n_i n_{j_2}\ w_{ij_2} (\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_2}) \right)\ -\\
+    \frac{1}{3} &\left(\sum_{\substack{j_1 \in \mathcal{B}_i(r_\text{c}) \\ j_1 \neq i}} n_i n_{j_1}\ w_{ij_1}\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_1}) \right) \left(\sum_{\substack{j_2 \in \mathcal{B}_i(r_\text{c}) \\ j_2 \neq i}} n_i n_{j_2}\ w_{ij_2} (\gls{distance-vec}_{ij_2} \cdot \gls{distance-vec}_{ij_2}) \right)
+    \end{split}
+\end{equation}
+The previous expression can be writted in a more compact fashion by considering the permutations $<j_1, j_2>$:
+\begin{equation}
+    \begin{split}
+    V^{\gls{quadru-distortion}}\ =\ \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H}} \sum_{\substack{<j_1, j_2 > \\ j_1, j_2  \neq i}} V^{\gls{quadru-distortion}}_{i,j_1,j_2} = \frac{1}{2} \sum_i \sum_{\substack{<j_1, j_2 > \\ j_1, j_2  \neq i}} &\left(n_i n_{j_1}\ w_{i,j_1}\right) \left(n_i n_{j_2}\ w_{i,j_2}\right)\ \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2} \right)^2 - \\
+    \frac{1}{3} &\left(n_i n_{j_1}\ w_{i,j_1}\right) \left(n_i n_{j_2}\ w_{i,j_2}\right) \| \gls{distance-vec}_{ij_1} \|^2 \| \gls{distance-vec}_{ij_2} \|^2,
+    \end{split}
+\end{equation}
+where $\mathcal{B}_i(r_\text{c})$ denotes the set of atomic sites within a distance $r_c$ of site $i$, and $r_\text{c}$ is the cut-off distance of the ADP potential:
+\begin{equation}
+    \mathcal{B}_i(r_c)\ \coloneqq\ \mathbb{S}^1(\gls{distance-vec}_{ij}, r_c) \cap (I_{Mg} \cup I_{H}).
+\end{equation}
+Therefore $\mathcal{B}_i(r_\text{c})$ can be viewed as the set of atomistic positions which defines the neighborhood of the site $i$. Taking derivatives of $V^{\lambda}_{i,j_1,j_2}$ with respect to $\gls{atomic-position}_i$, $\gls{atomic-position}_{j1}$ and $\gls{atomic-position}_{j2}$
+\begin{equation}
+\begin{split}
+\frac{\partial V^{\lambda}_{i,j_1,j_2}}{\partial \gls{atomic-position}_i}\ =\ \bigg(&\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right) \left(n_i n_{j_2}\ w_{i,j_2}\right)\ \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2} \right)^2 \frac{\gls{distance-vec}_{ij_1}}{\| \gls{distance-vec}_{ij_1} \|} +\ \\ 
+&\left(n_i n_{j_1}\ w_{i,j_1}\right) \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2} \right)^2 \frac{\gls{distance-vec}_{i j_2}}{\| \gls{distance-vec}_{i j_2} \|} +\ \\
+&\left(n_i n_{j_1}\ w_{i,j_1}\right) \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2} \right) \left(\gls{distance-vec}_{ij_2} + \gls{distance-vec}_{ij_1} \right)\bigg) \\
+- \frac{1}{3}\bigg(&\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ \| \gls{distance-vec}_{ij_1} \|^2 \| \gls{distance-vec}_{ij_2} \|^2 \frac{\gls{distance-vec}_{ij_1}}{\| \gls{distance-vec}_{ij_1} \|} +\ \\
+&\left(n_i n_{j_1}\ w_{i,j_1}\right) \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ \| \gls{distance-vec}_{ij_1} \|^2 \| \gls{distance-vec}_{ij_2} \|^2 \frac{\gls{distance-vec}_{i j_2}}{\| \gls{distance-vec}_{i j_2} \|} +\ \\
+&\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 \left(\| \gls{distance-vec}_{ij_2} \|^2 \gls{distance-vec}_{ij_1} + \| \gls{distance-vec}_{ij_1} \|^2 \gls{distance-vec}_{ij_2}\right)\bigg)    
+\end{split}
+\end{equation}
+
+
+\begin{equation}
+\begin{split}
+\frac{\partial V^{\lambda}_{i,j_1,j_2}}{\partial \gls{atomic-position}_{j_1}}\ =\ - \bigg(&\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right) \left(n_i n_{j_2}\ w_{i,j_2}\right)\ \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2} \right)^2 \frac{\gls{distance-vec}_{ij_1}}{\| \gls{distance-vec}_{ij_1} \|} +\ \\ 
+&\left(n_i n_{j_1}\ w_{i,j_1}\right) \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2} \right) \gls{distance-vec}_{ij_2}\bigg) \\
++ \frac{1}{3}\bigg(&\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ \| \gls{distance-vec}_{ij_1} \|^2 \| \gls{distance-vec}_{ij_2} \|^2\ \frac{\gls{distance-vec}_{ij_1}}{\| \gls{distance-vec}_{ij_1} \|} +\ \\
+&\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 \| \gls{distance-vec}_{ij_2} \|^2 \gls{distance-vec}_{ij_1} \bigg)    
+\end{split}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+\frac{\partial V^{\lambda}_{i,j_1,j_2}}{\partial \gls{atomic-position}_{j_2}}\ =\ - \bigg(&\left(n_i n_{j_1}\ w_{i,j_1}\right) \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2} \right)^2 \frac{\gls{distance-vec}_{i j_2}}{\| \gls{distance-vec}_{i j_2} \|} +\ \\
+&\left(n_i n_{j_1}\ w_{i,j_1}\right) \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2} \right) \gls{distance-vec}_{ij_1} \bigg) \\
++ \frac{1}{3}\bigg(&\left(n_i n_{j_1}\ w_{i,j_1}\right) \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ \| \gls{distance-vec}_{ij_1} \|^2 \| \gls{distance-vec}_{ij_2} \|^2 \frac{\gls{distance-vec}_{i j_2}}{\| \gls{distance-vec}_{i j_2} \|} +\ \\
+&\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 \| \gls{distance-vec}_{ij_1} \|^2 \gls{distance-vec}_{ij_2}\bigg)    
+\end{split}
+\end{equation}
+Higher order derivatives of $V^{\lambda}_{i,j_1,j_2}$
+\begin{equation}
+\begin{split}
+\frac{\partial^2 V^{\lambda}_{i,j_1,j_2}}{\partial \gls{atomic-position}_i^2}\ =\ \bigg(&\left(n_i n_{j_1}\ \frac{d^2 w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|^2}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})^2\ \frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_1})}{\| \gls{distance-vec}_{ij_1} \|^2} + \\
+        &\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})^2\ \frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_1} \|\| \gls{distance-vec}_{ij_2} \|} + \\
+        &\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})\ \left( \frac{\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2}}{\| \gls{distance-vec}_{ij_1} \|} + \frac{\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_1}}{\| \gls{distance-vec}_{ij_1} \|} \right)\ + \\
+        &\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})^2\  \frac{d^2 \| \gls{distance-vec}_{ij_1} \| }{d \gls{distance-vec}_{ij_1}^2}\ + \\
+        &\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})^2\  \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1})}{ \| \gls{distance-vec}_{ij_1} \| \| \gls{distance-vec}_{ij_2} \|} + \\
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d^2 u_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|^2}\right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})^2\ \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_2} \|^2} + \\         
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ 2 (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})\ \left( \frac{\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1}}{\| \gls{distance-vec}_{ij_2} \|} + \frac{\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_2}}{\| \gls{distance-vec}_{ij_2} \|} \right)\ + \\
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})^2\  \frac{d^2 \| \gls{distance-vec}_{ij_2} \| }{d \gls{distance-vec}_{ij_2}^2}\ + \\
+        &\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\  2 \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2} \right)\ \left( \frac{(\gls{distance-vec}_{ij_1}  \otimes \gls{distance-vec}_{ij_1})}{\| \gls{distance-vec}_{ij_1} \|}\ + \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1})}{\| \gls{distance-vec}_{ij_1} \|} \right)\ + \\
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ 2 \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2} \right)\ \left(\frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_2} \|}\ + \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_2} \|} \right)\ + \\
+        &\left(n_i n_{j_2}\ w_{i,j_2}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 (\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_1})\ + \left(n_i n_{j_2}\ w_{i,j_2}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 (\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2})\ + \\
+        &\left(n_i n_{j_2}\ w_{i,j_2}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 (\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1})\ + \left(n_i n_{j_2}\ w_{i,j_2}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 (\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_2})\ + \\
+        &\left(n_i n_{j_2}\ w_{i,j_2}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 4 (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2}) \cdot I \bigg) \\
+        - \frac{1}{3}\bigg(&\left(n_i n_{j_1}\ \frac{d^2 w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|^2}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right) \| \gls{distance-vec}_{ij_2} \|^2 (\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_1})\ + \\
+        &\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right) \| \gls{distance-vec}_{ij_1} \| \| \gls{distance-vec}_{ij_2} \| (\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2})\ +\\
+        &\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right) 2 \| \gls{distance-vec}_{ij_2} \|^2 \left( \frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_1})}{\| \gls{distance-vec}_{ij_1} \|} + \frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_1} \|} \right)\ + \\  
+        &\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right) \| \gls{distance-vec}_{ij_1} \|^2 \| \gls{distance-vec}_{ij_2} \|^2 \frac{d^2 \| \gls{distance-vec}_{ij_1} \| }{d \gls{distance-vec}_{ij_1}^2}\ + \\
+        &\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right) \| \gls{distance-vec}_{ij_1} \| \| \gls{distance-vec}_{ij_2} \| (\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1})\ + \\ 
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d^2 u_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|^2}\right) \| \gls{distance-vec}_{ij_1} \|^2 (\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_2})\ + \\
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right) 2 \| \gls{distance-vec}_{ij_2} \|^2 \left( \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1})}{\| \gls{distance-vec}_{ij_2} \|} + \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_2} \|} \right)\ + \\  
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right) \| \gls{distance-vec}_{ij_1} \|^2 \| \gls{distance-vec}_{ij_2} \|^2 \frac{d^2 \| \gls{distance-vec}_{ij_2} \| }{d \gls{distance-vec}_{ij_2}^2}\ +\\
+        &\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 \| \gls{distance-vec}_{ij_2} \| \left(\left(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_1}\right)\ + \left(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1}\right) \right) \\
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ 2 \| \gls{distance-vec}_{ij_2} \| \left(\left(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2}\right)\ + \left(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_2}\right) \right) \\
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 4 \left(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2}\right)\ +\ \left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 \| \gls{distance-vec}_{ij_2} \|^2\ \text{I}\ + \\ 
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 4 \left(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1}\right)\ +\ \left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 \| \gls{distance-vec}_{ij_1} \|^2\ \text{I}\bigg)
+\end{split}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+\frac{\partial^2 V^{\lambda}_{i,j_1,j_2}}{\partial \gls{atomic-position}_{j_1}^2}\ =\ \bigg(&\left(n_i n_{j_1}\ \frac{d^2 w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|^2}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})^2\ \frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_1})}{\| \gls{distance-vec}_{ij_1} \|^2} + \\
+        &\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})\ \frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_1} \|} + \\
+        &\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})^2\  \frac{d^2 \| \gls{distance-vec}_{ij_1} \| }{d \gls{distance-vec}_{ij_1}^2}\ + \\
+        &\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2} \right)\ \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1})}{\| \gls{distance-vec}_{ij_1} \|}\ + \\        
+        &\left(n_i n_{j_2}\ w_{i,j_2}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 (\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_2}) \bigg) \\
+        - \frac{1}{3}\bigg(&\left(n_i n_{j_1}\ \frac{d^2 w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|^2}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right) \| \gls{distance-vec}_{ij_2} \|^2 (\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_1})\ + \\
+        &\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right) 2 \| \gls{distance-vec}_{ij_2} \|^2 \frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_1})}{\| \gls{distance-vec}_{ij_1} \|} + \\  
+        &\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right) \| \gls{distance-vec}_{ij_1} \|^2 \| \gls{distance-vec}_{ij_2} \|^2 \frac{d^2 \| \gls{distance-vec}_{ij_1} \| }{d \gls{distance-vec}_{ij_1}^2} + \\
+        &\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 \| \gls{distance-vec}_{ij_2} \|^2 \frac{\left(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_1}\right)}{\| \gls{distance-vec}_{ij_1} \|} + \\
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 \| \gls{distance-vec}_{ij_2} \|^2\ \text{I}\bigg)
+\end{split}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+\frac{\partial^2 V^{\lambda}_{i,j_1,j_2}}{\partial \gls{atomic-position}_{j_1} \partial \gls{atomic-position}_{j_2}}\ =\ \bigg( &\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})^2\ \frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_1} \|\| \gls{distance-vec}_{ij_2} \|} + \\ 
+        &\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})\ \frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_1})}{\| \gls{distance-vec}_{ij_1} \|} + \\ 
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ 2 (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})\ \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_2} \|} + \\ 
+        &\left(n_i n_{j_2}\ w_{i,j_2}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 (\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1})\ + \\ 
+        &\left(n_i n_{j_2}\ w_{i,j_2}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2}) \cdot I \bigg) \\
+        - \frac{1}{3}\bigg(&\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right) \| \gls{distance-vec}_{ij_1} \| \| \gls{distance-vec}_{ij_2} \| (\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2})\ +\\ 
+        &\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right) 2 \| \gls{distance-vec}_{ij_1} \| (\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2}) + \\  
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ 2 \| \gls{distance-vec}_{ij_2} \| \left(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2}\right)\ +\\  
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 4 \left(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2}\right) \bigg)
+\end{split}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+\frac{\partial^2 V^{\lambda}_{i,j_1,j_2}}{\partial \gls{atomic-position}_{j_2} \partial \gls{atomic-position}_{j_1}}\ =\ \bigg(&\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})^2\  \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1})}{ \| \gls{distance-vec}_{ij_1} \| \| \gls{distance-vec}_{ij_2} \|} + \\ 
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ 2 (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})\ \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_2} \|} + \\ 
+        &\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})\ \frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_1})}{\| \gls{distance-vec}_{ij_1} \|} + \\
+        &\left(n_i n_{j_2}\ w_{i,j_2}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 (\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2})\ + \\ 
+        &\left(n_i n_{j_2}\ w_{i,j_2}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2}) \cdot I \bigg) \\
+        - \frac{1}{3}\bigg(&\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right) \| \gls{distance-vec}_{ij_1} \| \| \gls{distance-vec}_{ij_2} \| (\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1}) + \\  
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right) 2 \| \gls{distance-vec}_{ij_2} \| (\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1}) + \\  
+        &\left(n_i n_{j_1}\ \frac{d w_{ij_1}}{ d \| \gls{distance-vec}_{ij_1} \|} \right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 \| \gls{distance-vec}_{ij_1} \| \left(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1}\right) +\\ 
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 4 \left(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1}\right) \bigg)
+\end{split}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+\frac{\partial^2 V^{\lambda}_{i,j_1,j_2}}{\partial \gls{atomic-position}_{j_2}^2}\ =\ \bigg(&\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d^2 u_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|^2}\right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})^2\ \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_2} \|^2} + \\         
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ 2 (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})\ \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_1})}{\| \gls{distance-vec}_{ij_2} \|} + \\       
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ (\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2})^2\  \frac{d^2 \| \gls{distance-vec}_{ij_2} \| }{d \gls{distance-vec}_{ij_2}^2}\ + \\
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ 2 \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2} \right)\ \frac{(\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_2} \|}\ + \\
+        &\left(n_i n_{j_2}\ w_{i,j_2}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 (\gls{distance-vec}_{ij_1} \otimes \gls{distance-vec}_{ij_1}) \bigg) \\
+        - \frac{1}{3}\bigg(&\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d^2 u_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|^2}\right) \| \gls{distance-vec}_{ij_1} \|^2 (\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_2})\ + \\
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right) 2 \| \gls{distance-vec}_{ij_1} \|^2 \frac{(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_2})}{\| \gls{distance-vec}_{ij_2} \|} + \\
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right) \| \gls{distance-vec}_{ij_1} \|^2 \| \gls{distance-vec}_{ij_2} \|^2 \frac{d^2 \| \gls{distance-vec}_{ij_2} \| }{d \gls{distance-vec}_{ij_2}^2} +\\
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ \frac{d w_{ij_2}}{ d \| \gls{distance-vec}_{ij_2} \|} \right)\ 2 \| \gls{distance-vec}_{ij_1} \|^2 \frac{\left(\gls{distance-vec}_{ij_2} \otimes \gls{distance-vec}_{ij_2}\right)}{\| \gls{distance-vec}_{ij_2} \|} + \\
+        &\left(n_i n_{j_1}\ w_{i,j_1}\right)\ \left(n_i n_{j_2}\ w_{i,j_2}\right)\ 2 \| \gls{distance-vec}_{ij_1} \|^2\ \text{I}\bigg)
+\end{split}
+\end{equation}
+
+Additionally we can compute the derivatives of $V^{\lambda}_{i,j_1,j_2}$ with respect the occupancy vector $\{n\} = \{n_i , n_{j_1} , n_{j_2}\}$:
+\begin{equation}
+    \begin{split}
+        \frac{\partial V^{\gls{quadru-distortion}}_{i,j_1,j_2}}{\partial n_{i^*}}\ =\ &\frac{1}{2} \left(n_{j_1}\ w_{i,j_1}\right) \left(n_i n_{j_2}\ w_{i,j_2}\right)\ \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2} \right)^2 + \\
+        &\frac{1}{2} \left(n_i n_{j_1}\ w_{i,j_1}\right) \left(n_{j_2}\ w_{i,j_2}\right)\ \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2} \right)^2 - \\
+        &\frac{1}{6} \left(n_{j_1}\ w_{i,j_1}\right) \left(n_i n_{j_2}\ w_{i,j_2}\right) \| \gls{distance-vec}_{ij_1} \|^2 \| \gls{distance-vec}_{ij_2} \|^2 - \\
+        &\frac{1}{6} \left(n_i n_{j_1}\ w_{i,j_1}\right) \left(n_{j_2}\ w_{i,j_2}\right) \| \gls{distance-vec}_{ij_1} \|^2 \| \gls{distance-vec}_{ij_2} \|^2,\ \quad i^{*} \equiv i
+    \end{split}
+\end{equation}
+\begin{equation}
+    \begin{split}
+        \frac{\partial V^{\gls{quadru-distortion}}_{i,j_1,j_2}}{\partial n_{i^*}}\ =\ \frac{1}{2} &\left(n_i\ w_{i,j_1}\right) \left(n_i n_{j_2}\ w_{i,j_2}\right)\ \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2} \right)^2 - \\
+        \frac{1}{6} &\left(n_i\ w_{i,j_1}\right) \left(n_i n_{j_2}\ w_{i,j_2}\right) \| \gls{distance-vec}_{ij_1} \|^2 \| \gls{distance-vec}_{ij_2} \|^2,\ \quad i^{*} \equiv j_1
+    \end{split}
+\end{equation}
+\begin{equation}
+    \begin{split}
+        \frac{\partial V^{\gls{quadru-distortion}}_{i,j_1,j_2}}{\partial n_{i^*}}\ =\ \frac{1}{2} &\left(n_i n_{j_1}\ w_{i,j_1}\right) \left(n_i\ w_{i,j_2}\right)\ \left(\gls{distance-vec}_{ij_1} \cdot \gls{distance-vec}_{ij_2} \right)^2 - \\
+        \frac{1}{6} &\left(n_i n_{j_1}\ w_{i,j_1}\right) \left(n_i\ w_{i,j_2}\right) \| \gls{distance-vec}_{ij_1} \|^2 \| \gls{distance-vec}_{ij_2} \|^2,\ \quad i^{*} \equiv j_2
+    \end{split}
+\end{equation}
+
+
+\begin{comment}
+The contribution of the quadrupole \gls{quadru-distortion} to the \acrshort{adp} is given by:
+\begin{align}
+\label{eq:quadru-distortion-term}
+&V^{\gls{quadru-distortion}}\ =\ \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H}} \left(\gls{quadru-distortion}_i\ \colon\ \gls{quadru-distortion}_i\right),\quad \text{where} \\
+&\label{eq:quadru-distortion}
+\gls{quadru-distortion}_i\ =\ \sum_{\substack{j \in \mathcal{B}_i(r_\text{c}) \\ j \neq i}} \gls{molar-fraction}_i\gls{molar-fraction}_j\ w_{ij} (\| \gls{distance-vec}_{ij} \|)\ \left(\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}\right)
+\end{align}
+
+Introducing \cref{eq:quadru-distortion} into \cref{eq:quadru-distortion-term} it can be expressed:
+\begin{equation}
+\label{eq:quadru-distortion-term-a}
+\begin{split}
+V^{\gls{quadru-distortion}}\ &=\ \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H} } \left( \sum_{\substack{j \in \mathcal{B}_i(r_\text{c}) \\ j \neq i}} \gls{molar-fraction}_i\gls{molar-fraction}_j\ w_{ij}\ \left(\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}\right) \right) : \left(\sum_{\substack{k \in \mathcal{B}_i(r_\text{c}) \\ k \neq i}} \gls{molar-fraction}_i\gls{molar-fraction}_k\ w_{ik}\ \left(\gls{distance-vec}_{ik} \otimes \gls{distance-vec}_{ik}\right) \right)\\
+&=\ \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H} } \sum_{\substack{j,k \in \mathcal{B}_i(r_\text{c}) \\ j,k \neq i}} \gls{quadru-distortion}_{ij} : \gls{quadru-distortion}_{ik}\\
+&=\ \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H} } \sum_{\substack{j,k \in \mathcal{B}_i(r_\text{c}) \\ j,k \neq i}} \left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ w_{ij}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ w_{ik}\right)\ \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ik}\right)^2
+\end{split}
+\end{equation}
+
+where $\mathcal{B}_i(r_\text{c})$ denotes the set of atomic sites within a distance $r_c$ of site $i$, and $r_\text{c}$ is the cut-off distance of the ADP potential:
+\begin{equation}
+    \mathcal{B}_i(r_c)\ \coloneqq\ \mathbb{S}^1(\gls{distance-vec}_{ij}, r_c) \cap (I_{Mg} \cup I_{H})
+\end{equation}
+therefore $\mathcal{B}_i(r_\text{c})$ can be viewed as the set of atomistic positions which defines the neighborhood of the site $i$. Following the standard rules of the infinitesimal calculus to apply the directional derivative $\text{D}_{\gls{distance-vec}} \square$, the gradient of \cref{eq:quadru-distortion-term-a} is:
+
+\begin{equation}
+\text{D}_{\gls{distance-vec}} V^{\gls{quadru-distortion}}\ =\ \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H} } \sum_{\substack{j,k \in \mathcal{B}_i(r_\text{c}) \\ j,k \neq i}} \text{D}_{\gls{distance-vec}}\gls{quadru-distortion}_{ij} : \gls{quadru-distortion}_{ik}\ +\ \text{D}_{\gls{distance-vec}}\gls{quadru-distortion}_{ik} : \gls{quadru-distortion}_{ij},
+\end{equation}
+where $\text{D}_{\gls{distance-vec}}\gls{quadru-distortion}_{ij} : \gls{quadru-distortion}_{ik}$ is:
+\begin{equation}
+\begin{split}
+   \text{D}_{\gls{distance-vec}}\gls{quadru-distortion}_{ij} : \gls{quadru-distortion}_{ik}\ =\ &\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ w_{ik}\right)\ \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ik}\right)^2 \frac{\gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|}\ + \\
+   &\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ w_{ij}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ w_{ik}\right)\ 2\left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ik}\right) \gls{distance-vec}_{ik}
+\end{split}
+\end{equation}
+$\text{D}_{\gls{distance-vec}}\gls{quadru-distortion}_{ik} : \gls{quadru-distortion}_{ij}$ can be obtained just by switching the index j and k. The hessian of \cref{eq:quadru-distortion-term-a} is:
+
+\begin{equation}
+\begin{split}
+    \text{D}_{\gls{distance-vec}} \text{D}_{\gls{distance-vec}} V^{\gls{quadru-distortion}}\ =\  \frac{1}{2} \sum_{i \in I_{Mg} \cup I_{H}} \sum_{\substack{j,k \in \mathcal{B}_i(r_\text{c}) \\ j,k \neq i}} 
+    &\text{D}_{\gls{distance-vec}}\text{D}_{\gls{distance-vec}}\gls{quadru-distortion}_{ij} : \gls{quadru-distortion}_{ik}\ +\ \text{D}_{\gls{distance-vec}}\gls{quadru-distortion}_{ij} : \text{D}_{\gls{distance-vec}}\gls{quadru-distortion}_{ik}\ +\ \\
+    &\text{D}_{\gls{distance-vec}}\text{D}_{\gls{distance-vec}}\gls{quadru-distortion}_{ik} : \gls{quadru-distortion}_{ij}\ +\ \text{D}_{\gls{distance-vec}}\gls{quadru-distortion}_{ik} : \text{D}_{\gls{distance-vec}}\gls{di-distortion}_{ij},    
+\end{split}
+\end{equation}
+
+where $\text{D}_{\gls{distance-vec}}\text{D}_{\gls{distance-vec}}\gls{quadru-distortion}_{ij} : \gls{quadru-distortion}_{ik}$ is:
+
+\begin{equation}
+    \begin{split}
+        \text{D}_{\gls{distance-vec}}\text{D}_{\gls{distance-vec}}\gls{quadru-distortion}_{ij} : \gls{quadru-distortion}_{ik}\ =\ &\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ \frac{d^2 w_{ij}}{d \| \gls{distance-vec}_{ij} \|^2}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ w_{ik}\right)\ \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ik}\right)^2\  \frac{\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|^2}\ + \\
+        &\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ w_{ik}\right)\ 2\left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ik}\right)\ \frac{\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ik}}{\| \gls{distance-vec}_{ij} \|}\ + \\    
+        &\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ w_{ik}\right)\ \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ik}\right)^2\ \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij} d \gls{distance-vec}_{ij}}\ + \\        
+       &\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \| }\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ w_{ik}\right)\ 2\left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ik}\right)\ \frac{\gls{distance-vec}_{ik} \otimes \gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|}\ + \\
+       &\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ w_{ij}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ w_{ik}\right)\ 2 \left(\gls{distance-vec}_{ik} \otimes \gls{distance-vec}_{ik}\right)       
+    \end{split}
+\end{equation}
+
+and $\text{D}_{\gls{distance-vec}}\gls{quadru-distortion}_{ij} : \text{D}_{\gls{distance-vec}}\gls{quadru-distortion}_{ik}$ is:
+\begin{equation}
+\begin{split}
+    \text{D}_{\gls{distance-vec}}\gls{quadru-distortion}_{ij} : \text{D}_{\gls{distance-vec}}\gls{quadru-distortion}_{ik}\ =\ &\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ \frac{d w_{ik}}{d \| \gls{distance-vec}_{ik} \|}\right)\ \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ik}\right)^2 \frac{\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ik}}{\| \gls{distance-vec}_{ij} \|\| \gls{distance-vec}_{ik} \|}\ + \\
+    &\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ w_{ik}\right)\ 2 \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ik}\right)\ \frac{\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}}{\| \gls{distance-vec}_{ij} \|}\ + \\
+   &\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ w_{ij}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ \frac{d w_{ik}}{d \| \gls{distance-vec}_{ik} \|}\right)\ 2\left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ik}\right) \frac{\gls{distance-vec}_{ik} \otimes \gls{distance-vec}_{ik}}{\| \gls{distance-vec}_{ik} \|}\ +\\
+   &\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ w_{ij}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ w_{ik}\right)\ 2\left(\gls{distance-vec}_{ik} \otimes \gls{distance-vec}_{ij}\right)\ +\\
+   &\left(\gls{molar-fraction}_i\gls{molar-fraction}_j\ w_{ij}\right)\ \left(\gls{molar-fraction}_i\gls{molar-fraction}_k\ w_{ik}\right)\ 2\left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ik}\right) \gls{metric-tensor}   
+\end{split}    
+\end{equation}
+
+
+    Introducing the species, Magnesium ($I_{Mg}$) and Hydrogen ($I_{H}$), where the occupancy of the Magnesium sites is fixed, $n_i\ =\ 1$, and the occupancy of the Hydrogen sites may vary, $n_i\ \in\ \left(0, 1\right)$:
+\begin{align}
+\label{eq:quadru-distortion-term-species}
+&\left[\gls{quadru-distortion}_{term}\right]^{Mg}_{H}\ =\  \frac{1}{2} \sum_{i \in I_{Mg}} \left(\gls{quadru-distortion}_i\ \colon\ \gls{quadru-distortion}_i\right)\ +\ \frac{1}{2} \sum_{i \in I_{H}} \left(\gls{molar-fraction}_i\gls{quadru-distortion}_i\ \colon\ \gls{molar-fraction}_i\gls{quadru-distortion}_i\right), \quad \text{where} \\
+\label{eq:quadru-distortion-species}
+&\left[\gls{quadru-distortion}_i\right]^{Mg}_{H}\ =\ \sum_{\substack{j \in I_{Mg} \\ j \neq i}} w_{ij} (\| \gls{distance-vec}_{ij} \|)\ \left(\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}\right)\ +\ \sum_{\substack{j \in I_{H} \\ j \neq i}} \gls{molar-fraction}_j\ w_{ij} (\| \gls{distance-vec}_{ij} \|)\ \left(\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}\right)   
+\end{align}
+
+The directional derivative $\text{D}_{\gls{distance-vec}} \square$ of \cref{eq:quadru-distortion-term} is:
+\begin{equation}
+\label{eq:Dr-quadru-distortion-term}
+\text{D}_{\gls{distance-vec}} \gls{quadru-distortion}_{term}\ =\ \sum_{i} \gls{molar-fraction}_i\ \text{D}_{\gls{distance-vec}} \gls{quadru-distortion}\ \colon\ \gls{molar-fraction}_i\gls{quadru-distortion}_i
+\end{equation}\\
+
+Gathering terms in \cref{eq:Dr-quadru-distortion-term} by the two different species in the system:
+\begin{equation}
+\label{eq:Dr-quadru-distortion-term-species}
+\begin{split}
+\left[\text{D}_{\gls{distance-vec}} \gls{quadru-distortion}_{term}\right]^{Mg}_{H}\ =\ &\sum_{i \in I_{Mg}}  \left[\text{D}_{\gls{distance-vec}} \gls{quadru-distortion}\right]^{Mg}_{H} \colon \left[\gls{quadru-distortion}_i\right]^{Mg}_{H}\ +\ \sum_{i \in I_{H}} \gls{molar-fraction}_i \left[\text{D}_{\gls{distance-vec}} \gls{quadru-distortion}\right]^{Mg}_{H} \colon \gls{molar-fraction}_i \left[\gls{quadru-distortion}_i\right]^{Mg}_{H}\ 
+    \end{split}
+\end{equation}\\
+
+In order to achieve a programmable-friendly counterpart of \cref{eq:Dr-quadru-distortion-term}, we have follow two different approaches. On one hand, taking \cref{eq:Dr-quadru-distortion-term} as starting point the directional derivative $\text{D}_{\gls{distance-vec}} \square$ of \gls{quadru-distortion} results in the third order tensor $\text{D}_{\gls{distance-vec}} \gls{quadru-distortion}$:
+\begin{equation}
+\label{eq:Dr-quadru-distortion-thir-order-tensor}
+\begin{split}
+\text{D}_{\gls{distance-vec}} \gls{quadru-distortion}\ =\ \sum_{\substack{j \\ j \neq i}} \gls{molar-fraction}_j\  \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|}\ \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}\right)\  +\  \gls{molar-fraction}_j\ w_{ij}\ \left(\frac{d \gls{distance-vec}_{ij}}{d \gls{distance-vec}_{ij}} \oplus \gls{distance-vec}_{ij}\right) +\  \gls{molar-fraction}_j\ w_{ij}\ \left(\frac{d \gls{distance-vec}_{ij}}{d \gls{distance-vec}_{ij}} \oplus \gls{distance-vec}_{ij}\right)
+\end{split}
+\end{equation}\\
+
+Projecting \cref{eq:Dr-quadru-distortion-thir-order-tensor} in the direction of \gls{quadru-distortion}, as  in \cref{eq:Dr-quadru-distortion-term} we obtain the following first order tensor for the site $i$:
+\begin{equation}
+\label{eq:Dr-quadru-distortion-term-i}
+\begin{split}
+    &\gls{molar-fraction}_i \text{D}_{\gls{distance-vec}} \gls{quadru-distortion} \colon \gls{molar-fraction}_i\gls{quadru-distortion}_i\ =\ \sum_{\substack{j \\ j \neq i}} \gls{molar-fraction}_i\gls{molar-fraction}_j\  \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|}\ \left(\left(\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}\right) \colon \gls{molar-fraction}_i\gls{quadru-distortion}_i \right)\ \gls{normalized-distance-vec}_{ij}\ +\ 2 \gls{molar-fraction}_i\gls{molar-fraction}_j\ w_{ij}\ \left(\frac{d \gls{distance-vec}_{ij}}{d \gls{distance-vec}_{ij}} \colon \gls{molar-fraction}_i\gls{quadru-distortion}_i\right) \gls{distance-vec}_{ij}  
+\end{split}
+\end{equation}
+
+Gathering terms in \cref{eq:Dr-quadru-distortion-term-i} for the two different species in the system:
+\begin{equation}
+\begin{split}
+    &\gls{molar-fraction}_i \left[\text{D}_{\gls{distance-vec}} \gls{quadru-distortion}\right]^{Mg}_{H} \colon \gls{molar-fraction}_i\gls{quadru-distortion}_i\ =\ \sum_{\substack{j \in I_{Mg} \\ j \neq i}} \bigg[ \gls{molar-fraction}_i\ \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|}\ \left(\left(\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}\right) \colon \gls{molar-fraction}_i\gls{quadru-distortion}_i \right)\ \gls{normalized-distance-vec}_{ij}\  \\
+    &+\ \gls{molar-fraction}_i\ w_{ij}\ \left(\frac{d \gls{distance-vec}_{ij}}{d \gls{distance-vec}_{ij}} \colon \gls{molar-fraction}_i\gls{quadru-distortion}_i\right) \gls{distance-vec}_{ij}\ +\ \gls{molar-fraction}_i\ w_{ij}\ \left(\frac{d \gls{distance-vec}_{ij}}{d \gls{distance-vec}_{ij}} \colon \gls{molar-fraction}_i\gls{quadru-distortion}_i\right) \gls{distance-vec}_{ij} \bigg] \\
+    &+\ \sum_{\substack{j \in I_{H} \\ j \neq i}} \bigg[\gls{molar-fraction}_i\gls{molar-fraction}_j\  \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|}\ \left(\left(\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}\right) \colon \gls{molar-fraction}_i\gls{quadru-distortion}_i \right)\ \gls{normalized-distance-vec}_{ij}\ \\
+    &+\ \gls{molar-fraction}_i\gls{molar-fraction}_j\ w_{ij}\ \left(\frac{d \gls{distance-vec}_{ij}}{d \gls{distance-vec}_{ij}} \colon \gls{molar-fraction}_i\gls{quadru-distortion}_i\right) \gls{distance-vec}_{ij}\ +\ \gls{molar-fraction}_i\gls{molar-fraction}_j\ w_{ij}\ \left(\frac{d \gls{distance-vec}_{ij}}{d \gls{distance-vec}_{ij}} \colon \gls{molar-fraction}_i\gls{quadru-distortion}_i\right) \gls{distance-vec}_{ij} \bigg]       
+\end{split}
+\end{equation}\\
+
+On the other hand, taking both expressions, \cref{eq:quadru-distortion-term,eq:quadru-distortion}, as starting point we may approach such as derivative manipulating first the internal components of the term instead of manipulating higher order expressions has has been done in the previous derivation. Therefore, introducing \cref{eq:quadru-distortion} into both \gls{quadru-distortion} terms present in \cref{eq:quadru-distortion-term}:
+\begin{equation} 
+\label{eq:quadru-distortion-term-II}
+\begin{split}
+    \gls{quadru-distortion}_{term}\ =\ \frac{1}{2} \sum_{i} \left(\gls{molar-fraction}_i \gls{quadru-distortion}_i\ \colon\ \gls{molar-fraction}_i \gls{quadru-distortion}_i\right)\ =\ &\frac{1}{2} \sum_{i} \sum_{\substack{j \\ j \neq i}} \left(\gls{molar-fraction}_i \gls{molar-fraction}_j  w_{ij}\right)^2 \left[\left(\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}\right) : \left(\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}\right)\right]\ \\
+    =\ &\frac{1}{2} \sum_{i} \sum_{\substack{j \\ j \neq i}} \left(\gls{molar-fraction}_i \gls{molar-fraction}_j  w_{ij}\right)^2 \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right)  \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right)\ \\
+    =\ &\frac{1}{2} \sum_{i} \sum_{\substack{j \\ j \neq i}} \left(\gls{molar-fraction}_i \gls{molar-fraction}_j  w_{ij}\right)^2 \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right)^2 
+\end{split}
+\end{equation}\\
+
+Applying the chain rule to \cref{eq:quadru-distortion-term-II} we reach to the analogous expression of \cref{eq:Dr-quadru-distortion-term-i}:
+\begin{equation}
+\label{eq:Dr-quadru-distortion-term-i-II}
+\begin{split}
+\text{D}_{\gls{distance-vec}} \gls{quadru-distortion}_{term}\ &=\ \gls{molar-fraction}_i \text{D}_{\gls{distance-vec}} \gls{quadru-distortion} \colon \gls{molar-fraction}_i\gls{quadru-distortion}_i\ =\ \\
+&\frac{1}{2} \sum_{i} \sum_{\substack{j \\ j \neq i}} 2 \left(\gls{molar-fraction}_i \gls{molar-fraction}_j w_{ij} \right) \left(\gls{molar-fraction}_i \gls{molar-fraction}_j \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|} \right) \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right)^2\ \gls{normalized-distance-vec}_{ij}\ +\ \\
+& \left(\gls{molar-fraction}_i \gls{molar-fraction}_j w_{ij} \right)^2 2 \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right) \left(\frac{d \gls{distance-vec}_{ij}}{d \gls{distance-vec}_{ij}}\ \cdot \gls{distance-vec}_{ij}\right)\ +\ \left(\gls{molar-fraction}_i \gls{molar-fraction}_j w_{ij} \right)^2 2 \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right) \left(\frac{d \gls{distance-vec}_{ij}}{d \gls{distance-vec}_{ij}}\ \cdot \gls{distance-vec}_{ij}\right) \\
+=\ &\sum_{i} \sum_{\substack{j \\ j \neq i}} \left(\gls{molar-fraction}_i \gls{molar-fraction}_j w_{ij} \right) \left(\gls{molar-fraction}_i \gls{molar-fraction}_j \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|} \right) \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right)^2\ \gls{normalized-distance-vec}_{ij}\ +\ 2 \left(\gls{molar-fraction}_i \gls{molar-fraction}_j w_{ij} \right)^2 \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right) \gls{distance-vec}_{ij}\ 
+\end{split}
+\end{equation}\\
+
+Although \cref{eq:Dr-quadru-distortion-term-i-II} seems to be more compact compared to \cref{eq:Dr-quadru-distortion-term-i} they are both equivalent. Introducing two different species in the index $j$, $\forall\ i \in I_{Mg} \cup I_{H}$ the gradient and the hessian of the contribution of \gls{quadru-distortion} to the position $i$ are:
+\begin{equation}
+\begin{split}
+\left[\text{D}_{\gls{distance-vec}} \gls{quadru-distortion}_{term,i}\right]^{Mg}_{H}\ =\ \sum_{\substack{j \in I_{Mg} \\ j \neq i}} &\left(\gls{molar-fraction}_i w_{ij} \right) \left(\gls{molar-fraction}_i \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|} \right) \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right)^2\ \gls{normalized-distance-vec}_{ij}\ +\ 2 \left(\gls{molar-fraction}_i w_{ij} \right)^2 \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right) \gls{distance-vec}_{ij}\ +\ \\
+\sum_{\substack{j \in I_{H} \\ j \neq i}} &\left(\gls{molar-fraction}_i \gls{molar-fraction}_j w_{ij} \right) \left(\gls{molar-fraction}_i \gls{molar-fraction}_j \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|} \right) \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right)^2\ \gls{normalized-distance-vec}_{ij}\ +\ 2 \left(\gls{molar-fraction}_i \gls{molar-fraction}_j w_{ij} \right)^2 \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right) \gls{distance-vec}_{ij}\ 
+\end{split}    
+\end{equation}
+
+In order to derive the hessian of the contribution. We will follow the second approach although higher order tensor operators (fourth and third) can be used as well. Nevertheless, this last approach seems to be more straightforward from an algebraic point of view and implementation:
+\begin{equation}
+\begin{split}
+\text{D}_{\gls{distance-vec}} \text{D}_{\gls{distance-vec}} \gls{quadru-distortion}_{term}\ =\ \sum_{i} \sum_{\substack{j \\ j \neq i}} &\left(\gls{molar-fraction}_i \gls{molar-fraction}_j \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|} \right) \left(\gls{molar-fraction}_i \gls{molar-fraction}_j \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|} \right) \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right)^2\ \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{normalized-distance-vec}_{ij}\right)\ +\ \\
+ &\left(\gls{molar-fraction}_i \gls{molar-fraction}_j w_{ij}\right) \left(\gls{molar-fraction}_i \gls{molar-fraction}_j \frac{d^2 w_{ij}}{d \| \gls{distance-vec}_{ij} \|^2} \right) \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right)^2\ \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{normalized-distance-vec}_{ij}\right)\ +\ \\
+ 4&\left(\gls{molar-fraction}_i \gls{molar-fraction}_j w_{ij}\right) \left(\gls{molar-fraction}_i \gls{molar-fraction}_j \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|} \right) \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right)\ \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}\right)\ +\ \\ 
+ &\left(\gls{molar-fraction}_i \gls{molar-fraction}_j w_{ij}\right) \left(\gls{molar-fraction}_i \gls{molar-fraction}_j \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|} \right) \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right)^2\ \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij} d \gls{distance-vec}_{ij}}\ +\ \\ 
+4&\left(\gls{molar-fraction}_i \gls{molar-fraction}_j w_{ij} \right) \left(\gls{molar-fraction}_i \gls{molar-fraction}_j \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|} \right) \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right) \left(\gls{distance-vec}_{ij} \otimes \gls{normalized-distance-vec}_{ij}\right)\ +\\
+4&\left(\gls{molar-fraction}_i \gls{molar-fraction}_j w_{ij} \right)^2 \left(\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}\right)\ +\ 2\left(\gls{molar-fraction}_i \gls{molar-fraction}_j w_{ij} \right)^2 \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right) \frac{d \gls{distance-vec}_{ij}}{d \gls{distance-vec}_{ij}}
+\end{split}
+\end{equation}
+
+
+
+\begin{equation}
+\begin{split}
+\left[\text{D}_{\gls{distance-vec}} \text{D}_{\gls{distance-vec}} \gls{quadru-distortion}_{term,i}\right]^{Mg}_{H}\ =\ \sum_{\substack{j \in I_{Mg} \\ j \neq i}} &\left(\gls{molar-fraction}_i \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|} \right) \left(\gls{molar-fraction}_i \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|} \right) \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right)^2\ \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{normalized-distance-vec}_{ij}\right)\ +\ \\
+ &\left(\gls{molar-fraction}_i w_{ij}\right) \left(\gls{molar-fraction}_i \frac{d^2 w_{ij}}{d \| \gls{distance-vec}_{ij} \|^2} \right) \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right)^2\ \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{normalized-distance-vec}_{ij}\right)\ +\ \\
+ 4&\left(\gls{molar-fraction}_i w_{ij}\right) \left(\gls{molar-fraction}_i \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|} \right) \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right)\ \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}\right)\ +\ \\ 
+ &\left(\gls{molar-fraction}_i w_{ij}\right) \left(\gls{molar-fraction}_i \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|} \right) \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right)^2\ \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij} d \gls{distance-vec}_{ij}}\ +\ \\ 
+4&\left(\gls{molar-fraction}_i w_{ij} \right) \left(\gls{molar-fraction}_i \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|} \right) \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right) \left(\gls{distance-vec}_{ij} \otimes \gls{normalized-distance-vec}_{ij}\right)\ +\\
+4&\left(\gls{molar-fraction}_i w_{ij} \right)^2 \left(\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}\right)\ +\ 2\left(\gls{molar-fraction}_i w_{ij} \right)^2 \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right) \frac{d \gls{distance-vec}_{ij}}{d \gls{distance-vec}_{ij}} \\
++\ \sum_{\substack{j \in I_{H} \\ j \neq i}} &\left(\gls{molar-fraction}_i \gls{molar-fraction}_j \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|} \right) \left(\gls{molar-fraction}_i \gls{molar-fraction}_j \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|} \right) \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right)^2\ \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{normalized-distance-vec}_{ij}\right)\ +\ \\
+ &\left(\gls{molar-fraction}_i \gls{molar-fraction}_j w_{ij}\right) \left(\gls{molar-fraction}_i \gls{molar-fraction}_j \frac{d^2 w_{ij}}{d \| \gls{distance-vec}_{ij} \|^2} \right) \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right)^2\ \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{normalized-distance-vec}_{ij}\right)\ +\ \\
+ 4&\left(\gls{molar-fraction}_i \gls{molar-fraction}_j w_{ij}\right) \left(\gls{molar-fraction}_i \gls{molar-fraction}_j \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|} \right) \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right)\ \left(\gls{normalized-distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}\right)\ +\ \\ 
+ &\left(\gls{molar-fraction}_i \gls{molar-fraction}_j w_{ij}\right) \left(\gls{molar-fraction}_i \gls{molar-fraction}_j \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|} \right) \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right)^2\ \frac{d^2 \| \gls{distance-vec}_{ij} \| }{d \gls{distance-vec}_{ij} d \gls{distance-vec}_{ij}}\ +\ \\ 
+4&\left(\gls{molar-fraction}_i \gls{molar-fraction}_j w_{ij} \right) \left(\gls{molar-fraction}_i \gls{molar-fraction}_j \frac{d w_{ij}}{d \| \gls{distance-vec}_{ij} \|} \right) \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right) \left(\gls{distance-vec}_{ij} \otimes \gls{normalized-distance-vec}_{ij}\right)\ +\\
+4&\left(\gls{molar-fraction}_i \gls{molar-fraction}_j w_{ij} \right)^2 \left(\gls{distance-vec}_{ij} \otimes \gls{distance-vec}_{ij}\right)\ +\ 2\left(\gls{molar-fraction}_i \gls{molar-fraction}_j w_{ij} \right)^2 \left(\gls{distance-vec}_{ij} \cdot \gls{distance-vec}_{ij}\right) \frac{d \gls{distance-vec}_{ij}}{d \gls{distance-vec}_{ij}}
+\end{split}
+\end{equation}
+\end{comment}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{Euler-Lagrange equations}
+
+
+\newpage
+\printglossaries
+
+\end{document}

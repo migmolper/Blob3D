@@ -1,0 +1,255 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% University/School Laboratory Report
+% LaTeX Template
+% Version 3.1 (25/3/14)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original author:
+% Linux and Unix Users Group at Virginia Tech Wiki 
+% (https://vtluug.org/wiki/Example_LaTeX_chem_lab_report)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass{article}
+\usepackage{float}
+%\usepackage[version=3]{mhchem} % Package for chemical equation typesetting
+%\usepackage{siunitx} % Provides the \SI{}{} and \si{} command for typesetting SI units
+\usepackage{graphicx} % Required for the inclusion of images
+\usepackage{natbib} % Required to change bibliography style to APA
+\usepackage{amsmath} % Required for some math elements 
+%\setlength\parindent{0pt} % Removes all indentation from paragraphs
+\usepackage{vmargin}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{amssymb}
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{subfigure} % subfiguras
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\renewcommand{\labelenumi}{\alph{enumi}.} % Make numbering in the enumerate environment by letter rather than number (e.g. section 6)
+\setpapersize{A4}
+\setmargins{1.75cm}       % margen izquierdo
+{1.5cm}                        % margen superior
+{16.5cm}                      % anchura del texto
+{23.42cm}                    % altura del texto
+{10pt}                           % altura de los encabezados
+{1cm}                           % espacio entre el texto y los encabezados
+{0pt}                             % altura del pie de página
+{2cm}                           % espacio entre el texto y el pie de página
+%\usepackage{times} % Uncomment to use the Times New Roman font
+
+%----------------------------------------------------------------------------------------
+%	DOCUMENT INFORMATION
+%----------------------------------------------------------------------------------------
+
+\title{Algorithm} % Title
+
+\author{Javier Ramos, Pilar Ariza} % Author name
+
+\date{\today} % Date for the report
+
+\begin{document}
+\begin{equation}
+    \frac{\partial x_i}{\partial t} = \sum_{j \in I_H,j \neq i}\nu_i  \; {\rm e}^{ -\frac{Eb_{i\rightarrow j}}{k_BT}} \big[ x_j(1-x_i)\;{\rm e}^{\frac{\mu_j-\mu_i}{2K_BT}} - x_i(1-x_j)\;{\rm e}^{\frac{\mu_i-\mu_j}{2K_BT}} \big]
+\end{equation}
+\\ \\ \\
+\textbf{UNITS FOR $\nu$} 
+\\ \\
+The second derivative of the potential with respect to the position twice, gives us the forces constant matrix of the atom \\ \\ 
+ \begin{equation}\label{adp72}
+ \phi_i=\frac{\partial^2 V}{\partial q_i \partial q_i} = 
+     \begin{pmatrix}
+\phi_{xx} & \phi_{xy} & \phi_{xz}\\
+\phi_{yx} & \phi_{yy} & \phi_{yz}\\
+\phi_{zx} & \phi_{zy} & \phi_{zz}
+\end{pmatrix}\;\;[\frac{eV}{\r{A}^2}]
+ \end{equation}
+ \\
+using the analogy of a spring, we can consider
+\\
+\begin{equation}\label{adp73}
+    k=\sum_i \phi_{ii}, \; \;\; \;\; \;\; \;  \nu_i=\sqrt{\frac{k}{3m_i}},
+\end{equation}
+
+In order to work with frequency unit we have to make a unit conversion. If we recall the Eq. (\ref{adp73}), the initial units are
+\\
+\begin{equation} \label{adp80}
+    \sqrt{\frac{eV/\r{A}^2}{u}},
+\end{equation}
+\\
+the first unit conversion we do is $1 eV/\r{A}^2 =$ $16.025 J/m^2 $, $1J = 1 N \cdot m$ and $1 u = $ $1.66^{-24}g$. Putting this together we have
+\\
+\begin{equation}\label{adp81}
+    \sqrt{\frac{16.025 N \cdot m/{m}^2}{1.66^{-24}g}}.
+\end{equation}
+\\
+The second unit conversion we do is $1N = 10^3 g \cdot m /s^2$ and we finally obtain
+\\
+\begin{equation}\label{adp82}
+    \sqrt{\frac{(eV\cdot \frac{1.60218 \cdot 10^{-19}J}{1 eV}) /(\r{A}^2 \cdot \frac{10^{-20}m^2}{1 \r{A}^2})}{u \cdot \frac{1.660538921 \cdot 10^{-27} kg}{1 u}}} = 98.25 \cdot 10^{12} \frac{1}{s} 
+\end{equation}
+\\ \\
+\textbf{UNITS FOR $\mu$} 
+\\ \\
+\begin{equation}\label{mu}
+    \mu = \gamma * K_BT
+\end{equation}
+
+\begin{equation} \label{gamma}
+    \gamma = \frac{3}{2} + log\frac{x}{1-x}+\frac{1}{k_bT}[\frac{1}{eV}]\frac{\partial V}{\partial x}[eV]
+\end{equation}
+In Eq. (\ref{gamma}) we see that $\gamma$ is dimensionless, from Eq. (\ref{mu}) we know that the dimensions for $\mu$ are eV.
+\\ \\
+\textbf{UNITS FOR $f_i$} 
+\\ \\
+\begin{equation}
+    f_i = \frac{\partial V}{\partial q_i} \;\; [\frac{eV}{\r{A}}]
+\end{equation}
+\\ \\
+\textbf{UNITS FOR $V$} 
+\\ \\
+\begin{equation}
+V [eV]
+\end{equation}
+\\ \\
+\textbf{VALUES FOR $\nu_i$} 
+\\ \\
+\begin{equation}
+     k=\sum_i \phi_{ii}=(1.189,...,6.168) \;\; [\frac{eV}{\r{A}^2}]
+\end{equation}
+\\
+\begin{equation}
+    \frac{k}{3m}=(0.389,...,2.039)\;\; [\frac{eV}{\r{A}^2u}]
+\end{equation}
+\\
+\begin{equation}
+    \nu_i=\sqrt{\frac{k}{3m_i}}=(0.623,...,1.47) [\sqrt{\frac{eV}{\r{A}^2u}}] = (61.21,...,144.42)  \cdot 10^{12} [\frac{1}{s}]
+\end{equation}
+\\ \\ \\
+$\nu_i = 100*10^{12} s^{-1}.$
+\\
+${E^b}_{i\rightarrow j}=0.1 eV$
+\\
+$K_B = 8.617333262 \cdot 10^{-5} eV/K$
+\\
+$T = 350K$
+\\
+$x_i = 0.7$
+\\
+$x_j = 0.3$
+\\
+$\mu_i = -3 eV$
+\\
+$\mu_j = -3.7 eV$
+\\ \\ \\
+\begin{equation}\nonumber
+k_BT = 0.03016 eV
+\end{equation}
+
+\begin{equation}\nonumber
+    -\frac{{E^b}_{i\rightarrow j}}{K_BT}=-3.31565
+\end{equation}
+
+\begin{equation}\nonumber
+    {\rm e}^{-\frac{{E^b}_{i\rightarrow j}}{K_BT}}=0.03631
+\end{equation}
+
+\begin{equation}\nonumber
+    \nu_i  \;{\rm e}^{-\frac{{E^b}_{i\rightarrow j}}{k_BT}}=4.35*10^{12} \; s^{-1}
+\end{equation}
+
+\begin{equation}\nonumber
+    x_j(1-x_i)=0.3·(1-0.7)=0.09
+\end{equation}
+
+\begin{equation} \nonumber
+   {\rm e}^{\frac{\mu_j-\mu_i}{2K_BT}} = {\rm e}^{\frac{-3.7 \; eV- (- 3) \; eV}{2*0.03016eV}}={\rm e}^{\frac{-0.7 \; eV}{0.06032 \; eV}}=9.12 \cdot 10^{-6}
+\end{equation}
+
+\begin{equation} \nonumber
+   x_j(1-x_i){\rm e}^{\frac{\mu_j-\mu_i}{2K_BT}} =0.09 \cdot 8.57 \cdot 10^{-6} = 8.21 \cdot 10^{-7}
+\end{equation}
+
+\begin{equation}\nonumber
+    x_i(1-x_j)=0.7 \cdot (1-0.3)=0.49
+\end{equation}
+
+\begin{equation} \nonumber
+   {\rm e}^{\frac{\mu_i-\mu_j}{2K_BT}} = {\rm e}^{\frac{-3eV- (- 3.7) \; eV}{2*0.03016 \; eV}}={\rm e}^{\frac{0.7 \; eV}{0.06032 \; eV}}=109619
+\end{equation}
+
+\begin{equation} \nonumber
+   x_i(1-x_j) {\rm e}^{\frac{\mu_i-\mu_j}{2K_BT}} =0.49 \cdot 109619=53713.31
+\end{equation}
+
+\begin{equation}\nonumber
+    \big[ x_j(1-x_i)\;{\rm e}^{\frac{\mu_j-\mu_i}{2K_BT}} - x_i(1-x_j)\;{\rm e}^{\frac{\mu_i-\mu_j}{2K_BT}} \big] = 8.21 \cdot 10^{-7} - 53713.31 = - 53713.31
+\end{equation}
+
+\begin{equation}
+    \frac{\partial x_i}{\partial t} = \sum_{j \in I_H,j \neq i}\nu_i  {\rm e}^{ -\frac{{E^b}_{i\rightarrow j}}{K_B T}} \big[ x_j(1-x_i)\;{\rm e}^{\frac{\mu_j-\mu_i}{2K_B T}} - x_i(1-x_j)\;{\rm e}^{\frac{\mu_i-\mu_j}{2K_B T}} \big]= 4.35 ^10^{12}\; s^{-1} \cdot (- 53713.31)=233652*10^{12} \; s^{-1}
+\end{equation}
+\\ \\ \\
+\textbf{NEW MASTER EQUATION}
+\\ \\
+\begin{equation}
+    \frac{\partial x_i}{\partial t}= \sum_{j \in I_H,j \neq i} \bigg( \nu_j{\rm e}^{-\beta {E}_{j\rightarrow i}} x_j(1-x_i)  - \nu_i{\rm e}^{-\beta {E}_{i\rightarrow j}} x_i(1-x_j) \bigg)
+\end{equation}
+\\ \\
+$\nu_i = 120 *10^{12}s^{-1}.$
+\\
+$\nu_j = 100*10^{12} s^{-1}.$
+\\
+${E}_{i\rightarrow j}=0.1 eV$
+\\
+${E}_{j\rightarrow i}=0.3 eV$
+\\
+$K_B = 8.617333262 \cdot 10^{-5} eV/K$
+\\
+$T = 350K$
+\\
+$x_i = 0.7$
+\\
+$x_j = 0.3$
+\\ \\
+\begin{equation}
+    \beta = \frac{1}{K_BT}=33.157 eV
+\end{equation}
+\\
+\begin{equation}
+\beta * {E}_{j\rightarrow i}=9.947
+\end{equation}
+\\
+\begin{equation}
+    {\rm e}^{-\beta {E}_{j\rightarrow i}} = {\rm e}^{-9.947}=4.78*10^{-5}
+\end{equation}
+\\
+\begin{equation}
+    \nu_j{\rm e}^{-\beta {E}_{j\rightarrow i}} x_j(1-x_i) =  100*10^{12}[s^{-1}]*4.78*10^{-5} * 0.3(1-0.7)=4.30*10^{8}[s^{-1}]
+\end{equation}
+\\
+\begin{equation}
+\beta * {E}_{i\rightarrow j}=3.3157
+\end{equation}
+\\
+\begin{equation}
+     {\rm e}^{-\beta {E}_{i\rightarrow j}} = {\rm e}^{-3.3157}=0.0363
+\end{equation}
+\\
+\begin{equation}
+    \nu_i{\rm e}^{-\beta {E}_{i\rightarrow j}} x_i(1-x_j) = 120*10^{12}[s^{-1}]*0.0363 * 0.7(1-0.3)=2.13*10^{12}[s^{-1}]
+\end{equation}
+\\
+\begin{equation}
+    \bigg( \nu_j{\rm e}^{-\beta {E}_{j\rightarrow i}} x_j(1-x_i)  - \nu_i{\rm e}^{-\beta {E}_{i\rightarrow j}} x_i(1-x_j) \bigg)=(4.30*10^{8}-2.13*10^{12})[s^{-1}]=-2.13*10^{12}(\frac{1}{s})
+\end{equation}
+\end{document}

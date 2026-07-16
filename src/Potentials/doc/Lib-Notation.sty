@@ -1,0 +1,136 @@
+\ProvidesPackage{Lib-Notation}
+
+\makeatletter
+\newcommand{\mfootnote}[1]{%
+  \ifmeasuring@
+    \chardef\@tempfn=\value{footnote}%
+    \! \footnotemark
+    \setcounter{footnote}{\@tempfn}%
+  \else
+    \iffirstchoice@
+      \! \footnote{#1}%
+    \fi
+  \fi}
+\makeatother
+
+% Math operators
+%\newcommand{\tens}[1]{\ensuremath{\mathbf{#1}}}
+%\newcommand{\Matrix}[1]{\ensuremath{\textbf{#1}}}
+%\newcommand\sym[1]{sym(#1)}
+%\newcommand\divergence[1]{div({#1})}
+%\newcommand\DIV[1]{DIV(#1)}
+%\newcommand\grad[1]{grad({#1})}
+%\newcommand\gradsym[1]{grad^s({#1})}
+%\newcommand\GRAD[1]{GRAD({#1})}
+%\newcommand\GRADn[1]{GRAD_n({#1})}
+%\newcommand{\norm}[1]{\left\Vert#1\right\Vert}
+
+\newcommand{\tens}[1]{\ensuremath{\mathbf{#1}}}
+\newcommand{\Matrix}[1]{\ensuremath{\textbf{#1}}}
+\newcommand\trace[1]{tr(#1)}
+\newcommand\determinant[1]{det(#1)}
+\newcommand\sym[1]{sym(#1)}
+\newcommand\skewsym[1]{skew(#1)}
+\newcommand\DIVERGENCE[1]{\nabla_{0}\cdot{#1}}
+\newcommand\divergence[1]{\nabla\cdot{#1}}
+\newcommand\grad[1]{\nabla{#1}}
+\newcommand\gradsym[1]{sym(\nabla{#1})}
+\newcommand\GRAD[1]{\nabla_{0}{#1}}
+\newcommand\GRADn[1]{\nabla_{n}{#1}}
+\newcommand\gradnI[1]{\nabla_{n+1}{#1}}
+\newcommand\gradStar[1]{\nabla_{*}{#1}}
+\newcommand{\norm}[1]{\| #1 \|}
+
+% Integral
+\newcommand{\integral}[2]{
+ \IfStrEqCase{#1}{
+    {2}{\ensuremath{\int_{\Gamma_{\sigma}}{#2}\ dA}}
+    {3}{\ensuremath{\int_{\mathcal{B}}{#2}\ dV}}
+  }
+}
+
+\newcommand{\integralfracture}[1]{\ensuremath{\int_{\mathcal{B} \setminus C}{#1}\ dA}}
+
+\newcommand{\INTEGRAL}[2]{
+  \IfStrEqCase{#1}{
+    {2}{\ensuremath{\int_{\Gamma_{\sigma}}{#2}\ d\Gamma}}
+    {3}{\ensuremath{\int_{\mathcal{B}_0}{#2}\ dV}}
+  }
+}
+
+
+\newglossaryentry{metric-tensor}
+{
+  name={\ensuremath{\tens{I}}},
+  description={Metric tensor}
+}
+
+\newglossaryentry{atomic-position}
+{
+  name={\ensuremath{\textbf{q}}},
+  description={Atomic position \ensuremath{\textbf{q} \in \mathcal{V}}}
+}
+
+\newglossaryentry{distance-vec}
+{
+  name={\ensuremath{\textbf{r}}},
+  description={Distance vector \ensuremath{\textbf{r} \in \mathcal{V}}}
+}
+
+\newglossaryentry{normalized-distance-vec}
+{
+  name={\ensuremath{\textbf{t}}},
+  description={Normalized distance vector \ensuremath{\textbf{t} \in \mathcal{V}^{*}}}
+}
+
+\newglossaryentry{molar-fraction}
+{
+  name={\ensuremath{n}},
+  description={Molar fraction}
+}
+
+\newglossaryentry{energy-density}
+{
+  name={\ensuremath{\rho}},
+  description={Energy density}
+}
+
+\newglossaryentry{D-energy-density}
+{
+  name={\ensuremath{\text{D}_{\textbf{r}}\bar{\rho}}},
+  description={Directional derivative of the energy density}
+}
+
+\newglossaryentry{embedding-energy}
+{
+  name={\ensuremath{\mathcal{F}}},
+  description={Embedding energy}
+}
+
+
+\newglossaryentry{D-embedding-energy-i}
+{
+  name={\ensuremath{\frac{d\mathcal{F}_i}{d \bar{\rho}_i}}},
+  description={Derivative of the embedding energy}
+}
+
+\newglossaryentry{pair-energy}
+{
+  name={\ensuremath{\phi}},
+  description={Pair energy}
+}
+
+\newglossaryentry{di-distortion}
+{
+  name={\ensuremath{\boldsymbol{\mu}}},
+  description={Dipole distortion \ensuremath{\mu \in \mathbb{R}^{dim}}}
+}
+
+\newglossaryentry{quadru-distortion}
+{
+  name={\ensuremath{\boldsymbol{\lambda}}},
+  description={Quadrupole distortion \ensuremath{\lambda \in \mathbb{R}^{dim} \times \mathbb{R}^{dim}}}
+}
+
+
+\newacronym{adp}{ADP}{Angular Dependant Potential}

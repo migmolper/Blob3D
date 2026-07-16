@@ -1,5 +1,30 @@
-# Prerequisites
-*.d
+# Ignore exe file
+exe-tasting-SOLERA
+tasting-SOLERA*
+core.*
+
+# Ignore configure 
+configure.sh
+run-test.sh
+CMakeLists.txt  
+
+# Ignore DS_Store file
+**/.DS_Store
+
+# Ignore documentation files
+*.js
+
+# Ignore Logs
+logs
+*.log
+
+# Ignore .vtk files
+*.vtk
+*.vtp
+*.vtu
+
+# Ignore .m files
+*.m
 
 # Compiled Object files
 *.slo
@@ -7,63 +32,70 @@
 *.o
 *.obj
 
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-*.so.*
-
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
+# Compile tex obj
+*.toc
+*.glo
+*.ist
 *.out
-*.app
+*.err
+*.ist
+*.aux
+*.bbl
+*.blg
+*.pdf
+*.synctex.gz  
+*.fls
+*.fdb_latexmk
 
-# Build directories
-build/
-Build/
-build-*/
+# Ignore the content of some directories
 
-# CMake generated files
-CMakeFiles/
-CMakeCache.txt
-cmake_install.cmake
-Makefile
-install_manifest.txt
-compile_commands.json
+/build
+/build-asan
+/coverage
+/docs/*
+!/docs/*.md
 
-# Temporary files
-*.tmp
-*.log
-*.bak
-*.swp
+/test/configure.sh
+/test/run.sh
+/test/build
+/test/Potentials/outputs
+/test/Atoms/outputs
+/test/Kinetics/outputs
+/test/IO/outputs
+/test/Mesh/outputs
+/test/Mechanical-eqs/min-F0/outputs
+/test/Mechanical-eqs/min-V/outputs
+/test/Periodic-Boundary/outputs
 
-# vcpkg
-vcpkg_installed/
+/examples/Nanowire-thermal-expansion/build
+/examples/Nanowire-thermal-expansion/outputs
+/examples/Nanowire-thermal-expansion/exe
 
-# debug information files
-*.dwo
+/examples/Nanowire-set-chempotential/build
+/examples/Nanowire-set-chempotential/outputs
+/examples/Nanowire-set-chempotential/exe
 
-# test output & cache
-Testing/
-.cache/
+/examples/Spataru-diffusion/build
+/examples/Spataru-diffusion/outputs
+/examples/Spataru-diffusion/exe
+
+/examples/Bulk-Modulus/build
+/examples/Bulk-Modulus/outputs
+/examples/Bulk-Modulus/exe
+
+# Test enviroment for istorage
+/test/istorage/build
+/test/istorage/exe-tasting-SOLERA
+
+# Test enviroment for hercules
+/test/hercules/build 
+/test/hercules/exe-tasting-SOLERA
+
+# The file containing environment variables 
+.env    
+.cache
+
+# Ignore IDE specific files
+.idea/
+.vscode/
+*.sw*
