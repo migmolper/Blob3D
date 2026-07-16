@@ -1,5 +1,5 @@
 /**
- * @file Atoms/Atom.cpp
+ * @file Blobs/Blobs.cpp
  * @author your name (you@domain.com)
  * @brief
  * @version 0.1
@@ -17,7 +17,7 @@
 #ifdef USE_MPI
 #include <mpi.h>
 #endif
-#include "Atoms/Atom.hpp"
+#include "Blobs/Blobs.hpp"
 #include "Macros.hpp"
 #include "Mesh/Boundary-Conditions.hpp"
 #include "Mesh/Create-Mesh.hpp"
@@ -575,7 +575,6 @@ PetscErrorCode init_Blob_simulation(DMD* Simulation,               //!
   Simulation->Temperature_env = 0.0;
   Simulation->ChemicalPotential_env = 0.0;
   Simulation->Pressure_env = 0.0;
-  Simulation->F = Eigen::Matrix3d::Identity();
   Simulation->atomistic_data = atomistic_data;
   Simulation->dump2petsc_mapping = dump2petsc_mapping;
 

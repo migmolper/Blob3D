@@ -39,7 +39,7 @@ static PetscErrorCode evaluate_meassure(Vec rho,                             //!
                                         const Vec q_k1,                      //!
                                         const Vec beta_k1,                   //!
                                         const Vec mass,                      //!
-                                        const AtomTopology* atom_topology);  //!
+                                        const ParticleTopology* atom_topology);  //!
 
 static PetscErrorCode evaluate_F(PetscScalar* JKO_system,             //!
                                  PetscScalar Delta_t,                 //!
@@ -49,7 +49,7 @@ static PetscErrorCode evaluate_F(PetscScalar* JKO_system,             //!
                                  const Vec beta_k1,                   //!
                                  const Vec beta_k,                    //!
                                  const Vec mass,                      //!
-                                 const AtomTopology* atom_topology);  //!
+                                 const ParticleTopology* atom_topology);  //!
 
 static PetscErrorCode evaluate_D_F_Dq(Vec D_JKO_Dq,                        //!
                                       PetscScalar Delta_t,                 //!
@@ -58,13 +58,13 @@ static PetscErrorCode evaluate_D_F_Dq(Vec D_JKO_Dq,                        //!
                                       const Vec x_k,                       //!
                                       const Vec beta_k1,                   //!
                                       const Vec mass,                      //!
-                                      const AtomTopology* atom_topology);  //!
+                                      const ParticleTopology* atom_topology);  //!
 
 /********************************************************************************/
 
-dmd_equations Advection_Diff_constructor() {
+governing_equations Advection_Diff_constructor() {
 
-  dmd_equations equations;
+  governing_equations equations;
 
   equations.evaluate_meassure_JKO = evaluate_meassure;
 
@@ -82,7 +82,7 @@ static PetscErrorCode evaluate_meassure(
     const Vec x_k1,                     //!
     const Vec beta_k1,                  //!
     const Vec mass,                     //!
-    const AtomTopology* atom_topology)  //!                        //!
+    const ParticleTopology* atom_topology)  //!                        //!
 {
   PetscFunctionBeginUser;
 
@@ -180,7 +180,7 @@ static PetscErrorCode evaluate_F(
     const Vec beta_k1,                  //!
     const Vec beta_k,                   //!
     const Vec mass,                     //!
-    const AtomTopology* atom_topology)  //!                        //!
+    const ParticleTopology* atom_topology)  //!                        //!
 {
   PetscFunctionBeginUser;
 
@@ -310,7 +310,7 @@ static PetscErrorCode evaluate_D_F_Dq(Vec D_JKO_Dq,                       //!
                                       const Vec x_k,                      //!
                                       const Vec beta_k1,                  //!
                                       const Vec mass,                     //!
-                                      const AtomTopology* atom_topology)  //!
+                                      const ParticleTopology* atom_topology)  //!
 
 {
   PetscFunctionBeginUser;

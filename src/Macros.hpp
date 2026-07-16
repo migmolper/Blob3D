@@ -50,148 +50,6 @@ typedef Eigen::Matrix<int, 1, Eigen::Dynamic> List1D;
 typedef Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
     List2D;
 
-/**
- * @brief Create dictionary for the species
- *
- */
-enum AtomicSpecie {
-  //! @param Rigid: Rigid body
-  Rigid,
-  //! @param H: Hydrogen, Z: 1.0079
-  H,
-  //! @param He: Helium, Z: 4.0026
-  He,
-  Li,
-  Be,
-  B,
-  C,
-  N,
-  O,
-  F,
-  Ne,
-  Na,
-  //! @param Mg: Magnesium, Z: 24.305
-  Mg,
-  //! @param Al: Aluminium, Z: 26.981
-  Al,
-  Si,
-  P,
-  S,
-  Cl,
-  Ar,
-  K,
-  Ca,
-  Sc,
-  Ti,
-  V,
-  Cr,
-  Mn,
-  Fe,
-  Co,
-  Ni,
-  //! @param Cu: Copper, Z: 63,546
-  Cu,
-  Zn,
-  Ga,
-  Ge,
-  As,
-  Se,
-  Br,
-  Kr,
-  Rb,
-  Sr,
-  Y,
-  Zr,
-  Nb,
-  Mo,
-  Tc,
-  Ru,
-  Rh,
-  Pd,
-  Ag,
-  Cd,
-  In,
-  Sn,
-  Sb,
-  Te,
-  I,
-  Xe,
-  Cs,
-  Ba,
-  La,
-  Ce,
-  Pr,
-  Nd,
-  Pm,
-  Sm,
-  Eu,
-  Gd,
-  Tb,
-  Dy,
-  Ho,
-  Er,
-  Tm,
-  Yb,
-  Lu,
-  Hf,
-  Ta,
-  //! @param W: Wolfram (Tungsten), Z: 183.84
-  W,
-  Re,
-  Os,
-  Ir,
-  Pt,
-  Au,
-  Hg,
-  Tl,
-  Pb,
-  Bi,
-  Po,
-  At,
-  Rn,
-  Fr,
-  Ra,
-  Ac,
-  Th,
-  Pa,
-  U,
-  Np,
-  Pu,
-  Am,
-  Cm,
-  Bk,
-  Cf,
-  Es,
-  Fm,
-  Md,
-  No,
-  Lr,
-  Rf,
-  Db,
-  Sg,
-  Bh,
-  Hs,
-  Mt,
-  Ds,
-  Rg
-};
-
-/*******************************************************/
-
-enum species_combinations {
-  HH,
-  AlAl,
-  CuCu,
-  FeFe,
-  MgMg,
-  FeH,
-  HFe,
-  MgH,
-  HMg,
-  AlCu,
-  CuAl
-};
-
 /*******************************************************/
 
 /**
@@ -270,62 +128,7 @@ typedef struct {
 
   const PetscInt* list;
 
-} AtomTopology;
-
-/*******************************************************/
-
-/**
- * @brief This structures defines a function and its derivatives
- *
- */
-typedef struct {
-
-  /*! @param F: Integrand */
-  void (*F)(double* F, const double* xi, const double* q,
-            const AtomicSpecie* spc);
-
-  /*! @param dF_dq: Gradient of the function (analytical) */
-  void (*dF_dq)(int direction, double* dF_dq, const double* xi, const double* q,
-                const AtomicSpecie* spc);
-
-  /*! @param d2F_dq2: Hessian of the function (analytical) */
-  void (*d2F_dq2)(int direction, double* d2F_dq2, const double* xi,
-                  const double* q, const AtomicSpecie* spc);
-
-  /*! @param dF_dq_FD: Gradient of the function (numerical) */
-  void (*dF_dq_FD)(int direction, double* dF_dq, const double* xi,
-                   const double* q, const AtomicSpecie* spc);
-
-  /*! @param d2F_dq2_FD: Hessian of the function (numerical) */
-  void (*d2F_dq2_FD)(int direction, double* d2F_dq2, const double* xi,
-                     const double* q, const AtomicSpecie* spc);
-
-  /*! @param dF_dn: Gradient of the function with respect the occupancy */
-  void (*dF_dn)(int direction, double* dF_dn, const double* xi, const double* q,
-                const AtomicSpecie* spc);
-
-} potential_function;
-
-/*******************************************************/
-
-/**
- * @brief Nonuniform cubic splines with n intervals
- *
- */
-typedef struct CubicSpline {
-  double dx;
-  int n;
-  double* x;
-  double* a;
-  double* b;
-  double* c;
-  double* d;
-  double* db;
-  double* dc;
-  double* dd;
-  double* ddc;
-  double* ddd;
-} CubicSpline;
+} ParticleTopology;
 
 /*******************************************************/
 
@@ -333,10 +136,6 @@ typedef struct dump_file {
 
   /** @param n_atoms Number of atoms */
   int n_atoms;
-
-  /** @param specie: Integer which defines the atomic specie
-   */
-  AtomicSpecie* specie;
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Box bounds
@@ -384,174 +183,6 @@ typedef struct dump_file {
 
 } dump_file;
 
-/*******************************************************/
-
-/**
- * @brief  Ising model type
- *
- */
-enum class IsingModelType {
-  LatticeGas,  //!< Lattice gas model (interestitial)
-  BinaryAlloy  //!< Binary alloy model (substitutional)
-};
-
-/*******************************************************/
-
-/**
- * @brief Structure which contains the necessary information to evaluate the
- * ADP interatomic potential
- *
- */
-typedef struct adpPotential {
-
-  /**
-   * @brief
-   *
-   */
-  int n_embed;
-
-  int n_rho;
-  int n_pair;
-  int n_u;
-  int n_w;
-
-  /**
-   * @brief Evaluation of the embedded energy
-   *
-   */
-  CubicSpline embed;
-
-  /**
-   * @brief Evaluation of the density function
-   *
-   */
-  CubicSpline rho;
-
-  /**
-   * @brief
-   *
-   */
-  CubicSpline pair;
-  CubicSpline u;
-  CubicSpline w;
-
-  /**
-   * @brief Mass of the specie
-   *
-   */
-  double mass;
-  double radius;
-  double factor;
-
-  /**
-   * @brief Cut-off radious for the specie
-   *
-   */
-  double r_cutoff;
-
-} adpPotential;
-
-/********************************************************************************/
-
-/**
- * @brief Structure which contains the necessary information to evaluate the
- * EAM interatomic potential
- *
- */
-typedef struct eamPotential {
-
-  /**
-   * @brief
-   *
-   */
-  int n_embed;
-
-  int n_rho;
-  int n_pair;
-
-  /**
-   * @brief Evaluation of the embedded energy
-   *
-   */
-  CubicSpline embed;
-
-  /**
-   * @brief Evaluation of the density function
-   *
-   */
-  CubicSpline rho;
-
-  /**
-   * @brief
-   *
-   */
-  CubicSpline pair;
-
-  /**
-   * @brief Mass of the specie
-   *
-   */
-  double mass;
-  double radius;
-  double factor;
-
-  /**
-   * @brief Cut-off radious for the specie
-   *
-   */
-  double r_cutoff;
-
-} eamPotential;
-
-/********************************************************************************/
-
-/**
- * @brief Class which contains the necessary information to evaluate the
- * indenter potential.
- * \f[
- *  U = \varepsilon \left( \frac{\sigma}{r} \right)^{12}
- * \f]
- */
-class indenterPotential {
-
- private:
-  double sigma;     //!< Repulsive potential strength
-  double epsilon;   //!< Repulsive potential depth
-  double r_cutoff;  //!< Repulsive potential cutoff
-
-  void dV_indenter_ij_dq(double* dV_dq, const double* n, const double* q,
-                         const AtomicSpecie* spc) const;
-
- public:
-  indenterPotential();
-
-  /**
-   * @brief Initialize the indenter potential parameters.
-   * @param sigma: Repulsive potential strength (nullptr uses default).
-   * @param epsilon: Repulsive potential depth (nullptr uses default).
-   * @param r_cutoff: Repulsive potential cutoff (nullptr uses default).
-   */
-  PetscErrorCode init(const double* sigma = nullptr,
-                      const double* epsilon = nullptr,
-                      const double* r_cutoff = nullptr);
-
-  /**
-   * @brief Evaluate the gradient of the indenter potential with respect to the
-   * mean atomic positions
-   * @param RHS: Residual / force vector (mean-q block), updated in place.
-   * @param mean_q: Mean atomic positions (ghosted).
-   * @param xi: Site occupancies (ghosted).
-   * @param specie_ptr: Local species array (ghosted layout).
-   * @param atom_topology: Neighbour lists.
-   * @return PetscErrorCode PETSC_SUCCESS if successful, PETSC_ERR_OTHER if
-   * error.
-   */
-  PetscErrorCode evaluate_dV_indenter_dmq(Vec RHS, const Vec mean_q,
-                                          const Vec xi,
-                                          const AtomicSpecie* specie_ptr,
-                                          const AtomTopology* atom_topology) const;
-};
-
 /********************************************************************************/
 
 
@@ -566,9 +197,6 @@ class indenterPotential {
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !*/
   //! @param Variable: with the atomistic data
   DM atomistic_data;
-
-  //! @param IsingModel: Ising model (interstitial or subtitutional)
-  IsingModelType IsingModel;
 
   //! @param n_sites_global: Number of atoms in the global domain
   PetscInt n_sites_global;
@@ -592,62 +220,11 @@ class indenterPotential {
   //! ({mu}). {mu} = {gamma}/{beta}
   double ChemicalPotential_env;
 
-  //! @param MolarFraction_env: Enviromental value of the chemical potential
-  //! ({mu}). {mu} = {gamma}/{beta}
-  double MolarFraction_env;
-
-  /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    @brief Transition state variables
-  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !*/
-  //! @param Interstitial
-  double particle_mass_I;
-
-  //! @param Subtitutional
-  double particle_mass_A;
-  double particle_mass_B;
-
-  //! @param
-  double max_diffusion_lenght;
-
-  //! @param
-  double Eb;
-
   /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    @brief Topological variables of each site
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !*/
   /** @param neigh: Local indices of I atoms (we only need for the cell) */
   IS* mechanical_neighs_idx;
-
-  /** @param diffusive_neighs_idx: Table with the list of neighbors-idx of
-   * each diffusive site */
-  IS* diffusive_neighs_idx;
-
-  /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    @brief Topological variables for the themo-mechanical equations
-  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !*/
-  /** @param n_mechanical_sites_local: Number of mechanical sites (local) */
-  PetscInt n_mechanical_sites_local;
-
-  /** @param n_mechanical_sites_ghost: Number of mechanical ghost sites */
-  PetscInt n_mechanical_sites_ghost;
-
-  /** @param active_mech_sites: List with the active mechanical sites */
-  IS active_mech_sites;
-
-  /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    @brief Topological variables for the chemical equation
-  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !*/
-  /** @param n_active_diff_sites_local: Number of active diffusive sites (local)
-   */
-  PetscInt n_active_diff_sites_local;
-
-  /** @param n_active_diff_sites_ghost: Number of active diffusive ghost sites
-   */
-  PetscInt n_active_diff_sites_ghost;
-
-  /** @param active_diff_sites: List with the active diffusive sites using local
-   * numbering */
-  IS active_diff_sites;
 
   /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     @brief Miscelaneous variables
@@ -656,17 +233,10 @@ class indenterPotential {
    * from the .dump prdering and petsc ordering */
   AO dump2petsc_mapping;
 
-  /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    @brief Indenter potential
-  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !*/
-  //! @param V_indenter: Indenter potential
-  indenterPotential V_indenter;
-
 } DMD;
 
 /*******************************************************/
 
-/*******************************************************/
 
 /**
  * @brief Structure which contains the necessary information to evaluate the
@@ -693,386 +263,7 @@ typedef struct DiffusivePotential {
  * equilibrium equation
  *
  */
-typedef struct dmd_equations {
-
-  /**
-   * @brief Evaluate the local density of the system
-   *
-   * @param mean_q:Mean value of q
-   * @param xi Molar fraction
-   * @param specie Atomic specie
-   * @param atom_topology_i List of neighs
-   * @return rho
-   */
-  PetscErrorCode (*evaluate_rho)(Vec rho,                             //!
-                                 const Vec mean_q,                    //!
-                                 const Vec xi,                        //!
-                                 const AtomicSpecie* specie_ptr,      //!
-                                 const AtomTopology* atom_topology);  //!
-
-  /**
-   * @brief Evaluate the local potential of the system
-   * @param mean_q Mean position (\f$\bar{\mathbf{q}}\f$) of the atomic
-   * positions in the updated configuration
-   * @param xi Molar fraction
-   * @param rho Local density of the system
-   * @param specie_ptr Information of the atomic species
-   * @param atom_topology Topology information of the atoms
-   * @return V_system Total potential of the system
-   */
-  PetscErrorCode (*evaluate_internal_energy)(
-      PetscScalar* V_system,               //!
-      const Vec mean_q,                    //!
-      const Vec xi,                        //!
-      const Vec rho,                       //!
-      const AtomicSpecie* specie_ptr,      //!
-      const AtomTopology* atom_topology);  //!
-
-  /**
-   * @brief Compute \f$\frac{\partial V}{\partial \mathbf{q}_{i^*}}\f$:
-   * \f[
-   *  \frac{\partial V}{\partial
-   * \mathbf{q}_{i^*}}\ =\ \frac{\partial}{\partial \mathbf{q}_{i^*}} \sum_i
-   * V_i \f] Derivative of the total potential with respect the site
-   * position
-   * @param mean_q Position (\f$\mathbf{q}\f$) of the atomic
-   * positions in the updated configuration
-   * @param xi Molar fraction
-   * @param rho Local density of the system
-   * @param specie_ptr Information of the atomic species
-   * @param atom_topology Topology information of the atoms
-   * @return RHS Vector with the derivative of the potential
-   */
-  PetscErrorCode (*evaluate_dV_dq)(Vec RHS,                             //!
-                                   const Vec mean_q,                    //!
-                                   const Vec xi,                        //!
-                                   const Vec rho,                       //!
-                                   const AtomicSpecie* specie_ptr,      //!
-                                   const AtomTopology* atom_topology);  //!
-
-  /**
-   * @brief Compute \f$\frac{\partial^2 V}{\partial \mathbf{q}_{i^*}^2}\f$:
-   * \f[
-   *  \frac{\partial^2 V}{\partial
-   * \mathbf{q}_{i^*}^2}\ =\ \frac{\partial}{\partial \mathbf{q}_{i^*}} \sum_i
-   * \frac{\partial V_i}{\partial \mathbf{q}_{i^*}} \f]
-   * Derivative of the total potential with respect the site position
-   * @param mean_q Position (\f$\mathbf{q}\f$) of the atomic
-   * positions in the updated configuration
-   * @param xi Molar fraction
-   * @param rho Local density of the system
-   * @param specie_ptr Information of the atomic species
-   * @param atom_topology Topology information of the atoms
-   * @return Jac Jacobian matrix with the second derivative of the potential
-   */
-  PetscErrorCode (*evaluate_d2V_dq_ii)(Mat Jac,                             //!
-                                       const Vec mean_q,                    //!
-                                       const Vec xi,                        //!
-                                       const Vec rho,                       //!
-                                       const AtomicSpecie* specie_ptr,      //!
-                                       const AtomTopology* atom_topology);  //!
-
-  /**
-   * @brief Compute the standard desviation of the position at each site using a
-   * quasi-harmonic approximation of the thermalized potential
-   * @param mean_q Position (\f$\mathbf{q}\f$) of the atomic
-   * positions in the updated configuration
-   * @param xi Molar fraction
-   * @param rho Local density of the system
-   * @param beta Lagrange multiplier (thermal)
-   * @param specie_ptr Information of the atomic species
-   * @param atom_topology Topology information of the atoms
-   * @return stdv_q Standard deviation of the site position
-   */
-  PetscErrorCode (*evaluate_qh_stdv_q)(Vec stdv_q,                          //!
-                                       const Vec mean_q,                    //!
-                                       const Vec xi,                        //!
-                                       const Vec rho,                       //!
-                                       const Vec beta,                      //!
-                                       const AtomicSpecie* specie_ptr,      //!
-                                       const AtomTopology* atom_topology);  //!
-
-  /**
-   * @brief Compute the derivative of the potential functional with respect
-   * the right stretch tensor:
-   * \f[
-   * \frac{\partial V}{\partial \mathbf{F}}
-   * \f]
-   * @param mean_q_ref Position (\f$\mathbf{q}_0\f$) of the atomic
-   * positions in the reference configuration
-   * @param mean_q Position (\f$\mathbf{q}\f$) of the atomic
-   * positions in the updated configuration
-   * @param xi Molar fraction
-   * @param rho Local density of the system
-   * @param specie_ptr Information of the atomic species
-   * @param atom_topology Topology information of the atoms
-   * @return RHS Vector with the derivative of the potential with respect to F
-   */
-  PetscErrorCode (*evaluate_dV_dF)(Vec RHS,                             //!
-                                   const Vec mean_q_ref,                //!
-                                   const Vec mean_q,                    //!
-                                   const Vec xi,                        //!
-                                   const Vec rho,                       //!
-                                   const AtomicSpecie* specie_ptr,      //!
-                                   const AtomTopology* atom_topology);  //!
-
-  /**
-   * @brief Evaluate the meanfield local density of the system
-   * * @param mean_q:Mean value of q
-   * @param stdv_q Standard desviation of q
-   * @param xi Molar fraction
-   * @param specie_ptr Information of the atomic species
-   * @param atom_topology Topology information of the atoms
-   * @return rho
-   */
-  PetscErrorCode (*evaluate_mf_rho)(Vec mf_rho,                          //!
-                                    const Vec mean_q,                    //!
-                                    const Vec stdv_q,                    //!
-                                    const Vec xi,                        //!
-                                    const AtomicSpecie* specie_ptr,      //!
-                                    const AtomTopology* atom_topology);  //!
-
-  /** @brief Total thermalized potential of the system
-   * @param V0_system Total meanfield potential of the system
-   * @param mean_q Mean value of q
-   * @param stdv_q Standard desviation of q
-   * @param xi Molar fraction
-   * @param mf_rho Meanfield energy density
-   * @param specie_ptr Information of the atomic species
-   * @param atom_topology Topology information of the atoms
-   * @return V0_system Total meanfield potential of the system
-   */
-  PetscErrorCode (*evaluate_mf_internal_energy)(
-      PetscScalar* V0_system,              //!
-      const Vec mean_q,                    //!
-      const Vec stdv_q,                    //!
-      const Vec xi,                        //!
-      const Vec mf_rho,                    //!
-      const AtomicSpecie* specie_ptr,      //!
-      const AtomTopology* atom_topology);  //!
-
-  /** @brief Evaluate the stress tensor of the system
-   * @param Stress Stress tensor of the system
-   * @param mean_q Mean value of q
-   * @param stdv_q Standard desviation of q
-   * @param xi Molar fraction
-   * @param beta Lagrange multiplier (thermal)
-   * @param mf_rho Meanfield energy density
-   * @param specie_ptr Information of the atomic species
-   * @param atom_topology Topology information of the atoms
-   * @return Stress Stress tensor of the system
-   */
-  PetscErrorCode (*evaluate_virial_stress)(
-      Vec Stress,                          //!
-      const Vec mean_q,                    //!
-      const Vec stdv_q,                    //!
-      const Vec xi,                        //!
-      const Vec mf_rho,                    //!
-      const AtomicSpecie* specie_ptr,      //!
-      const AtomTopology* atom_topology);  //!
-
-  /**
-   * @brief Evaluate the meanfield entropy of the system
-   * @param S0_system Meanfield entropy of the system
-   * @param mean_q Mean value of q
-   * @param stdv_q Standard desviation of q
-   * @param xi Molar fraction
-   * @param beta Lagrange multiplier (thermal)
-   * @param gamma Lagrange multiplier (chemical)
-   * @param specie_ptr Information of the atomic species
-   * @return S0_system Meanfield entropy of the system
-   */
-  PetscErrorCode (*evaluate_entropy)(PetscScalar* S0_system,           //!
-                                     const Vec mean_q,                 //!
-                                     const Vec stdv_q,                 //!
-                                     const Vec xi,                     //!
-                                     const Vec beta,                   //!
-                                     const Vec gamma,                  //!
-                                     const AtomicSpecie* specie_ptr);  //!
-
-  /***
-   * @brief Compute the derivatives of the thermalised functional with respect
-   * the mean position of each atomis site i:
-   *
-   * \f[
-   *    \frac{\partial V_0}{\partial \bar{\mathbf{q}}_i}
-   * \f]
-   *
-   * @param RHS: Right-hand side of the derivative
-   * @param mean_q: Mean value of q
-   * @param stdv_q: Standard desviation of q
-   * @param xi: Molar fraction
-   * @param beta: Lagrange multiplier (thermal)
-   * @param mf_rho: Meanfield energy density
-   * @param specie_ptr: Information of the atomic species
-   * @param atom_topology: Topology information of the atoms
-   * @return RHS Vector with the derivative of the potential
-   */
-  PetscErrorCode (*evaluate_dL0_dmq)(Vec RHS,                             //!
-                                     const Vec mean_q,                    //!
-                                     const Vec stdv_q,                    //!
-                                     const Vec xi,                        //!
-                                     const Vec beta,                      //!
-                                     const Vec mf_rho,                    //!
-                                     const AtomicSpecie* specie_ptr,      //!
-                                     const AtomTopology* atom_topology);  //!
-
-  /**
-   * @brief Compute the hessian of the potential with respect the mean position
-   * of the site positions.
-   *
-   * \f[
-   *    \frac{\partial^2 V_0}{\partial \bar{\mathbf{q}}_i^2}
-   * \f]
-   *
-   * @param Jac: Jacobian matrix of the derivative
-   * @param mean_q: Mean value of q
-   * @param stdv_q: Standard desviation of q
-   * @param xi: Molar fraction
-   * @param mf_rho: Meanfield energy density
-   * @param beta: Lagrange multiplier (thermal)
-   * @param specie_ptr: Information of the atomic species
-   * @param atom_topology: Topology information of the atoms
-   * @return Jac Vector with the derivative of the potential
-   */
-  PetscErrorCode (*evaluate_d2L0_dmq_ii)(
-      Mat Jac,                             //!
-      const Vec mean_q,                    //!
-      const Vec stdv_q,                    //!
-      const Vec xi,                        //!
-      const Vec mf_rho,                    //!
-      const Vec beta,                      //!
-      const AtomicSpecie* specie_ptr,      //!
-      const AtomTopology* atom_topology);  //!
-
-  /**
-   * @brief Compute the derivatives of the free-entropy functional with respect
-   the standard desviation of each atomis site i:
-   *
-   \f[
-    \frac{\partial V_0}{\partial \sigma_i}
-   \f]
-   * @param RHS: Right-hand side of the derivative
-   * @param mean_q: Mean value of q
-   * @param stdv_q: Standard desviation of q
-   * @param xi: Molar fraction
-   * @param beta: Lagrange multiplier (thermal)
-   * @param mf_rho: Meanfield energy density
-   * @param specie_ptr: Information of the atomic species
-   * @param atom_topology: Topology information of the atoms
-   * @return RHS Vector with the derivative of the potential
-   */
-  PetscErrorCode (*evaluate_dL0_dsq)(Vec RHS,                             //!
-                                     const Vec mean_q,                    //!
-                                     const Vec stdv_q,                    //!
-                                     const Vec xi,                        //!
-                                     const Vec beta,                      //!
-                                     const Vec mf_rho,                    //!
-                                     const AtomicSpecie* specie_ptr,      //!
-                                     const AtomTopology* atom_topology);  //!
-
-  /**
-   * @brief Compute the derivatives of the free-entropy functional with respect
-   * the mean and standard desviation of the position at the atomic site i:
-   *
-   * \f[
-   *    \frac{\partial V_0}{\partial \bar{\mathbf{q}}_i} \\
-   *    \frac{\partial V_0}{\partial \sigma_i}
-   * \f]
-   * @param RHS_mean_q: Right-hand side of the derivative with respect the mean
-   * position
-   * @param RHS_stdv_q: Right-hand side of the derivative with respect the
-   * standard desviation
-   * @param mean_q: Mean value of q
-   * @param stdv_q: Standard desviation of q
-   * @param xi: Molar fraction
-   * @param beta: Lagrange multiplier (thermal)
-   * @param mf_rho: Meanfield energy density
-   * @param specie_ptr: Information of the atomic species
-   * @param atom_topology: Topology information of the atoms
-   * @return RHS_mean_q Vector with the derivative of the potential with respect
-   * to the mean position
-   * @return RHS_stdv_q Vector with the derivative of the potential with respect
-   * to the standard desviation
-   */
-  PetscErrorCode (*evaluate_dL0_dmq_dsq)(
-      Vec RHS_mean_q,                      //!
-      Vec RHS_stdv_q,                      //!
-      const Vec mean_q,                    //!
-      const Vec stdv_q,                    //!
-      const Vec xi,                        //!
-      const Vec beta,                      //!
-      const Vec mf_rho,                    //!
-      const AtomicSpecie* specie_ptr,      //!
-      const AtomTopology* atom_topology);  //!
-
-  /**
-   * @brief Compute the derivatives of the free-entropy functional with respect
-   * the deformation gradient:
-   *
-   \f[
-    \frac{\partial V_0}{\partial \mathbf{F}}
-   \f]
-   * @param RHS: Right-hand side of the derivative
-   * @param mean_q: Mean value of q
-   * @param mean_q_ref: Mean value of q in the reference configuration
-   * @param stdv_q: Standard deviation of q
-   * @param xi: Molar fraction
-   * @param beta: Lagrange multiplier (thermal)
-   * @param mf_rho: Meanfield energy density
-   * @param specie_ptr: Information of the atomic species
-   * @param atom_topology: Topology information of the atoms
-   * @return RHS Vector with the derivative of the potential with respect to the
-   deformation gradient
-   */
-  PetscErrorCode (*evaluate_dL0_dF)(Vec RHS,
-                                    const Vec mean_q,                    //!
-                                    const Vec mean_q_ref,                //!
-                                    const Vec stdv_q,                    //!
-                                    const Vec xi,                        //!
-                                    const Vec beta,                      //!
-                                    const Vec mf_rho,                    //!
-                                    const AtomicSpecie* specie_ptr,      //!
-                                    const AtomTopology* atom_topology);  //!
-
-  /**
-   * @brief
-   *
-   */
-  PetscErrorCode (*evaluate_free_entropy)(
-      PetscScalar* free_S0_system,         //!
-      const Vec mean_q,                    //!
-      const Vec stdv_q,                    //!
-      const Vec xi,                        //!
-      const Vec mf_rho,                    //!
-      const Vec beta,                      //!
-      const Vec gamma,                     //!
-      const AtomicSpecie* specie_ptr,      //!
-      const AtomTopology* atom_topology);  //!
-
-  PetscErrorCode (*evaluate_dxdt)(Vec dxdt,                           //!
-                                  const Vec mean_q,                   //!
-                                  const Vec stdv_q,                   //!
-                                  const Vec xi,                       //!
-                                  const Vec xi_ref,                   //!
-                                  const Vec beta,                     //!
-                                  const Vec gamma,                    //!
-                                  const PetscInt* gamma_bcc_ptr,      //!
-                                  const PetscInt* idx_diff_ptr,       //!
-                                  const AtomTopology* atom_topology,  //!
-                                  double* particle_mass);             //!
-
-  PetscErrorCode (*evaluate_Jac_dxdt)(Mat Jac,                            //!
-                                      const Vec mean_q,                   //!
-                                      const Vec stdv_q,                   //!
-                                      const Vec xi,                       //!
-                                      const Vec xi_ref,                   //!
-                                      const Vec beta,                     //!
-                                      const Vec gamma,                    //!
-                                      const PetscInt* gamma_bcc_ptr,      //!
-                                      const PetscInt* idx_diff_ptr,       //!
-                                      const AtomTopology* atom_topology,  //!
-                                      double* particle_mass);             //!
+typedef struct governing_equations {
 
   /**
    * @brief Compute the discrete Jordan-Kinderlerhrer-Otto functional
@@ -1096,7 +287,7 @@ typedef struct dmd_equations {
       const Vec q_k1,                      //!
       const Vec beta_k1,                   //!
       const Vec mass,                      //!
-      const AtomTopology* atom_topology);  //!
+      const ParticleTopology* atom_topology);  //!
 
   /**
    * @brief Compute the discrete Jordan-Kinderlerhrer-Otto functional
@@ -1122,7 +313,7 @@ typedef struct dmd_equations {
                                  const Vec beta_k1,                   //!
                                  const Vec beta_k,                    //!
                                  const Vec mass,                      //!
-                                 const AtomTopology* atom_topology);  //!
+                                 const ParticleTopology* atom_topology);  //!
 
   /**
    * @brief Compute the discrete Jordan-Kinderlerhrer-Otto functional
@@ -1147,9 +338,9 @@ typedef struct dmd_equations {
       const Vec x_k,                       //!
       const Vec beta_k1,                   //!
       const Vec mass,                      //!
-      const AtomTopology* atom_topology);  //!                  //!
+      const ParticleTopology* atom_topology);  //!                  //!
 
-} dmd_equations;
+} governing_equations;
 
 /*******************************************************/
 
@@ -1207,7 +398,7 @@ typedef struct DMD_context {
 
   //  adpPotential V;
 
-  dmd_equations system_equations;
+  governing_equations system_equations;
 
   /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   @brief Enviroment thermo-chemo-mechanical variables

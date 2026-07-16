@@ -22,14 +22,35 @@
  * @param r_cutoff
  * @return PetscErrorCode
  */
-PetscErrorCode DMSwarmCreateNeighborsBlobs(DMD* Simulation, double r_cutoff);
+PetscErrorCode DMSwarmCreateNeighborsBlobs(DMD *Simulation, double r_cutoff);
 
 /**
- * @brief 
- * 
- * @param Simulation 
- * @return PetscErrorCode 
+ * @brief
+ *
+ * @param Simulation
+ * @return PetscErrorCode
  */
-PetscErrorCode DMSwarmDestroyNeighborsBlobs(DMD* Simulation);
+PetscErrorCode DMSwarmDestroyNeighborsBlobs(DMD *Simulation);
+
+/**
+ * @brief
+ *
+ * @param particle_topology
+ * @param mechanical_neighs_idx
+ * @return PetscErrorCode
+ */
+PetscErrorCode DMSwarmGetParticleNeighbors(ParticleTopology *particle_topology,
+                                           IS mechanical_neighs_idx);
+
+/**
+ * @brief
+ *
+ * @param particle_topology
+ * @param mechanical_neighs_idx
+ * @return PetscErrorCode
+ */
+PetscErrorCode
+DMSwarmRestoreParticleNeighbors(ParticleTopology *particle_topology,
+                                IS mechanical_neighs_idx);
 
 #endif /* NEIGHBORS_BLOBS_HPP */

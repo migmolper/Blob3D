@@ -21,10 +21,10 @@
 #ifdef USE_OPENMP
 #include <omp.h>
 #endif
-#include "Atoms/Atom.hpp"
-#include "Atoms/Ghosts.hpp"
-#include "Atoms/Neighbors.hpp"
-#include "Atoms/Topology.hpp"
+#include "Blobs/Blobs.hpp"
+#include "Blobs/Ghosts.hpp"
+#include "Blobs/Neighbors.hpp"
+#include "Blobs/Topology.hpp"
 #include "Macros.hpp"
 #include "Mesh/Boundary-Conditions.hpp"
 #include "petscdm.h"
@@ -32,7 +32,7 @@
 #include "petscdmlabel.h"
 #include <ctime>
 #include <fstream>
-#include <iomanip>  // to print more decimals
+#include <iomanip> // to print more decimals
 #include <iostream>
 #include <math.h>
 #include <petscksp.h>
@@ -49,10 +49,10 @@ extern double petsc_maxf;
 struct JKO_ctx {
 
   /** @param blob_topology: List of neighs */
-  const AtomTopology* blob_topology;
+  const ParticleTopology *blob_topology;
 
   /*! @param box_idx_ptr: */
-  const PetscInt* box_idx_ptr;
+  const PetscInt *box_idx_ptr;
 
   /*! @param X_k: Reference value standard desviation of the
    * position */
@@ -71,7 +71,7 @@ struct JKO_ctx {
   Vec mass;
 
   /*! @param system_equations Definition of the equation */
-  dmd_equations system_equations;
+  governing_equations system_equations;
 
   /*! @param Delta_t: Time-step */
   PetscScalar Delta_t;
@@ -80,21 +80,22 @@ struct JKO_ctx {
   DM background_mesh;
 };
 
-static PetscErrorCode Advection(PetscReal dt, DMD* Simulation,
-                                dmd_equations system_equations);
+static PetscErrorCode Advection(PetscReal dt, DMD *Simulation,
+                                governing_equations system_equations);
 
-static PetscErrorCode JKO_Diffusion(PetscReal dt, DMD* Simulation,
-                                    dmd_equations system_equations);
+static PetscErrorCode JKO_Diffusion(PetscReal dt, DMD *Simulation,
+                                    governing_equations system_equations);
 
-static PetscErrorCode compute_F0_and_RHS(Tao tao, Vec X_k1, PetscReal* F0,
-                                         Vec D_JKO_Dx, void* ctx);
+static PetscErrorCode compute_F0_and_RHS(Tao tao, Vec X_k1, PetscReal *F0,
+                                         Vec D_JKO_Dx, void *ctx);
 
-static PetscErrorCode compute_RHS(Tao tao, Vec X_k1, Vec D_JKO_Dx, void* ctx);
+static PetscErrorCode compute_RHS(Tao tao, Vec X_k1, Vec D_JKO_Dx, void *ctx);
 
 /************************************************************************/
 
-PetscErrorCode Mass_Trasport_Advection_Diffusion(
-    PetscReal dt, DMD* Simulation, dmd_equations system_equations) {
+PetscErrorCode
+Mass_Trasport_Advection_Diffusion(PetscReal dt, DMD *Simulation,
+                                  governing_equations system_equations) {
 
   PetscFunctionBeginUser;
 
@@ -108,7 +109,7 @@ PetscErrorCode Mass_Trasport_Advection_Diffusion(
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Source step: adjust the number of particles to account for sources
   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(regenerate_topology(Simulation, Delta_r, PETSC_TRUE, PETSC_FALSE));
+  PetscCall(DMSwarmRegenerateBlobsTopology(Simulation, Delta_r));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Unconstrained diffusion step: update the particle position
@@ -120,8 +121,8 @@ PetscErrorCode Mass_Trasport_Advection_Diffusion(
 
 /************************************************************************/
 
-static PetscErrorCode Advection(PetscReal dt, DMD* Simulation,
-                                dmd_equations system_equations) {
+static PetscErrorCode Advection(PetscReal dt, DMD *Simulation,
+                                governing_equations system_equations) {
 
   PetscFunctionBeginUser;
   unsigned int dim = NumberDimensions;
@@ -143,35 +144,35 @@ static PetscErrorCode Advection(PetscReal dt, DMD* Simulation,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get list of mechanical neighbors
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  IS* mechanical_neighs_idx = Simulation->mechanical_neighs_idx;
-  AtomTopology* blob_topology =
-      (AtomTopology*)malloc(n_sites_local_ghosted * sizeof(AtomTopology));
+  IS *mechanical_neighs_idx = Simulation->mechanical_neighs_idx;
+  ParticleTopology *blob_topology = (ParticleTopology *)malloc(
+      n_sites_local_ghosted * sizeof(ParticleTopology));
 
   for (PetscInt site_u = 0; site_u < n_sites_local_ghosted; site_u++) {
-    PetscCall(get_atom_neighbors(&blob_topology[site_u],
-                                 mechanical_neighs_idx[site_u]));
+    PetscCall(DMSwarmGetParticleNeighbors(&blob_topology[site_u],
+                                          mechanical_neighs_idx[site_u]));
   }
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Periodic box index
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscInt* box_idx_ptr;
+  PetscInt *box_idx_ptr;
   PetscCall(DMSwarmGetField(Simulation->atomistic_data, "box-idx", NULL, NULL,
-                            (void**)&box_idx_ptr));
+                            (void **)&box_idx_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Get index of the particles
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscInt* idx_q_ptr;
+  PetscInt *idx_q_ptr;
   PetscCall(DMSwarmGetField(Simulation->atomistic_data, "idx", NULL, NULL,
-                            (void**)&idx_q_ptr));
+                            (void **)&idx_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Get index for the ghost particles
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscInt n_dof_local = dim * n_sites_local;
   PetscInt n_dof_ghost = dim * n_sites_ghost;
-  PetscInt* idx_dof_ghost = (PetscInt*)malloc(n_dof_ghost * sizeof(PetscInt));
+  PetscInt *idx_dof_ghost = (PetscInt *)malloc(n_dof_ghost * sizeof(PetscInt));
   for (int i = 0; i < n_sites_ghost; i++) {
     for (int j = 0; j < dim; j++) {
       idx_dof_ghost[i * dim + j] = idx_q_ptr[n_sites_local + i] * dim + j;
@@ -187,23 +188,23 @@ static PetscErrorCode Advection(PetscReal dt, DMD* Simulation,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get mean position vector
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscScalar* mean_q_ptr;  //! Mean position pointer
+  PetscScalar *mean_q_ptr; //! Mean position pointer
   PetscCall(DMSwarmGetField(Simulation->atomistic_data, DMSwarmPICField_coor,
-                            NULL, NULL, (void**)&mean_q_ptr));
+                            NULL, NULL, (void **)&mean_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get momentum vector
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscScalar* mean_p_ptr;  //! Mean momentum pointer
+  PetscScalar *mean_p_ptr; //! Mean momentum pointer
   PetscCall(DMSwarmGetField(Simulation->atomistic_data, "mean-p", NULL, NULL,
-                            (void**)&mean_p_ptr));
+                            (void **)&mean_p_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get mass
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscScalar* mass_ptr;  //! Mass pointer
+  PetscScalar *mass_ptr; //! Mass pointer
   PetscCall(DMSwarmGetField(Simulation->atomistic_data, "mass", NULL, NULL,
-                            (void**)&mass_ptr));
+                            (void **)&mass_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Compute advection
@@ -219,7 +220,7 @@ static PetscErrorCode Advection(PetscReal dt, DMD* Simulation,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   Enforce periodic bcc and restore mean-q data
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  Vec X;  //! Mean position PETSc vector
+  Vec X; //! Mean position PETSc vector
   PetscCall(VecCreateGhostWithArray(PETSC_COMM_WORLD, n_dof_local,
                                     PETSC_DETERMINE, n_dof_ghost, idx_dof_ghost,
                                     mean_q_ptr, &X));
@@ -235,31 +236,31 @@ static PetscErrorCode Advection(PetscReal dt, DMD* Simulation,
   //! Copy the updated ghost values back to the mean_q array
   PetscCall(DMSwarmRestoreField(Simulation->atomistic_data,
                                 DMSwarmPICField_coor, NULL, NULL,
-                                (void**)&mean_q_ptr));
+                                (void **)&mean_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore mean-p data
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "mean-p", NULL,
-                                NULL, (void**)&mean_p_ptr));
+                                NULL, (void **)&mean_p_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   Restore mass data
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "mass", NULL, NULL,
-                                (void**)&mass_ptr));
+                                (void **)&mass_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore Periodic box index
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "box-idx", NULL,
-                                NULL, (void**)&box_idx_ptr));
+                                NULL, (void **)&box_idx_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore idx data
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "idx", NULL, NULL,
-                                (void**)&idx_q_ptr));
+                                (void **)&idx_q_ptr));
   free(idx_dof_ghost);
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -272,8 +273,8 @@ static PetscErrorCode Advection(PetscReal dt, DMD* Simulation,
 
 /************************************************************************/
 
-static PetscErrorCode JKO_Diffusion(PetscReal dt, DMD* Simulation,
-                                    dmd_equations system_equations) {
+static PetscErrorCode JKO_Diffusion(PetscReal dt, DMD *Simulation,
+                                    governing_equations system_equations) {
 
   PetscFunctionBeginUser;
 
@@ -296,35 +297,35 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, DMD* Simulation,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get list of mechanical neighbors
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  IS* mechanical_neighs_idx = Simulation->mechanical_neighs_idx;
-  AtomTopology* blob_topology =
-      (AtomTopology*)malloc(n_sites_local_ghosted * sizeof(AtomTopology));
+  IS *mechanical_neighs_idx = Simulation->mechanical_neighs_idx;
+  ParticleTopology *blob_topology = (ParticleTopology *)malloc(
+      n_sites_local_ghosted * sizeof(ParticleTopology));
 
   for (PetscInt site_u = 0; site_u < n_sites_local_ghosted; site_u++) {
-    PetscCall(get_atom_neighbors(&blob_topology[site_u],
-                                 mechanical_neighs_idx[site_u]));
+    PetscCall(DMSwarmGetParticleNeighbors(&blob_topology[site_u],
+                                          mechanical_neighs_idx[site_u]));
   }
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Periodic box index
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscInt* box_idx_ptr;
+  PetscInt *box_idx_ptr;
   PetscCall(DMSwarmGetField(Simulation->atomistic_data, "box-idx", NULL, NULL,
-                            (void**)&box_idx_ptr));
+                            (void **)&box_idx_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Get index of the particles
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscInt* idx_q_ptr;
+  PetscInt *idx_q_ptr;
   PetscCall(DMSwarmGetField(Simulation->atomistic_data, "idx", NULL, NULL,
-                            (void**)&idx_q_ptr));
+                            (void **)&idx_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Get index for the ghost particles
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscInt n_dof_local = dim * n_sites_local;
   PetscInt n_dof_ghost = dim * n_sites_ghost;
-  PetscInt* idx_dof_ghost = (PetscInt*)malloc(n_dof_ghost * sizeof(PetscInt));
+  PetscInt *idx_dof_ghost = (PetscInt *)malloc(n_dof_ghost * sizeof(PetscInt));
   for (int i = 0; i < n_sites_ghost; i++) {
     for (int j = 0; j < dim; j++) {
       idx_dof_ghost[i * dim + j] = idx_q_ptr[n_sites_local + i] * dim + j;
@@ -348,10 +349,10 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, DMD* Simulation,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get mean position vector
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscScalar* mean_q_ptr;  //! Mean position pointer
+  PetscScalar *mean_q_ptr; //! Mean position pointer
   PetscCall(DMSwarmGetField(Simulation->atomistic_data, DMSwarmPICField_coor,
-                            NULL, NULL, (void**)&mean_q_ptr));
-  Vec X_k1;  //! Mean position PETSc vector
+                            NULL, NULL, (void **)&mean_q_ptr));
+  Vec X_k1; //! Mean position PETSc vector
   PetscCall(VecCreateGhostWithArray(PETSC_COMM_WORLD, n_dof_local,
                                     PETSC_DETERMINE, n_dof_ghost, idx_dof_ghost,
                                     mean_q_ptr, &X_k1));
@@ -389,10 +390,10 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, DMD* Simulation,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get the molar fraction vector
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscScalar* rho_k1_ptr;  //! Molr fraction pointer
+  PetscScalar *rho_k1_ptr; //! Molr fraction pointer
   PetscCall(DMSwarmGetField(Simulation->atomistic_data, "rho", NULL, NULL,
-                            (void**)&rho_k1_ptr));
-  Vec rho_k1;  //! Molar fraction PETSc vector
+                            (void **)&rho_k1_ptr));
+  Vec rho_k1; //! Molar fraction PETSc vector
   PetscCall(VecCreateGhostWithArray(
       PETSC_COMM_WORLD, n_sites_local, PETSC_DETERMINE, n_sites_ghost,
       &idx_q_ptr[n_sites_local], rho_k1_ptr, &rho_k1));
@@ -404,10 +405,10 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, DMD* Simulation,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get the thermal multiplier vector
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscScalar* beta_k1_ptr;
+  PetscScalar *beta_k1_ptr;
   PetscCall(DMSwarmGetField(Simulation->atomistic_data, "beta", NULL, NULL,
-                            (void**)&beta_k1_ptr));
-  Vec beta_k1;  //! Thermal multiplier PETSc vector
+                            (void **)&beta_k1_ptr));
+  Vec beta_k1; //! Thermal multiplier PETSc vector
   PetscCall(VecCreateGhostWithArray(
       PETSC_COMM_WORLD, n_sites_local, PETSC_DETERMINE, n_sites_ghost,
       &idx_q_ptr[n_sites_local], beta_k1_ptr, &beta_k1));
@@ -428,10 +429,10 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, DMD* Simulation,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get the mass vector
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscScalar* mass_ptr;  //! Mass pointer
+  PetscScalar *mass_ptr; //! Mass pointer
   PetscCall(DMSwarmGetField(Simulation->atomistic_data, "mass", NULL, NULL,
-                            (void**)&mass_ptr));
-  Vec mass;  //! Mass PETSc vector
+                            (void **)&mass_ptr));
+  Vec mass; //! Mass PETSc vector
   PetscCall(VecCreateGhostWithArray(
       PETSC_COMM_WORLD, n_sites_local, PETSC_DETERMINE, n_sites_ghost,
       &idx_q_ptr[n_sites_local], mass_ptr, &mass));
@@ -443,9 +444,9 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, DMD* Simulation,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Define PETSc variables for the mechanical equilibrium
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  Tao tao_min_JKO;  //! Nonlinear optimization solver context
-  KSP ksp;          //! linear solver context
-  PC pc;            //! preconditioner context
+  Tao tao_min_JKO; //! Nonlinear optimization solver context
+  KSP ksp;         //! linear solver context
+  PC pc;           //! preconditioner context
   PetscInt TAO_iterations;
   // absolute convergence tolerance
   PetscReal abstol = 1e-3;
@@ -460,7 +461,7 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, DMD* Simulation,
   PetscInt maxf = petsc_maxf;
   // Set a reason for convergence/divergence of solver (TAO)
   TaoConvergedReason min_JKO_reason;
-  const char* TAO_strreason;
+  const char *TAO_strreason;
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Evaluate initial guess; then solve nonlinear system; save final solution
@@ -564,45 +565,45 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, DMD* Simulation,
   PetscCall(VecEnforceGhostAtomsPeriodic(X_k1, box_idx_ptr, background_mesh));
   PetscCall(DMSwarmRestoreField(Simulation->atomistic_data,
                                 DMSwarmPICField_coor, NULL, NULL,
-                                (void**)&mean_q_ptr));
+                                (void **)&mean_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore molar fraction data
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "rho", NULL, NULL,
-                                (void**)&rho_k1_ptr));
+                                (void **)&rho_k1_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore thermal Lagrange Multiplier (beta) data
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "beta", NULL, NULL,
-                                (void**)&beta_k1_ptr));
+                                (void **)&beta_k1_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore mass
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "mass", NULL, NULL,
-                                (void**)&mass_ptr));
+                                (void **)&mass_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore Periodic box index
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "box-idx", NULL,
-                                NULL, (void**)&box_idx_ptr));
+                                NULL, (void **)&box_idx_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore idx data
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "idx", NULL, NULL,
-                                (void**)&idx_q_ptr));
+                                (void **)&idx_q_ptr));
   free(idx_dof_ghost);
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore atom topology
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   for (PetscInt site_u = 0; site_u < n_sites_local_ghosted; site_u++) {
-    PetscCall(restore_atom_neighbors(&blob_topology[site_u],
-                                     mechanical_neighs_idx[site_u]));
+    PetscCall(DMSwarmRestoreParticleNeighbors(&blob_topology[site_u],
+                                              mechanical_neighs_idx[site_u]));
   }
   free(blob_topology);
 
@@ -627,8 +628,8 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, DMD* Simulation,
 /************************************************************************/
 
 static PetscErrorCode compute_F0_and_RHS(Tao tao, Vec X_k1,
-                                         PetscReal* JKO_system, Vec D_JKO_Dx,
-                                         void* ctx) {
+                                         PetscReal *JKO_system, Vec D_JKO_Dx,
+                                         void *ctx) {
 
   PetscFunctionBeginUser;
 
@@ -638,34 +639,34 @@ static PetscErrorCode compute_F0_and_RHS(Tao tao, Vec X_k1,
    Get user context
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   //! Get the list of neighbors of each site
-  const AtomTopology* blob_topology = ((JKO_ctx*)ctx)->blob_topology;
+  const ParticleTopology *blob_topology = ((JKO_ctx *)ctx)->blob_topology;
 
   //! Get the periodic box index
-  const PetscInt* box_idx_ptr = ((JKO_ctx*)ctx)->box_idx_ptr;
+  const PetscInt *box_idx_ptr = ((JKO_ctx *)ctx)->box_idx_ptr;
 
   //!
-  Vec X_k = ((JKO_ctx*)ctx)->X_k;
+  Vec X_k = ((JKO_ctx *)ctx)->X_k;
 
   //! Get the density
-  Vec rho_k1 = ((JKO_ctx*)ctx)->rho_k1;
+  Vec rho_k1 = ((JKO_ctx *)ctx)->rho_k1;
 
   //!
-  Vec beta_k1 = ((JKO_ctx*)ctx)->beta_k1;
+  Vec beta_k1 = ((JKO_ctx *)ctx)->beta_k1;
 
   //!
-  Vec beta_k = ((JKO_ctx*)ctx)->beta_k;
+  Vec beta_k = ((JKO_ctx *)ctx)->beta_k;
 
   //!
-  Vec mass = ((JKO_ctx*)ctx)->mass;
+  Vec mass = ((JKO_ctx *)ctx)->mass;
 
   //! Take structure with the dmd equations
-  dmd_equations system_equations = ((JKO_ctx*)ctx)->system_equations;
+  governing_equations system_equations = ((JKO_ctx *)ctx)->system_equations;
 
   //! Time step
-  PetscScalar Delta_t = ((JKO_ctx*)ctx)->Delta_t;
+  PetscScalar Delta_t = ((JKO_ctx *)ctx)->Delta_t;
 
   //! Get FE mesh
-  DM background_mesh = ((JKO_ctx*)ctx)->background_mesh;
+  DM background_mesh = ((JKO_ctx *)ctx)->background_mesh;
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Update solution vector X_k1 and enforce periodic bcc
@@ -716,7 +717,7 @@ static PetscErrorCode compute_F0_and_RHS(Tao tao, Vec X_k1,
 
 /************************************************************************/
 
-PetscErrorCode compute_RHS(Tao tao, Vec X_k1, Vec D_JKO_Dq, void* ctx) {
+PetscErrorCode compute_RHS(Tao tao, Vec X_k1, Vec D_JKO_Dq, void *ctx) {
 
   PetscFunctionBeginUser;
 
@@ -726,31 +727,31 @@ PetscErrorCode compute_RHS(Tao tao, Vec X_k1, Vec D_JKO_Dq, void* ctx) {
    Get user context
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   //! Get the list of neighbors of each site
-  const AtomTopology* blob_topology = ((JKO_ctx*)ctx)->blob_topology;
+  const ParticleTopology *blob_topology = ((JKO_ctx *)ctx)->blob_topology;
 
   //! Get the periodic box index
-  const PetscInt* box_idx_ptr = ((JKO_ctx*)ctx)->box_idx_ptr;
+  const PetscInt *box_idx_ptr = ((JKO_ctx *)ctx)->box_idx_ptr;
 
   //!
-  Vec X_k = ((JKO_ctx*)ctx)->X_k;
+  Vec X_k = ((JKO_ctx *)ctx)->X_k;
 
   //! Get the density
-  Vec rho_k1 = ((JKO_ctx*)ctx)->rho_k1;
+  Vec rho_k1 = ((JKO_ctx *)ctx)->rho_k1;
 
   //!
-  Vec beta_k1 = ((JKO_ctx*)ctx)->beta_k1;
+  Vec beta_k1 = ((JKO_ctx *)ctx)->beta_k1;
 
   //!
-  Vec mass = ((JKO_ctx*)ctx)->mass;
+  Vec mass = ((JKO_ctx *)ctx)->mass;
 
   //! Take structure with the dmd equations
-  dmd_equations system_equations = ((JKO_ctx*)ctx)->system_equations;
+  governing_equations system_equations = ((JKO_ctx *)ctx)->system_equations;
 
   //! Time step
-  PetscScalar Delta_t = ((JKO_ctx*)ctx)->Delta_t;
+  PetscScalar Delta_t = ((JKO_ctx *)ctx)->Delta_t;
 
   //! Get FE mesh
-  DM background_mesh = ((JKO_ctx*)ctx)->background_mesh;
+  DM background_mesh = ((JKO_ctx *)ctx)->background_mesh;
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Update solution vector X_k1 and enforce periodic bcc

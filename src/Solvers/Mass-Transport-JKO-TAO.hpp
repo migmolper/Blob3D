@@ -17,6 +17,6 @@
 #include <Eigen/Dense>
 
 PetscErrorCode Mass_Trasport_Advection_Diffusion(
-    PetscReal dt, DMD* Simulation, dmd_equations system_equations);
+    PetscReal dt, DMD* Simulation, governing_equations system_equations);
 
 #endif /* MASS_TRANSPORT_JKO_TAO_HPP */

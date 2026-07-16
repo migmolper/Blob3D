@@ -13,7 +13,7 @@
 #include "Blobs/Neighbors.hpp"
 #include "Macros.hpp"
 #include "Mesh/Boundary-Conditions.hpp"
-#include "Mesh/Update-Mesh.hpp"
+#include "Mesh/Coordinates.hpp"
 #include "petscis.h"
 #include <petscerror.h>
 #include <petscsystypes.h>
@@ -23,7 +23,7 @@ extern PetscMPIInt rank_MPI;
 
 /********************************************************************************/
 
-PetscErrorCode DMSwarmGenerateBlobsTopology(DMD* Simulation,
+PetscErrorCode DMSwarmGenerateBlobsTopology(DMD *Simulation,
                                             double buffer_width) {
 
   PetscFunctionBeginUser;
@@ -33,7 +33,7 @@ PetscErrorCode DMSwarmGenerateBlobsTopology(DMD* Simulation,
       DMSwarmSetMigrateType(Simulation->atomistic_data, DMSWARM_MIGRATE_BASIC));
   PetscCall(DMSwarmCreateGhostBlobs(Simulation, buffer_width));
 
-  //! 2º Compute list of neighbors
+  //! 2º Compute list of mechanical neighs
   PetscCall(DMSwarmCreateNeighborsBlobs(Simulation, buffer_width));
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -41,73 +41,55 @@ PetscErrorCode DMSwarmGenerateBlobsTopology(DMD* Simulation,
 
 /********************************************************************************/
 
-PetscErrorCode DMSwarmRegenerateBlobsTopology(DMD* Simulation,
-                                              double buffer_width,
-                                              PetscBool MIGRATE_BLOBS,
-                                              PetscBool PARTICLE_INSERTION) {
+PetscErrorCode DMSwarmRegenerateBlobsTopology(DMD *Simulation,
+                                              double buffer_width) {
 
   PetscFunctionBeginUser;
 
-  DM FE_Mesh;
   PetscInt n_sites_global = 0;
 
   //! 1º: Destroy topology
   PetscCall(DMSwarmDestroyNeighborsBlobs(Simulation));
 
-  //! 2º: Destroy ghost blobs
-  if (MIGRATE_BLOBS == PETSC_TRUE) {
-    PetscCall(DMSwarmDestroyGhostBlobs(Simulation));
+  //! 2º: Destroy ghost atoms
+  PetscCall(DMSwarmDestroyGhostBlobs(Simulation));
+
+  //! 3º: Enforce periodic conditions over physical atoms
+  PetscCall(DMSwarmEnforceAtomsPeriodic(Simulation, buffer_width));
+
+  //! 4º: Rebin atoms
+  PetscCall(DMSwarmSyncCoorFromMeanQ(Simulation));
+  PetscCall(DMSwarmSetMigrateType(Simulation->atomistic_data,
+                                  DMSWARM_MIGRATE_DMCELLNSCATTER));
+  PetscCall(DMSwarmMigrate(Simulation->atomistic_data, PETSC_TRUE));
+
+  //! 5º: Update number of atoms and check consistency
+  PetscCall(DMSwarmGetSize(Simulation->atomistic_data, &n_sites_global));
+  PetscCall(DMSwarmGetLocalSize(Simulation->atomistic_data,
+                                &(Simulation->n_sites_local)));
+  if (n_sites_global != Simulation->n_sites_global) {
+    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_RETURN,
+            "Number of atoms is not consistent: %" PetscInt_FMT
+            " (new), %" PetscInt_FMT " (old)",
+            n_sites_global, Simulation->n_sites_global);
   }
 
-  //! 3º: Rebin blobs and update number of blobs and check consistency
-  if (MIGRATE_BLOBS == PETSC_TRUE) {
-    PetscCall(DMSwarmSetMigrateType(Simulation->atomistic_data,
-                                    DMSWARM_MIGRATE_DMCELLNSCATTER));
-    PetscCall(DMSwarmMigrate(Simulation->atomistic_data, PETSC_TRUE));
-    PetscCall(DMSwarmGetSize(Simulation->atomistic_data, &n_sites_global));
-    PetscCall(DMSwarmGetLocalSize(Simulation->atomistic_data,
-                                  &(Simulation->n_sites_local)));
-    if (n_sites_global != Simulation->n_sites_global) {
-      PetscCall(PetscError(
-          PETSC_COMM_SELF, __LINE__, "DMSwarmRegenerateBlobsTopology", __FILE__,
-          PETSC_ERR_RETURN, PETSC_ERROR_INITIAL,
-          "Number of blobs is not consistent: %i (new), %i (old) \n",
-          n_sites_global, Simulation->n_sites_global));
-
-      PetscFunctionReturn(PETSC_ERR_RETURN);
-    }
+  //! 6º: Update "MPI-rank"
+  PetscInt *rank_ptr;
+  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "MPI-rank", NULL, NULL,
+                            (void **)&rank_ptr));
+  for (PetscInt site_u = 0; site_u < Simulation->n_sites_local; site_u++) {
+    rank_ptr[site_u] = rank_MPI;
   }
+  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "MPI-rank", NULL,
+                                NULL, (void **)&rank_ptr));
 
-  //! 4º: Insert new particles if needed
-/*   if (PARTICLE_INSERTION == PETSC_TRUE) {
+  //! 7º: create new ghost atoms and impose periodicity over them
+  PetscCall(
+      DMSwarmSetMigrateType(Simulation->atomistic_data, DMSWARM_MIGRATE_BASIC));
+  PetscCall(DMSwarmCreateGhostBlobs(Simulation, buffer_width));
 
-    PetscCall(DMSwarmAddNPoints(Simulation->atomistic_data, num_ghost));
-
-    PetscCall(DMSwarmGetLocalSize(Simulation->atomistic_data,
-                                  &(Simulation->n_sites_local)));
-  } */
-
-  //! 5º: Update "MPI-rank"
-  if (MIGRATE_BLOBS == PETSC_TRUE) {
-    PetscInt* rank_ptr;
-    PetscCall(DMSwarmGetField(Simulation->atomistic_data, "MPI-rank", NULL,
-                              NULL, (void**)&rank_ptr));
-#pragma omp parallel for schedule(runtime)
-    for (PetscInt site_u = 0; site_u < Simulation->n_sites_local; site_u++) {
-      rank_ptr[site_u] = rank_MPI;
-    }
-    PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "MPI-rank", NULL,
-                                  NULL, (void**)&rank_ptr));
-  }
-
-  //! 6º: create new ghost blobs and impose periodicity over them
-  if (MIGRATE_BLOBS == PETSC_TRUE) {
-    PetscCall(DMSwarmSetMigrateType(Simulation->atomistic_data,
-                                    DMSWARM_MIGRATE_BASIC));
-    PetscCall(DMSwarmCreateGhostBlobs(Simulation, buffer_width));
-  }
-
-  //! 7º: Update topology
+  //! 8º: Update topology
   PetscCall(DMSwarmCreateNeighborsBlobs(Simulation, buffer_width));
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -115,14 +97,14 @@ PetscErrorCode DMSwarmRegenerateBlobsTopology(DMD* Simulation,
 
 /********************************************************************************/
 
-PetscErrorCode DMSwarmDestroyBlobsTopology(DMD* Simulation) {
+PetscErrorCode DMSwarmDestroyBlobsTopology(DMD *Simulation) {
 
   PetscFunctionBeginUser;
 
   //! 1º Destroy list of neighs
   PetscCall(DMSwarmDestroyNeighborsBlobs(Simulation));
 
-  //! 2º Destroy ghost blobs
+  //! 2º Destroy ghost atoms
   PetscCall(DMSwarmDestroyGhostBlobs(Simulation));
 
   PetscFunctionReturn(PETSC_SUCCESS);

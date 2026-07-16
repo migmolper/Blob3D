@@ -94,28 +94,6 @@ double max_total_mass = 0.01;
 double max_Xh = 0.9;
 
 /*****************************************/
-/****** Variables for the Mg-H ADP *******/
-/*****************************************/
-adpPotential adp_MgMg;
-adpPotential adp_HH;
-adpPotential adp_MgH;
-
-/*****************************************/
-/****** Variables for the Al-Cu ADP *******/
-/*****************************************/
-adpPotential adp_AlAl;
-adpPotential adp_CuCu;
-adpPotential adp_AlCu;
-
-/*****************************************/
-/****** Variables for the Fe-H EAM *******/
-/*****************************************/
-eamPotential eam_FeFe;
-eamPotential eam_HH;
-eamPotential eam_FeH;
-eamPotential eam_HFe;
-
-/*****************************************/
 DiffusivePotential Potential_AD;
 
 /******************************************************/

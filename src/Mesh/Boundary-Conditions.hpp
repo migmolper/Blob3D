@@ -234,8 +234,4 @@ PetscErrorCode DMSwarmFixChemicalMultiplierBox(DMD* Simulation,
 PetscErrorCode DMSwarmFixThermalMultiplierBox(DMD* Simulation,
                                               const PetscScalar box_coords[6]);
 
-PetscErrorCode DMSwarmSetDiffusiveSpecies(DMD* Simulation,
-                                          const AtomicSpecie* diffusive_species,
-                                          const PetscInt n_diffusive_species);
-
 #endif /* BOUNDARY_CONDITIONS_HPP */

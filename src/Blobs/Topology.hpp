@@ -34,9 +34,7 @@ PetscErrorCode DMSwarmGenerateBlobsTopology(DMD* Simulation, double r_cutoff);
  * @return PetscErrorCode
  */
 PetscErrorCode DMSwarmRegenerateBlobsTopology(DMD* Simulation,
-                                              double buffer_width,
-                                              PetscBool MIGRATE_BLOBS,
-                                              PetscBool PARTICLE_INSERTION);
+                                              double buffer_width);
 
 /**
  * @brief

@@ -10,8 +10,8 @@
  */
 
 #include "Mesh/Boundary-Conditions.hpp"
-#include "Atoms/Atom.hpp"
-#include "Atoms/Neighbors.hpp"
+#include "Blobs/Blobs.hpp"
+#include "Blobs/Neighbors.hpp"
 #include "Eigen/src/Core/Matrix.h"
 #include "Macros.hpp"
 #include "Mesh/Coordinates.hpp"
@@ -879,81 +879,6 @@ PetscErrorCode DMSwarmFixThermalMultiplierBox(DMD* Simulation,
 
   PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "idx-bcc-beta",
                                 NULL, NULL, (void**)&idx_bcc_beta_ptr));
-
-  PetscFunctionReturn(PETSC_SUCCESS);
-}
-
-/************************************************************************/
-
-PetscErrorCode DMSwarmSetDiffusiveSpecies(DMD* Simulation,
-                                          const AtomicSpecie* diffusive_species,
-                                          const PetscInt n_diffusive_species) {
-
-  PetscFunctionBeginUser;
-
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    Get auxiliar data.
-   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  unsigned int dim = NumberDimensions;
-
-  //! Get number of sites in the simulation (without ghost)
-  PetscInt n_sites_global = Simulation->n_sites_global;
-
-  //! Number of local physical sites
-  PetscInt n_sites_local = Simulation->n_sites_local;
-
-  //! Define number of diffusive particles
-  PetscInt num_diff = 0.0;
-  PetscInt num_diff_local = 0.0;
-
-  //! Get index of the diffusive particles
-  PetscInt* idx_diff_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "idx-diff", NULL, NULL,
-                            (void**)&idx_diff_ptr));
-
-  //! Get the atomic specie vector all
-  AtomicSpecie* specie_ptr;
-  PetscCall(DMSwarmGetField(Simulation->atomistic_data, "specie", NULL, NULL,
-                            (void**)&specie_ptr));
-
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   Loop over atoms
-   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-#pragma omp parallel for reduction(+ : num_diff_local) schedule(runtime)
-  for (int site_i = 0; site_i < n_sites_local; site_i++) {
-
-    //! Get site specie
-    AtomicSpecie specie_i = specie_ptr[site_i];
-
-    // Check if specie is diffusive
-    for (PetscInt i = 0; i < n_diffusive_species; i++) {
-      if (specie_i == diffusive_species[i]) {
-        idx_diff_ptr[site_i] = 1;
-        num_diff_local += 1;
-        break;
-      }
-    }
-  }
-  PetscCall(MPIU_Allreduce(&num_diff_local, &num_diff, 1, MPI_INT, MPI_SUM,
-                           MPI_COMM_WORLD));
-
-  if (num_diff == 0) {
-    PetscPrintf(PETSC_COMM_WORLD,
-                "None of the particles is marked as diffusive\n");
-  } else {
-    PetscPrintf(PETSC_COMM_WORLD,
-                "Number of diffusive sites: %d over %d total sites\n", num_diff,
-                n_sites_global);
-  }
-
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    Restore auxiliar data.
-  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "idx-diff", NULL,
-                                NULL, (void**)&idx_diff_ptr));
-
-  PetscCall(DMSwarmRestoreField(Simulation->atomistic_data, "specie", NULL,
-                                NULL, (void**)&specie_ptr));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }

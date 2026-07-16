@@ -18,9 +18,9 @@
 /**
  * @brief Function devoted to create the DMD function context of a Mg-Hx system
  *
- * @return dmd_equations
+ * @return governing_equations
  */
-dmd_equations Advection_Diff_constructor();
+governing_equations Advection_Diff_constructor();
 
 
 #endif /* ADVEC_DIFF_POTENTIAL_HPP */

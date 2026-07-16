@@ -102,8 +102,6 @@ dump_file DMSwarmBlobsReadDump(const char* SimulationFile) {
   Simulation.box_z_max = box_z_max;
 
   //! @brief Create arrays
-  Simulation.specie = (AtomicSpecie*)calloc(n_atoms, sizeof(AtomicSpecie));
-
   Simulation.beta = (double*)calloc(n_atoms, sizeof(double));
 
   Simulation.beta_bcc = (int*)calloc(n_atoms, sizeof(int));
@@ -165,14 +163,6 @@ dump_file DMSwarmBlobsReadDump(const char* SimulationFile) {
     Simulation.beta[i_site] = beta_value;
     Simulation.gamma_bcc[i_site] = (int)gamma_bcc_value;
     Simulation.beta_bcc[i_site] = (int)beta_bcc_value;
-
-    // Initialize particle type.
-    if ((Particle_Type < 1) || (Particle_Type > 111)) {
-      std::cout << "FAIL Particle_Type " << Particle_Type << " at site "
-                << i_site << std::endl;
-    } else {
-      Simulation.specie[i_site] = (AtomicSpecie)Particle_Type;
-    }
   }
 
   //  Close file
@@ -184,8 +174,6 @@ dump_file DMSwarmBlobsReadDump(const char* SimulationFile) {
 /*******************************************************/
 
 void DMSwarmBlobsFreeDump(dump_file* Simulation_data) {
-
-  free(Simulation_data->specie);
 
   free(Simulation_data->beta);
 
