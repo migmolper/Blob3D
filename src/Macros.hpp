@@ -31,7 +31,7 @@
 #endif
 
 #ifndef PETSC_ERR_NOT_CONVERGED
-#define PETSC_ERR_NOT_CONVERGED 91  // solver did not converge
+#define PETSC_ERR_NOT_CONVERGED 91 // solver did not converge
 #endif
 
 #ifndef PETSC_ERR_RETURN
@@ -57,8 +57,8 @@ typedef Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
  *
  */
 enum class BackgroundMeshType {
-  DMDA_mesh,   //!< DMDA mesh
-  DMPLEX_mesh  //!< DMPLEX mesh
+  DMDA_mesh,  //!< DMDA mesh
+  DMPLEX_mesh //!< DMPLEX mesh
 };
 
 /*******************************************************/
@@ -126,7 +126,7 @@ typedef struct {
 
   PetscInt size;
 
-  const PetscInt* list;
+  const PetscInt *list;
 
 } ParticleTopology;
 
@@ -155,53 +155,33 @@ typedef struct dump_file {
     System Lagrange multipliers
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   /** @param beta: Thermodynamic Lagrange multiplier */
-  double* beta;
+  double *beta;
 
   /** @param beta_bcc: Index for the sites with beta boundary condition */
-  int* beta_bcc;
+  int *beta_bcc;
 
   /** @param gamma: Chemical Lagrange multiplier */
-  double* gamma;
+  double *gamma;
 
   /** @param gamma_bcc: Index for the sites with gamma boundary condition */
-  int* gamma_bcc;
+  int *gamma_bcc;
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Position-related variables
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   /** @param mean_q: Mean value of each particle position */
-  double* mean_q;
+  double *mean_q;
 
   /** @param stdv_q: Standard desviation of exach particle position */
-  double* stdv_q;
+  double *stdv_q;
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Chemical variables
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   /** @param xi: Molar fraction (mean occupancy) */
-  double* xi;
+  double *xi;
 
 } dump_file;
-
-/********************************************************************************/
-
-/**
- * @brief Structure which contains the necessary information to evaluate the
- * DiffusivePotential potential
- *
- */
-typedef struct DiffusivePotential {
-
-  //! @brief Diffusion coefficient
-  PetscScalar kappa;
-
-  //! @brief Reference density of the system
-  PetscScalar rho_ref;
-
-  //! @brief Penaly stiffness
-  PetscScalar C;
-
-} DiffusivePotential;
 
 /*******************************************************/
 
@@ -213,15 +193,16 @@ typedef struct DiffusivePotential {
  * that polymorphic overrides are invoked.
  */
 class GoverningEquations {
- public:
+public:
   virtual ~GoverningEquations() {}
 
   /**
    * @brief Reconstruct the discrete density measure from particle data.
    */
-  virtual PetscErrorCode evaluate_meassure_JKO(
-      Vec rho, const Vec q_k1, const Vec beta_k1, const Vec mass,
-      const ParticleTopology* particle_topology) = 0;
+  virtual PetscErrorCode
+  evaluate_meassure_JKO(Vec rho, const Vec q_k1, const Vec beta_k1,
+                        const Vec mass,
+                        const ParticleTopology *particle_topology) = 0;
 
   /**
    * @brief Evaluate the discrete Jordan–Kinderlehrer–Otto functional
@@ -232,18 +213,40 @@ class GoverningEquations {
    V(\rho_{k+1}(x_{p,k+1}))\, m_p
    \f]
    */
-  virtual PetscErrorCode evaluate_JKO(
-      PetscScalar* JKO_system, PetscScalar Delta_t, const Vec rho,
-      const Vec q_k1, const Vec q_k, const Vec beta_k1, const Vec beta_k,
-      const Vec mass, const ParticleTopology* particle_topology) = 0;
+  virtual PetscErrorCode
+  evaluate_JKO(PetscScalar *JKO_system, PetscScalar Delta_t, const Vec rho,
+               const Vec q_k1, const Vec q_k, const Vec beta_k1,
+               const Vec beta_k, const Vec mass,
+               const ParticleTopology *particle_topology) = 0;
 
   /**
    * @brief Evaluate the position gradient of the discrete JKO functional.
    */
-  virtual PetscErrorCode evaluate_D_JKO_Dq(
-      Vec D_JKO_Dq, PetscScalar Delta_t, const Vec rho_k1, const Vec x_k1,
-      const Vec x_k, const Vec beta_k1, const Vec mass,
-      const ParticleTopology* particle_topology) = 0;
+  virtual PetscErrorCode
+  evaluate_D_JKO_Dq(Vec D_JKO_Dq, PetscScalar Delta_t, const Vec rho_k1,
+                    const Vec x_k1, const Vec x_k, const Vec beta_k1,
+                    const Vec mass,
+                    const ParticleTopology *particle_topology) = 0;
+};
+
+/*******************************************************/
+
+class boundaryCondition {
+public:
+  virtual ~boundaryCondition() {}
+
+  /**
+   * @brief Add the barrier potential
+   */
+  virtual PetscErrorCode add_barrier_potential(PetscScalar *JKO_system,
+                                               const Vec x_k1,
+                                               const Vec mass) = 0;
+
+  /**
+   * @brief Add the barrier forces to the JKO system.
+   */
+  virtual PetscErrorCode add_barrier_forces(Vec D_JKO_Dq, const Vec x_k1,
+                                            const Vec mass) = 0;
 };
 
 /*******************************************************/
@@ -255,7 +258,7 @@ class GoverningEquations {
  * position x_i (e.g., a node or an particle site).
  */
 class ShapeFunction {
- public:
+public:
   /**
    * @brief Virtual destructor to ensure proper cleanup of derived classes.
    */
@@ -267,7 +270,7 @@ class ShapeFunction {
    * @param x_i The reference position or nodal coordinates.
    * @return The scalar value of the function.
    */
-  virtual double N_i(const Eigen::Vector3d& x, const Eigen::Vector3d& x_i,
+  virtual double N_i(const Eigen::Vector3d &x, const Eigen::Vector3d &x_i,
                      double beta_i) const = 0;
 
   /**
@@ -277,8 +280,8 @@ class ShapeFunction {
    * @return A Vector3d containing the partial derivatives [dN/dx, dN/dy,
    * dN/dz].
    */
-  virtual Eigen::Vector3d dN_i(const Eigen::Vector3d& x,
-                               const Eigen::Vector3d& x_i,
+  virtual Eigen::Vector3d dN_i(const Eigen::Vector3d &x,
+                               const Eigen::Vector3d &x_i,
                                double beta_i) const = 0;
 };
 
@@ -346,36 +349,36 @@ static float sqr_arg;
 static double dsqr_arg;
 #define DSQR(a) ((dsqr_arg = (a)) == 0.0 ? 0.0 : dsqr_arg * dsqr_arg)
 static double dmax_arg1, dmax_arg2;
-#define DMAX(a, b)                   \
-  (dmax_arg1 = (a), dmax_arg2 = (b), \
+#define DMAX(a, b)                                                             \
+  (dmax_arg1 = (a), dmax_arg2 = (b),                                           \
    (dmax_arg1) > (dmax_arg2) ? (dmax_arg1) : (dmax_arg2))
 static double dmin_arg1, dmin_arg2;
-#define DMIN(a, b)                   \
-  (dmin_arg1 = (a), dmin_arg2 = (b), \
+#define DMIN(a, b)                                                             \
+  (dmin_arg1 = (a), dmin_arg2 = (b),                                           \
    (dmin_arg1) < (dmin_arg2) ? (dmin_arg1) : (dmin_arg2))
 static float max_arg1, max_arg2;
-#define FMAX(a, b)                 \
-  (max_arg1 = (a), max_arg2 = (b), \
+#define FMAX(a, b)                                                             \
+  (max_arg1 = (a), max_arg2 = (b),                                             \
    (max_arg1) > (max_arg2) ? (max_arg1) : (max_arg2))
 static float min_arg1, min_arg2;
-#define FMIN(a, b)                 \
-  (min_arg1 = (a), min_arg2 = (b), \
+#define FMIN(a, b)                                                             \
+  (min_arg1 = (a), min_arg2 = (b),                                             \
    (min_arg1) < (min_arg2) ? (min_arg1) : (min_arg2))
 static long lmax_arg1, lmax_arg2;
-#define LMAX(a, b)                   \
-  (lmax_arg1 = (a), lmax_arg2 = (b), \
+#define LMAX(a, b)                                                             \
+  (lmax_arg1 = (a), lmax_arg2 = (b),                                           \
    (lmax_arg1) > (lmax_arg2) ? (lmax_arg1) : (lmax_arg2))
 static long lmin_arg1, lmin_arg2;
-#define LMIN(a, b)                   \
-  (lmin_arg1 = (a), lmin_arg2 = (b), \
+#define LMIN(a, b)                                                             \
+  (lmin_arg1 = (a), lmin_arg2 = (b),                                           \
    (lmin_arg1) < (lmin_arg2) ? (lmin_arg1) : (lmin_arg2))
 static int imax_arg1, imax_arg2;
-#define IMAX(a, b)                   \
-  (imax_arg1 = (a), imax_arg2 = (b), \
+#define IMAX(a, b)                                                             \
+  (imax_arg1 = (a), imax_arg2 = (b),                                           \
    (imax_arg1) > (imax_arg2) ? (imax_arg1) : (imax_arg2))
 static int imin_arg1, imin_arg2;
-#define IMIN(a, b)                   \
-  (imin_arg1 = (a), imin_arg2 = (b), \
+#define IMIN(a, b)                                                             \
+  (imin_arg1 = (a), imin_arg2 = (b),                                           \
    (imin_arg1) < (imin_arg2) ? (imin_arg1) : (imin_arg2))
 #define SIGN(a, b) ((b) >= 0.0 ? fabs(a) : -fabs(a)) s
 

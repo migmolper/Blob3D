@@ -72,6 +72,9 @@ struct JKO_ctx {
   /*! @param system_equations Definition of the equation (non-owning) */
   GoverningEquations *system_equations;
 
+  /*! @param boundary_conditions: Boundary conditions */
+  boundaryCondition *boundary_conditions;
+
   /*! @param Delta_t: Time-step */
   PetscScalar Delta_t;
 
@@ -83,7 +86,8 @@ static PetscErrorCode Advection(PetscReal dt, Simulation &simulation,
                                 GoverningEquations &system_equations);
 
 static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation &simulation,
-                                    GoverningEquations &system_equations);
+                                    GoverningEquations &system_equations,
+                                    boundaryCondition &boundary_conditions);
 
 static PetscErrorCode compute_F0_and_RHS(Tao tao, Vec X_k1, PetscReal *F0,
                                          Vec D_JKO_Dx, void *ctx);
@@ -94,7 +98,8 @@ static PetscErrorCode compute_RHS(Tao tao, Vec X_k1, Vec D_JKO_Dx, void *ctx);
 
 PetscErrorCode
 Mass_Trasport_Advection_Diffusion(PetscReal dt, Simulation &simulation,
-                                  GoverningEquations &system_equations) {
+                                  GoverningEquations &system_equations,
+                                  boundaryCondition &boundary_conditions) {
 
   PetscFunctionBeginUser;
 
@@ -113,7 +118,8 @@ Mass_Trasport_Advection_Diffusion(PetscReal dt, Simulation &simulation,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Unconstrained diffusion step: update the particle position
   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(JKO_Diffusion(dt, simulation, system_equations));
+  PetscCall(
+      JKO_Diffusion(dt, simulation, system_equations, boundary_conditions));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
@@ -272,7 +278,8 @@ static PetscErrorCode Advection(PetscReal dt, Simulation &simulation,
 /************************************************************************/
 
 static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation &simulation,
-                                    GoverningEquations &system_equations) {
+                                    GoverningEquations &system_equations,
+                                    boundaryCondition &boundary_conditions) {
 
   PetscFunctionBeginUser;
 
@@ -482,6 +489,7 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation &simulation,
   ctx.beta_k = beta_k;
   ctx.mass = mass;
   ctx.system_equations = &system_equations;
+  ctx.boundary_conditions = &boundary_conditions;
   ctx.Delta_t = dt;
   ctx.background_mesh = background_mesh;
 
@@ -658,6 +666,10 @@ static PetscErrorCode compute_F0_and_RHS(Tao tao, Vec X_k1,
   //! Take structure with the dmd equations
   GoverningEquations &system_equations = *((JKO_ctx *)ctx)->system_equations;
 
+  //! Take structure with the boundary conditions
+  boundaryCondition &boundary_conditions =
+      *((JKO_ctx *)ctx)->boundary_conditions;
+
   //! Time step
   PetscScalar Delta_t = ((JKO_ctx *)ctx)->Delta_t;
 
@@ -684,20 +696,26 @@ static PetscErrorCode compute_F0_and_RHS(Tao tao, Vec X_k1,
 #endif
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    Compute internal energy
+    Compute internal energy: JKO and barrier potential terms
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   *JKO_system = 0.0;
   PetscCall(system_equations.evaluate_JKO(JKO_system, Delta_t, rho_k1, X_k1,
                                           X_k, beta_k1, beta_k, mass,
                                           blob_topology));
+  PetscCall(boundary_conditions.add_barrier_potential(JKO_system, X_k1, mass));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Set the RHS to {mean_q_ref - mean_q}. This allow us to enforce the
     position for non-active sites. Then, loop in the subdomain of i_star
     to update RHS vector Y = {DV_Dmeanq} and enforce boundary conditions
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+  //! Evaluate the RHS of the JKO system
   PetscCall(system_equations.evaluate_D_JKO_Dq(
       D_JKO_Dx, Delta_t, rho_k1, X_k1, X_k, beta_k1, mass, blob_topology));
+  //! Add the barrier forces to the JKO system
+  PetscCall(boundary_conditions.add_barrier_forces(D_JKO_Dx, X_k1, mass));
+
+  //! Update the ghost values of the RHS vector
   PetscCall(VecGhostUpdateBegin(D_JKO_Dx, INSERT_VALUES, SCATTER_FORWARD));
   PetscCall(VecGhostUpdateEnd(D_JKO_Dx, INSERT_VALUES, SCATTER_FORWARD));
 
@@ -743,6 +761,10 @@ PetscErrorCode compute_RHS(Tao tao, Vec X_k1, Vec D_JKO_Dq, void *ctx) {
   //! Take structure with the dmd equations
   GoverningEquations &system_equations = *((JKO_ctx *)ctx)->system_equations;
 
+  //! Take structure with the boundary conditions
+  boundaryCondition &boundary_conditions =
+      *((JKO_ctx *)ctx)->boundary_conditions;
+
   //! Time step
   PetscScalar Delta_t = ((JKO_ctx *)ctx)->Delta_t;
 
@@ -761,6 +783,7 @@ PetscErrorCode compute_RHS(Tao tao, Vec X_k1, Vec D_JKO_Dq, void *ctx) {
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscCall(system_equations.evaluate_meassure_JKO(rho_k1, X_k1, beta_k1, mass,
                                                    blob_topology));
+
   PetscCall(VecGhostUpdateBegin(rho_k1, INSERT_VALUES, SCATTER_FORWARD));
   PetscCall(VecGhostUpdateEnd(rho_k1, INSERT_VALUES, SCATTER_FORWARD));
 
@@ -775,6 +798,10 @@ PetscErrorCode compute_RHS(Tao tao, Vec X_k1, Vec D_JKO_Dq, void *ctx) {
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscCall(system_equations.evaluate_D_JKO_Dq(
       D_JKO_Dq, Delta_t, rho_k1, X_k1, X_k, beta_k1, mass, blob_topology));
+
+  //! Add the barrier forces to the JKO system
+  PetscCall(boundary_conditions.add_barrier_forces(D_JKO_Dq, X_k1, mass));
+
   PetscCall(VecGhostUpdateBegin(D_JKO_Dq, INSERT_VALUES, SCATTER_FORWARD));
   PetscCall(VecGhostUpdateEnd(D_JKO_Dq, INSERT_VALUES, SCATTER_FORWARD));
 

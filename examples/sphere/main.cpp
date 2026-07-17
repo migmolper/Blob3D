@@ -14,8 +14,8 @@
 #include "Blobs/IO/dump-inputs.hpp"
 #include "Blobs/IO/vtk-outputs.hpp"
 #include "Blobs/Neighbors.hpp"
+#include "Boundaries/sphere.hpp"
 #include "Macros.hpp"
-#include "Mesh/Boundary-Conditions.hpp"
 #include "Potentials/Advection-Diff-OpenMP.hpp"
 #include "Solvers/Mass-Transport-JKO-TAO.hpp"
 #include "Variables.hpp"
@@ -47,12 +47,7 @@ const char help[] = "BLOB3D blob particle method library (static)";
 int main(int argc, char **argv) {
 
   unsigned int dim = NumberDimensions;
-  const double Tolerance = 1.E-8;
-  PetscScalar Delta_r = 6.0;
-  PetscScalar kappa = 0.1;   //!
-  PetscScalar Delta_t = 1;   //!
-  PetscScalar m_p = 0.01;    //!
-  PetscScalar rho_ref = 0.2; //!
+
   PetscErrorCode ierr;
   const char OutputFolder[MAXC] = "outputs";
   char SimulationFile[MAXC] = "inputs/Sphere-R-20.dump";
@@ -61,10 +56,6 @@ int main(int argc, char **argv) {
   ndiv_mesh_X = 60;
   ndiv_mesh_Y = 60;
   ndiv_mesh_Z = 60;
-
-  size_MPI_X = 2;
-  size_MPI_Y = 2;
-  size_MPI_Z = 2;
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   HPC libs
@@ -84,18 +75,46 @@ int main(int argc, char **argv) {
   PetscInitialize(&argc, &argv, 0, help);
 #endif
 
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   Command line options
-  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscOptionsSetValue(NULL, "-minJKO_dx_tao_gatol", "1.e-6");
-  PetscOptionsSetValue(NULL, "-minJKO_dx_tao_gttol", "1.e-9");
-  PetscOptionsSetValue(NULL, "-minJKO_dx_tao_max_it", "100");
-  PetscOptionsSetValue(NULL, "-minJKO_dx_tao_type", "cg");
-  PetscOptionsSetValue(NULL, "-minJKO_dx_tao_cg_type", "prp");
-  PetscOptionsSetValue(NULL, "-minJKO_dx_tao_max_funcs", "100");
-  PetscOptionsSetValue(NULL, "-minJKO_dx_tao_monitor_globalization", "");
-  PetscOptionsSetValue(NULL, "-minJKO_dx_tao_view", "");
-  PetscOptionsSetValue(NULL, "-minJKO_dx_tao_converged_reason", "");
+  size_MPI_X = atoi(argv[1]);
+  size_MPI_Y = atoi(argv[2]);
+  size_MPI_Z = atoi(argv[3]);
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Number of MPI divisions: %i %i %i\n",
+                        size_MPI_X, size_MPI_Y, size_MPI_Z));
+
+  PetscInt NumberSteps = atoi(argv[4]);
+  PetscCall(
+      PetscPrintf(PETSC_COMM_WORLD, "Number of steps: %i\n", NumberSteps));
+
+  PetscScalar kappa = atof(argv[5]); //!
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "kappa: %f\n", kappa));
+
+  //! Initialize simulation parameters
+  PetscInt NumberOfBlobs = 1477;
+  PetscScalar TotalMass = 100;
+  PetscScalar radius_domain = 50.0;
+  PetscScalar radius_t0 = 20.0;
+  PetscScalar volume_domain =
+      (4.0 / 3.0) * M_PI * radius_domain * radius_domain * radius_domain;
+  PetscScalar volume_init =
+      (4.0 / 3.0) * M_PI * radius_t0 * radius_t0 * radius_t0;
+  PetscScalar beta_value = 0.5 / DSQR(radius_domain);
+  PetscScalar Delta_r = 2 * radius_domain * pow(NumberOfBlobs, -1.0 / 3.0); //!
+  PetscScalar Delta_t = Delta_r * Delta_r / kappa;                          //!
+  PetscScalar penalty = 1.0 / Delta_t;
+  PetscScalar penalty_buffer = 2.0;
+  PetscScalar m_p = TotalMass / NumberOfBlobs;     //!
+  PetscScalar rho_ref = TotalMass / volume_domain; //!
+  PetscScalar rho_init = TotalMass / volume_init;  //!
+
+  if (rank_MPI == 0) {
+    std::cout << "Delta_r: " << Delta_r << std::endl;
+    std::cout << "Delta_t: " << Delta_t << std::endl;
+    std::cout << "penalty: " << penalty << std::endl;
+    std::cout << "m_p: " << m_p << std::endl;
+    std::cout << "rho_ref: " << rho_ref << std::endl;
+    std::cout << "rho_init: " << rho_init << std::endl;
+    std::cout << "beta_value: " << beta_value << std::endl;
+  }
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       Read information from dump file
@@ -106,16 +125,11 @@ int main(int argc, char **argv) {
     Initialize blob simulation
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   Simulation simulation;
-  PetscCall(simulation.initialize(
-      Simulation_dump_data, BackgroundMeshType::DMDA_mesh, r_cutoff_default));
+  PetscCall(simulation.initialize(Simulation_dump_data,
+                                  BackgroundMeshType::DMDA_mesh, Delta_r));
   PetscCall(
       DMSwarmSetMigrateType(simulation.dm(), DMSWARM_MIGRATE_DMCELLNSCATTER));
   PetscCall(DMSwarmMigrate(simulation.dm(), PETSC_TRUE));
-
-  //! Set potential parameters
-  Potential_AD.C = 0.0;
-  Potential_AD.kappa = kappa;
-  Potential_AD.rho_ref = rho_ref;
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Free dump data
@@ -130,12 +144,16 @@ int main(int argc, char **argv) {
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Set beta, mass and mean momentum value
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscScalar beta_value = 2.0 / DSQR(Delta_r);
   Vec beta;
   PetscCall(DMSwarmCreateGlobalVectorFromField(simulation.dm(), "beta", &beta));
   PetscCall(VecSet(beta, beta_value));
   PetscCall(
       DMSwarmDestroyGlobalVectorFromField(simulation.dm(), "beta", &beta));
+
+  Vec rho;
+  PetscCall(DMSwarmCreateGlobalVectorFromField(simulation.dm(), "rho", &rho));
+  PetscCall(VecSet(rho, rho_init));
+  PetscCall(DMSwarmDestroyGlobalVectorFromField(simulation.dm(), "rho", &rho));
 
   Vec mass;
   PetscCall(DMSwarmCreateGlobalVectorFromField(simulation.dm(), "mass", &mass));
@@ -156,7 +174,9 @@ int main(int argc, char **argv) {
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Initialize  equations
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  AdvectionDiffusionEquations system_equations;
+  AdvectionDiffusionEquations system_equations(kappa, rho_ref);
+  BC_Sphere boundary_conditions(radius_domain, Eigen::Vector3d(0.0, 0.0, 0.0),
+                                penalty, penalty_buffer);
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Outputs initial configuration
@@ -167,11 +187,11 @@ int main(int argc, char **argv) {
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    Update mean position
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  for (unsigned int i = 1; i < 50; i++) {
+  for (unsigned int i = 1; i < NumberSteps; i++) {
 
     //! Run advection-diffusion blob solver
-    PetscCall(Mass_Trasport_Advection_Diffusion(Delta_t, simulation,
-                                                system_equations));
+    PetscCall(Mass_Trasport_Advection_Diffusion(
+        Delta_t, simulation, system_equations, boundary_conditions));
 
     //! Update simulation topology
     PetscCall(simulation.regenerate_topology(Delta_r));

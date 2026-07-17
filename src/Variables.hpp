@@ -93,12 +93,6 @@ extern int max_it_diff;
 extern double max_total_mass;
 extern double max_Xh;
 
-/*****************************************/
-extern DiffusivePotential Potential_AD;
 
-/******************************************************/
-/***** Variable to store the mass of each element *****/
-/******************************************************/
-extern double element_mass[112];
 
 #endif /* VARIABLES_HPP */

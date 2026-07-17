@@ -45,6 +45,3 @@ int max_it_diff = 1;
 double max_total_mass = 0.01;
 double max_Xh = 0.9;
 
-DiffusivePotential Potential_AD;
-
-double element_mass[112];

@@ -22,23 +22,34 @@
  * or transport models without changing the TAO driver.
  */
 class AdvectionDiffusionEquations : public GoverningEquations {
- public:
+public:
+  AdvectionDiffusionEquations(PetscScalar kappa, PetscScalar rho_ref)
+      : kappa(kappa), rho_ref(rho_ref) {}
+
   ~AdvectionDiffusionEquations() override {}
 
-  PetscErrorCode evaluate_meassure_JKO(
-      Vec rho, const Vec q_k1, const Vec beta_k1, const Vec mass,
-      const ParticleTopology* particle_topology) override;
+  PetscErrorCode
+  evaluate_meassure_JKO(Vec rho, const Vec q_k1, const Vec beta_k1,
+                        const Vec mass,
+                        const ParticleTopology *particle_topology) override;
 
-  PetscErrorCode evaluate_JKO(PetscScalar* JKO_system, PetscScalar Delta_t,
-                              const Vec rho, const Vec q_k1, const Vec q_k,
-                              const Vec beta_k1, const Vec beta_k,
-                              const Vec mass,
-                              const ParticleTopology* particle_topology) override;
+  PetscErrorCode
+  evaluate_JKO(PetscScalar *JKO_system, PetscScalar Delta_t, const Vec rho,
+               const Vec q_k1, const Vec q_k, const Vec beta_k1,
+               const Vec beta_k, const Vec mass,
+               const ParticleTopology *particle_topology) override;
 
-  PetscErrorCode evaluate_D_JKO_Dq(
-      Vec D_JKO_Dq, PetscScalar Delta_t, const Vec rho_k1, const Vec x_k1,
-      const Vec x_k, const Vec beta_k1, const Vec mass,
-      const ParticleTopology* particle_topology) override;
+  PetscErrorCode
+  evaluate_D_JKO_Dq(Vec D_JKO_Dq, PetscScalar Delta_t, const Vec rho_k1,
+                    const Vec x_k1, const Vec x_k, const Vec beta_k1,
+                    const Vec mass,
+                    const ParticleTopology *particle_topology) override;
+
+public:
+  /** @brief Diffusion coefficient */
+  PetscScalar kappa;
+  /** @brief Reference density of the system */
+  PetscScalar rho_ref;
 };
 
 #endif /* ADVEC_DIFF_POTENTIAL_HPP */

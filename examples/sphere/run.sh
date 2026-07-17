@@ -22,8 +22,27 @@ else
 MPI_RUN=~/petsc/arch-darwin-c-debug/bin/mpirun
 fi
 
-MPI_P=8
-${MPI_RUN} -np ${MPI_P} ./exe     
+export OMP_NUM_THREADS=6
+
+MPI_P=1
+SIZE_MPI_X=1
+SIZE_MPI_Y=1
+SIZE_MPI_Z=1
+
+NUMBER_STEPS=60
+KAPPA=1
+${MPI_RUN} -np ${MPI_P} ./exe \
+${SIZE_MPI_X} ${SIZE_MPI_Y} ${SIZE_MPI_Z} ${NUMBER_STEPS} ${KAPPA} \
+-minJKO_dx_tao_gatol 1.e-5 \
+-minJKO_dx_tao_gttol 1.e-6 \
+-minJKO_dx_tao_max_it 100 \
+-minJKO_dx_tao_type cg \
+-minJKO_dx_tao_cg_type prp \
+-minJKO_dx_tao_cg_eta 0.01 \
+-minJKO_dx_tao_max_funcs 100 \
+-minJKO_dx_tao_monitor_globalization \
+-minJKO_dx_tao_converged_reason \
+-log_view
 
 echo "------------------------------------"
 echo "    THE SIMULATION HAS FINISHED     "

@@ -26,12 +26,9 @@
 #include "Blobs/Blob-Function.hpp"
 #include "Blobs/Blobs.hpp"
 #include "Macros.hpp"
-#include "Mesh/Boundary-Conditions.hpp"
 
 extern PetscMPIInt size_MPI;
 extern PetscMPIInt rank_MPI;
-
-extern DiffusivePotential Potential_AD;
 
 /************************************************************************/
 
@@ -136,8 +133,6 @@ PetscErrorCode AdvectionDiffusionEquations::evaluate_JKO(
   (void)particle_topology;
 
   unsigned int dim = NumberDimensions;
-  PetscScalar kappa = Potential_AD.kappa;
-  PetscScalar rho_ref = Potential_AD.rho_ref;
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Get local size
@@ -258,10 +253,6 @@ PetscErrorCode AdvectionDiffusionEquations::evaluate_D_JKO_Dq(
   PetscFunctionBeginUser;
 
   unsigned int dim = NumberDimensions;
-
-  PetscScalar kappa = Potential_AD.kappa;
-  PetscScalar rho_ref = Potential_AD.rho_ref;
-  (void)rho_ref;
 
   Blob shapefunc;
 
