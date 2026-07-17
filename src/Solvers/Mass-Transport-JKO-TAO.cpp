@@ -339,7 +339,7 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation &simulation,
     Get index for the ghost particles
   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   ISLocalToGlobalMapping mapping_dofs;
-  PetscCall(ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, dim, n_dof_local,
+  PetscCall(ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, dim, n_sites_local,
                                          idx_q_ptr, PETSC_USE_POINTER,
                                          &mapping_dofs));
 
