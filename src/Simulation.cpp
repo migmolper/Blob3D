@@ -197,26 +197,14 @@ PetscErrorCode Simulation::generate_topology(double buffer_width) {
 
   PetscFunctionBeginUser;
 
-  //! 1º: Contiguous PETSc idx for VecCreateGhostWithArray (before ghosts)
-  PetscInt rstart = 0;
-  PetscCallMPI(MPI_Exscan(&n_sites_local(), &rstart, 1, MPIU_INT, MPI_SUM,
-                          PETSC_COMM_WORLD));
-  if (rank_MPI == 0) {
-    rstart = 0;
-  }
+  //! 1: Contiguous local-idx for VecCreateGhostWithArray (before ghosts)
+  PetscCall(renumber_local_indices());
 
-  PetscInt *idx_ptr = nullptr;
-  PetscCall(DMSwarmGetField(dm(), "idx", NULL, NULL, (void **)&idx_ptr));
-  for (PetscInt site_u = 0; site_u < n_sites_local(); site_u++) {
-    idx_ptr[site_u] = rstart + site_u;
-  }
-  PetscCall(DMSwarmRestoreField(dm(), "idx", NULL, NULL, (void **)&idx_ptr));
-
-  //! 2º: Create ghost blobs
+  //! 2: Create ghost blobs
   PetscCall(DMSwarmSetMigrateType(dm(), DMSWARM_MIGRATE_BASIC));
   PetscCall(DMSwarmCreateGhostBlobs(*this, buffer_width));
 
-  //! 3º: Compute list of mechanical neighs
+  //! 3: Compute list of mechanical neighs
   PetscCall(DMSwarmCreateNeighborsBlobs(*this, buffer_width));
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -230,21 +218,21 @@ PetscErrorCode Simulation::regenerate_topology(double buffer_width) {
 
   PetscInt n_sites_global = 0;
 
-  //! 1º: Destroy topology
+  //! 1: Destroy topology
   PetscCall(DMSwarmDestroyNeighborsBlobs(*this));
 
-  //! 2º: Destroy ghost particles
+  //! 2: Destroy ghost particles
   PetscCall(DMSwarmDestroyGhostBlobs(*this));
 
-  //! 3º: Enforce periodic conditions over physical particles
+  //! 3: Enforce periodic conditions over physical particles
   PetscCall(DMSwarmEnforceBlobsPeriodic(*this, buffer_width));
 
-  //! 4º: Rebin particles
+  //! 4: Rebin particles
   PetscCall(DMSwarmSyncCoorFromMeanQ(*this));
   PetscCall(DMSwarmSetMigrateType(dm(), DMSWARM_MIGRATE_DMCELLNSCATTER));
   PetscCall(DMSwarmMigrate(dm(), PETSC_TRUE));
 
-  //! 5º: Update number of particles and check consistency
+  //! 5: Update number of particles and check consistency
   PetscCall(DMSwarmGetSize(dm(), &n_sites_global));
   PetscCall(DMSwarmGetLocalSize(dm(), &n_sites_local()));
   if (n_sites_global != this->n_sites_global()) {
@@ -254,7 +242,7 @@ PetscErrorCode Simulation::regenerate_topology(double buffer_width) {
             n_sites_global, this->n_sites_global());
   }
 
-  //! 6º: Update "MPI-rank"
+  //! 6: Update "MPI-rank"
   PetscInt *rank_ptr;
   PetscCall(DMSwarmGetField(dm(), "MPI-rank", NULL, NULL, (void **)&rank_ptr));
   for (PetscInt site_u = 0; site_u < n_sites_local(); site_u++) {
@@ -263,27 +251,41 @@ PetscErrorCode Simulation::regenerate_topology(double buffer_width) {
   PetscCall(
       DMSwarmRestoreField(dm(), "MPI-rank", NULL, NULL, (void **)&rank_ptr));
 
-  //! 7º: Contiguous PETSc idx for VecCreateGhostWithArray (before ghosts)
+  //! 7: Refresh local-idx for the new partition (idx stays permanent)
+  PetscCall(renumber_local_indices());
+
+  //! 8: create new ghost particles and impose periodicity over them
+  PetscCall(DMSwarmSetMigrateType(dm(), DMSWARM_MIGRATE_BASIC));
+  PetscCall(DMSwarmCreateGhostBlobs(*this, buffer_width));
+
+  //! 9: Update topology
+  PetscCall(DMSwarmCreateNeighborsBlobs(*this, buffer_width));
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+/********************************************************************************/
+
+PetscErrorCode Simulation::renumber_local_indices() {
+
+  PetscFunctionBeginUser;
+
+  PetscInt n_local = n_sites_local();
   PetscInt rstart = 0;
-  PetscCallMPI(MPI_Exscan(&n_sites_local(), &rstart, 1, MPIU_INT, MPI_SUM,
+  PetscCallMPI(MPI_Exscan(&n_local, &rstart, 1, MPIU_INT, MPI_SUM,
                           PETSC_COMM_WORLD));
   if (rank_MPI == 0) {
     rstart = 0;
   }
 
-  PetscInt *idx_ptr = nullptr;
-  PetscCall(DMSwarmGetField(dm(), "idx", NULL, NULL, (void **)&idx_ptr));
-  for (PetscInt site_u = 0; site_u < n_sites_local(); site_u++) {
-    idx_ptr[site_u] = rstart + site_u;
+  PetscInt *local_idx_ptr = nullptr;
+  PetscCall(DMSwarmGetField(dm(), "local-idx", NULL, NULL,
+                            (void **)&local_idx_ptr));
+  for (PetscInt site_u = 0; site_u < n_local; site_u++) {
+    local_idx_ptr[site_u] = rstart + site_u;
   }
-  PetscCall(DMSwarmRestoreField(dm(), "idx", NULL, NULL, (void **)&idx_ptr));
-
-  //! 8º: create new ghost particles and impose periodicity over them
-  PetscCall(DMSwarmSetMigrateType(dm(), DMSWARM_MIGRATE_BASIC));
-  PetscCall(DMSwarmCreateGhostBlobs(*this, buffer_width));
-
-  //! 9º: Update topology
-  PetscCall(DMSwarmCreateNeighborsBlobs(*this, buffer_width));
+  PetscCall(DMSwarmRestoreField(dm(), "local-idx", NULL, NULL,
+                                (void **)&local_idx_ptr));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }

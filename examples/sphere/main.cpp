@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
   //! Initialize simulation parameters
   PetscInt NumberOfBlobs = 1477;
   PetscScalar TotalMass = 100;
-  PetscScalar radius_domain = 50.0;
+  PetscScalar radius_domain = 40.0;
   PetscScalar radius_t0 = 20.0;
   PetscScalar volume_domain =
       (4.0 / 3.0) * M_PI * radius_domain * radius_domain * radius_domain;
@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
   PetscScalar Delta_r = 2 * radius_domain * pow(NumberOfBlobs, -1.0 / 3.0); //!
   PetscScalar Delta_t = Delta_r * Delta_r / kappa;                          //!
   PetscScalar penalty = 1.0 / Delta_t;
-  PetscScalar penalty_buffer = 2.0;
+  PetscScalar penalty_buffer = 1.0;
   PetscScalar m_p = TotalMass / NumberOfBlobs;     //!
   PetscScalar rho_ref = TotalMass / volume_domain; //!
   PetscScalar rho_init = TotalMass / volume_init;  //!
@@ -130,6 +130,8 @@ int main(int argc, char **argv) {
   PetscCall(
       DMSwarmSetMigrateType(simulation.dm(), DMSWARM_MIGRATE_DMCELLNSCATTER));
   PetscCall(DMSwarmMigrate(simulation.dm(), PETSC_TRUE));
+  PetscCall(DMSwarmGetLocalSize(simulation.dm(), &simulation.n_sites_local()));
+  PetscCall(simulation.renumber_local_indices());
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Free dump data

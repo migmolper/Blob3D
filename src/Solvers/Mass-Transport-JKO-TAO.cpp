@@ -165,11 +165,11 @@ static PetscErrorCode Advection(PetscReal dt, Simulation &simulation,
                             (void **)&box_idx_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-     Get index of the particles
+     Get local-idx for VecCreateGhostWithArray
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscInt *idx_q_ptr;
-  PetscCall(
-      DMSwarmGetField(simulation.dm(), "idx", NULL, NULL, (void **)&idx_q_ptr));
+  PetscInt *local_idx_ptr;
+  PetscCall(DMSwarmGetField(simulation.dm(), "local-idx", NULL, NULL,
+                            (void **)&local_idx_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Get index for the ghost particles
@@ -179,7 +179,7 @@ static PetscErrorCode Advection(PetscReal dt, Simulation &simulation,
   PetscInt *idx_dof_ghost = (PetscInt *)malloc(n_dof_ghost * sizeof(PetscInt));
   for (int i = 0; i < n_sites_ghost; i++) {
     for (int j = 0; j < dim; j++) {
-      idx_dof_ghost[i * dim + j] = idx_q_ptr[n_sites_local + i] * dim + j;
+      idx_dof_ghost[i * dim + j] = local_idx_ptr[n_sites_local + i] * dim + j;
     }
   }
 
@@ -262,8 +262,8 @@ static PetscErrorCode Advection(PetscReal dt, Simulation &simulation,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore idx data
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(simulation.dm(), "idx", NULL, NULL,
-                                (void **)&idx_q_ptr));
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "local-idx", NULL, NULL,
+                                (void **)&local_idx_ptr));
   free(idx_dof_ghost);
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -317,11 +317,11 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation &simulation,
                             (void **)&box_idx_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-     Get index of the particles
+     Get local-idx for VecCreateGhostWithArray
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscInt *idx_q_ptr;
-  PetscCall(
-      DMSwarmGetField(simulation.dm(), "idx", NULL, NULL, (void **)&idx_q_ptr));
+  PetscInt *local_idx_ptr;
+  PetscCall(DMSwarmGetField(simulation.dm(), "local-idx", NULL, NULL,
+                            (void **)&local_idx_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Get index for the ghost particles
@@ -331,7 +331,7 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation &simulation,
   PetscInt *idx_dof_ghost = (PetscInt *)malloc(n_dof_ghost * sizeof(PetscInt));
   for (int i = 0; i < n_sites_ghost; i++) {
     for (int j = 0; j < dim; j++) {
-      idx_dof_ghost[i * dim + j] = idx_q_ptr[n_sites_local + i] * dim + j;
+      idx_dof_ghost[i * dim + j] = local_idx_ptr[n_sites_local + i] * dim + j;
     }
   }
 
@@ -340,7 +340,7 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation &simulation,
   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   ISLocalToGlobalMapping mapping_dofs;
   PetscCall(ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, dim, n_sites_local,
-                                         idx_q_ptr, PETSC_USE_POINTER,
+                                         local_idx_ptr, PETSC_USE_POINTER,
                                          &mapping_dofs));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -399,7 +399,7 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation &simulation,
   Vec rho_k1; //! Molar fraction PETSc vector
   PetscCall(VecCreateGhostWithArray(
       PETSC_COMM_WORLD, n_sites_local, PETSC_DETERMINE, n_sites_ghost,
-      &idx_q_ptr[n_sites_local], rho_k1_ptr, &rho_k1));
+      &local_idx_ptr[n_sites_local], rho_k1_ptr, &rho_k1));
   PetscCall(VecSetUp(rho_k1));
 #ifdef DEBUG_MODE
   PetscCall(VecView(rho_k1, PETSC_VIEWER_STDOUT_WORLD));
@@ -414,7 +414,7 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation &simulation,
   Vec beta_k1; //! Thermal multiplier PETSc vector
   PetscCall(VecCreateGhostWithArray(
       PETSC_COMM_WORLD, n_sites_local, PETSC_DETERMINE, n_sites_ghost,
-      &idx_q_ptr[n_sites_local], beta_k1_ptr, &beta_k1));
+      &local_idx_ptr[n_sites_local], beta_k1_ptr, &beta_k1));
   PetscCall(VecSetUp(beta_k1));
 #ifdef DEBUG_MODE
   PetscCall(VecView(beta_k1, PETSC_VIEWER_STDOUT_WORLD));
@@ -438,7 +438,7 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation &simulation,
   Vec mass; //! Mass PETSc vector
   PetscCall(VecCreateGhostWithArray(
       PETSC_COMM_WORLD, n_sites_local, PETSC_DETERMINE, n_sites_ghost,
-      &idx_q_ptr[n_sites_local], mass_ptr, &mass));
+      &local_idx_ptr[n_sites_local], mass_ptr, &mass));
   PetscCall(VecSetUp(mass));
 #ifdef DEBUG_MODE
   PetscCall(VecView(mass, PETSC_VIEWER_STDOUT_WORLD));
@@ -597,8 +597,8 @@ static PetscErrorCode JKO_Diffusion(PetscReal dt, Simulation &simulation,
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore idx data
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(simulation.dm(), "idx", NULL, NULL,
-                                (void **)&idx_q_ptr));
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "local-idx", NULL, NULL,
+                                (void **)&local_idx_ptr));
   free(idx_dof_ghost);
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

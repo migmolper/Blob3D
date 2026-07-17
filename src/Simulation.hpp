@@ -229,6 +229,16 @@ class Simulation {
   PetscErrorCode regenerate_topology(double buffer_width);
 
   /**
+   * @brief Assign owned `local-idx` = rstart + i for VecCreateGhostWithArray.
+   *
+   * Permanent particle identity stays in `idx`. Call after Migrate() and
+   * before creating ghosts so ghost copies inherit the layout ids.
+   *
+   * @return PetscErrorCode
+   */
+  PetscErrorCode renumber_local_indices();
+
+  /**
    * @brief Destroy neighbor lists and ghost particles
    *
    * @return PetscErrorCode

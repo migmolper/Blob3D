@@ -470,11 +470,11 @@ PetscErrorCode DMSwarmApplyDisplacement(Simulation& simulation, PetscInt FixLabe
                             (void**)&box_idx_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-     Get index of the particles
+     Get local-idx for VecCreateGhostWithArray
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscInt* idx_q_ptr;
-  PetscCall(DMSwarmGetField(simulation.dm(), "idx", NULL, NULL,
-                            (void**)&idx_q_ptr));
+  PetscInt* local_idx_ptr;
+  PetscCall(DMSwarmGetField(simulation.dm(), "local-idx", NULL, NULL,
+                            (void**)&local_idx_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Get index for the ghost particles
@@ -484,7 +484,7 @@ PetscErrorCode DMSwarmApplyDisplacement(Simulation& simulation, PetscInt FixLabe
   PetscInt* idx_dof_ghost = (PetscInt*)malloc(n_dof_ghost * sizeof(PetscInt));
   for (int i = 0; i < n_sites_ghost; i++) {
     for (int j = 0; j < dim; j++) {
-      idx_dof_ghost[i * dim + j] = idx_q_ptr[n_sites_local + i] * dim + j;
+      idx_dof_ghost[i * dim + j] = local_idx_ptr[n_sites_local + i] * dim + j;
     }
   }
 
@@ -556,8 +556,8 @@ PetscErrorCode DMSwarmApplyDisplacement(Simulation& simulation, PetscInt FixLabe
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore idx data
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(DMSwarmRestoreField(simulation.dm(), "idx", NULL, NULL,
-                                (void**)&idx_q_ptr));
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "local-idx", NULL, NULL,
+                                (void**)&local_idx_ptr));
   free(idx_dof_ghost);
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

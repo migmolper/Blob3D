@@ -41,6 +41,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
   PetscFunctionBeginUser;
 
   PetscInt* idx_ptr;
+  PetscInt* local_idx_ptr;
   PetscInt* swarm_rank_ptr;
   PetscInt* ghost_ptr;
   PetscInt* rank_ptr;
@@ -660,6 +661,9 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
   PetscCall(DMSwarmGetField(simulation.dm(), "idx", NULL, NULL,
                             (void**)&idx_ptr));
 
+  PetscCall(DMSwarmGetField(simulation.dm(), "local-idx", NULL, NULL,
+                            (void**)&local_idx_ptr));
+
   PetscCall(DMSwarmGetField(simulation.dm(), DMSwarmField_rank, NULL,
                             NULL, (void**)&swarm_rank_ptr));
 
@@ -703,6 +707,7 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
     box_idx_ptr[ghost_i] = box_idx_ptr[loc_site_i];
     rank_ptr[ghost_i] = rank_MPI;
     idx_ptr[ghost_i] = idx_ptr[loc_site_i];
+    local_idx_ptr[ghost_i] = local_idx_ptr[loc_site_i];
     for (int alpha = 0; alpha < dim; alpha++) {
       mean_q_ptr[ghost_i * dim + alpha] = mean_q_ptr[loc_site_i * dim + alpha];
       mean_p_ptr[ghost_i * dim + alpha] =
@@ -717,6 +722,9 @@ PetscErrorCode DMSwarmCreateGhostBlobs(Simulation& simulation, double buffer_wid
 
   PetscCall(DMSwarmRestoreField(simulation.dm(), "idx", NULL, NULL,
                                 (void**)&idx_ptr));
+
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "local-idx", NULL, NULL,
+                                (void**)&local_idx_ptr));
 
   PetscCall(DMSwarmRestoreField(simulation.dm(), "mean-q", NULL, NULL,
                                 (void**)&mean_q_ptr));

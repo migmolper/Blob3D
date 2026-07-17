@@ -389,8 +389,12 @@ PetscErrorCode Simulation::initialize(const dump_file &Simulation_file,
   PetscCall(
       DMSwarmRegisterPetscDatatypeField(blobs_data, "box-idx", 1, PETSC_INT));
 
-  //! Site idx
+  //! Site idx (permanent particle id from the dump; never changes after init)
   PetscCall(DMSwarmRegisterPetscDatatypeField(blobs_data, "idx", 1, PETSC_INT));
+
+  //! Local PETSc layout id for VecCreateGhostWithArray (updated after Migrate)
+  PetscCall(DMSwarmRegisterPetscDatatypeField(blobs_data, "local-idx", 1,
+                                              PETSC_INT));
 
   //! MPI rank
   PetscCall(
@@ -418,19 +422,16 @@ PetscErrorCode Simulation::initialize(const dump_file &Simulation_file,
   PetscCall(DMSwarmGetSize(blobs_data, &n_particles_global));
   PetscCall(DMSwarmGetLocalSize(blobs_data, &n_particles_local));
 
-  //! Create a context to relate petsc numbering and dump numbering
+  //! Create AO: dump ordering -> PETSc contiguous ownership (do not rewrite idx)
   AO dump2petsc_mapping;
   IS dump_ordering;
 
   PetscInt *idx_ptr;
   PetscCall(DMSwarmGetField(blobs_data, "idx", NULL, NULL, (void **)&idx_ptr));
-
   PetscCall(ISCreateGeneral(PETSC_COMM_WORLD, n_particles_local, idx_ptr,
                             PETSC_COPY_VALUES, &dump_ordering));
   PetscCall(AOCreateBasicIS(dump_ordering, NULL, &dump2petsc_mapping));
   PetscCall(ISDestroy(&dump_ordering));
-  PetscCall(
-      AOApplicationToPetsc(dump2petsc_mapping, n_particles_local, idx_ptr));
   PetscCall(
       DMSwarmRestoreField(blobs_data, "idx", NULL, NULL, (void **)&idx_ptr));
 
@@ -438,6 +439,9 @@ PetscErrorCode Simulation::initialize(const dump_file &Simulation_file,
   particles_.adopt(blobs_data, dump2petsc_mapping, n_particles_global,
                    n_particles_local);
   env_ = Environment{};
+
+  //! Contiguous Vec layout ids for the initial partition
+  PetscCall(renumber_local_indices());
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
