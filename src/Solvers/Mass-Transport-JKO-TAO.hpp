@@ -11,6 +11,7 @@
 PetscErrorCode
 Mass_Trasport_Advection_Diffusion(PetscReal dt, Simulation &simulation,
                                   GoverningEquations &system_equations,
-                                  boundaryCondition &boundary_conditions);
+                                  boundaryCondition &boundary_conditions,
+                                  PetscReal buffer_width);
 
 #endif /* MASS_TRANSPORT_JKO_TAO_HPP */

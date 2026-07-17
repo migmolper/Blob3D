@@ -191,7 +191,7 @@ int main(int argc, char **argv) {
 
     //! Run advection-diffusion blob solver
     PetscCall(Mass_Trasport_Advection_Diffusion(
-        Delta_t, simulation, system_equations, boundary_conditions));
+        Delta_t, simulation, system_equations, boundary_conditions, Delta_r));
 
     //! Update simulation topology
     PetscCall(simulation.regenerate_topology(Delta_r));

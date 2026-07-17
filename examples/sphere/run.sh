@@ -22,12 +22,12 @@ else
 MPI_RUN=~/petsc/arch-darwin-c-debug/bin/mpirun
 fi
 
-export OMP_NUM_THREADS=6
+export OMP_NUM_THREADS=1
 
-MPI_P=1
-SIZE_MPI_X=1
-SIZE_MPI_Y=1
-SIZE_MPI_Z=1
+MPI_P=8
+SIZE_MPI_X=2
+SIZE_MPI_Y=2
+SIZE_MPI_Z=2
 
 NUMBER_STEPS=60
 KAPPA=1

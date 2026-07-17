@@ -99,11 +99,10 @@ static PetscErrorCode compute_RHS(Tao tao, Vec X_k1, Vec D_JKO_Dx, void *ctx);
 PetscErrorCode
 Mass_Trasport_Advection_Diffusion(PetscReal dt, Simulation &simulation,
                                   GoverningEquations &system_equations,
-                                  boundaryCondition &boundary_conditions) {
+                                  boundaryCondition &boundary_conditions,
+                                  PetscReal buffer_width) {
 
   PetscFunctionBeginUser;
-
-  PetscScalar Delta_r = 6.0;
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Advection step: update the particle positions according to U
@@ -111,9 +110,9 @@ Mass_Trasport_Advection_Diffusion(PetscReal dt, Simulation &simulation,
   PetscCall(Advection(dt, simulation, system_equations));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    Source step: adjust the number of particles to account for sources
+    Rebin particles, rebuild ghosts/neighbors before the JKO solve
   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  PetscCall(simulation.regenerate_topology(Delta_r));
+  PetscCall(simulation.regenerate_topology(buffer_width));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Unconstrained diffusion step: update the particle position
