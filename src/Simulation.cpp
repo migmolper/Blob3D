@@ -222,8 +222,7 @@ PetscErrorCode Simulation::generate_topology(double buffer_width)
 
   PetscFunctionBeginUser;
 
-  //! 1: Rebin particles to the owning MPI rank (same path as regenerate)
-  PetscCall(DMSwarmSyncCoorFromMeanQ(*this));
+  //! 1: Rebin particles to the owning MPI rank
   PetscCall(DMSwarmSetMigrateType(dm(), DMSWARM_MIGRATE_DMCELLNSCATTER));
   PetscCall(DMSwarmMigrate(dm(), PETSC_TRUE));
   PetscCall(DMSwarmGetLocalSize(dm(), &n_sites_local()));
