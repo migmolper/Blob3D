@@ -21,12 +21,11 @@ public:
    * @param radius_sphere Radius of the sphere
    * @param center_sphere Center of the sphere
    * @param penalty Penalty stiffness
-   * @param buffer Buffer distance
    */
   BC_Sphere(PetscScalar radius_sphere, const Eigen::Vector3d center_sphere,
-            PetscScalar penalty, PetscScalar buffer)
+            PetscScalar penalty)
       : radius_sphere(radius_sphere), center_sphere(center_sphere),
-        penalty(penalty), buffer(buffer) {}
+        penalty(penalty) {}
 
   /**
    * @brief Destructor
@@ -58,8 +57,6 @@ public:
   PetscScalar radius_sphere;
   /** @brief Penalty stiffness */
   PetscScalar penalty;
-  /** @brief Buffer distance */
-  PetscScalar buffer;
   /** @brief Center of the sphere */
   const Eigen::Vector3d center_sphere;
 };

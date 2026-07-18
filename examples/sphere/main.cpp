@@ -44,7 +44,8 @@ const char help[] = "BLOB3D blob particle method library (static)";
 
 /********************************************************************************/
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
 
   unsigned int dim = NumberDimensions;
 
@@ -85,31 +86,38 @@ int main(int argc, char **argv) {
   PetscCall(
       PetscPrintf(PETSC_COMM_WORLD, "Number of steps: %i\n", NumberSteps));
 
-  PetscScalar kappa = atof(argv[5]); //!
+  PetscScalar TotalMass = atof(argv[5]); //!
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "TotalMass: %f\n", TotalMass));
+
+  PetscScalar radius_domain = atof(argv[6]); //!
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "radius_domain: %f\n", radius_domain));
+
+  PetscScalar kappa = atof(argv[7]); //!
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "kappa: %f\n", kappa));
+
+  PetscScalar penalty = atof(argv[8]); //!
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "penalty: %f\n", penalty));
+
+  PetscScalar Delta_r = atof(argv[9]); //!
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Delta_r: %f\n", Delta_r));
+
 
   //! Initialize simulation parameters
   PetscInt NumberOfBlobs = 1477;
-  PetscScalar TotalMass = 100;
-  PetscScalar radius_domain = 50.0;
   PetscScalar radius_t0 = 20.0;
   PetscScalar volume_domain =
       (4.0 / 3.0) * M_PI * radius_domain * radius_domain * radius_domain;
   PetscScalar volume_init =
-      (4.0 / 3.0) * M_PI * radius_t0 * radius_t0 * radius_t0;
-  PetscScalar beta_value = 0.5 / DSQR(radius_domain);
-  PetscScalar Delta_r = 2 * radius_domain * pow(NumberOfBlobs, -1.0 / 3.0); //!
-  PetscScalar Delta_t = Delta_r * Delta_r / kappa;                          //!
-  PetscScalar penalty = 1.0 / Delta_t;
-  PetscScalar penalty_buffer = 2.0;
-  PetscScalar m_p = TotalMass / NumberOfBlobs;     //!
-  PetscScalar rho_ref = TotalMass / volume_domain; //!
-  PetscScalar rho_init = TotalMass / volume_init;  //!
+      (4.0 / 3.0) * M_PI * radius_t0 * radius_t0 * radius_t0;  
+  PetscScalar beta_value = 1.0 / DSQR(Delta_r);
+  PetscScalar Delta_t = 0.1 * Delta_r * Delta_r / kappa; //!
+  PetscScalar m_p = TotalMass / NumberOfBlobs;           //!
+  PetscScalar rho_ref = TotalMass / volume_domain;       //!
+  PetscScalar rho_init = TotalMass / volume_init;        //!
 
-  if (rank_MPI == 0) {
-    std::cout << "Delta_r: " << Delta_r << std::endl;
+  if (rank_MPI == 0)
+  {
     std::cout << "Delta_t: " << Delta_t << std::endl;
-    std::cout << "penalty: " << penalty << std::endl;
     std::cout << "m_p: " << m_p << std::endl;
     std::cout << "rho_ref: " << rho_ref << std::endl;
     std::cout << "rho_init: " << rho_init << std::endl;
@@ -173,7 +181,7 @@ int main(int argc, char **argv) {
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   AdvectionDiffusionEquations system_equations(kappa, rho_ref);
   BC_Sphere boundary_conditions(radius_domain, Eigen::Vector3d(0.0, 0.0, 0.0),
-                                penalty, penalty_buffer);
+                                penalty);
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Outputs initial configuration
@@ -184,7 +192,8 @@ int main(int argc, char **argv) {
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    Update mean position
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  for (unsigned int i = 1; i < NumberSteps; i++) {
+  for (unsigned int i = 1; i < NumberSteps; i++)
+  {
 
     //! Run advection-diffusion blob solver
     PetscCall(Mass_Trasport_Advection_Diffusion(

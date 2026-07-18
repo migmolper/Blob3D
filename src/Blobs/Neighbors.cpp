@@ -29,8 +29,8 @@ extern PetscMPIInt rank_MPI;
 
 /************************************************************************/
 
-PetscErrorCode DMSwarmCreateNeighborsBlobs(Simulation &simulation,
-                                           double r_cutoff) {
+PetscErrorCode DMSwarmCreateNeighborsBlobs(Simulation &simulation)
+{
 
   PetscFunctionBeginUser;
 
@@ -52,6 +52,13 @@ PetscErrorCode DMSwarmCreateNeighborsBlobs(Simulation &simulation,
   Eigen::Map<MatrixType> mean_q(mean_q_ptr, n_sites_local_ghosted, 3);
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    Get the thermal multiplier vector
+    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+  PetscScalar *beta_ptr;
+  PetscCall(DMSwarmGetField(simulation.dm(), "beta", NULL, NULL,
+                            (void **)&beta_ptr));
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Get index of the particles
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscInt *idx_ptr;
@@ -71,10 +78,15 @@ PetscErrorCode DMSwarmCreateNeighborsBlobs(Simulation &simulation,
   IS *mechanical_neighs_idx;
   PetscCall(PetscMalloc1(n_sites_local_ghosted, &mechanical_neighs_idx));
 
-  for (PetscInt site_i = 0; site_i < n_sites_local_ghosted; site_i++) {
+  for (PetscInt site_i = 0; site_i < n_sites_local_ghosted; site_i++)
+  {
 
     //! Get mean position of site i
     Eigen::Vector3d mean_q_i = mean_q.block<1, 3>(site_i, 0);
+
+    //! Get the cutoff radius
+    double beta_i = beta_ptr[site_i];
+    double r_cutoff = 1.0 / sqrt(beta_i);
 
     //! Create auxiliar list to store the diffusive neighbors of the site i
     unsigned int num_neigh_i = 0;
@@ -86,9 +98,11 @@ PetscErrorCode DMSwarmCreateNeighborsBlobs(Simulation &simulation,
     num_neigh_i += 1;
 
     //! Search neighbourhs
-    for (unsigned site_j = 0; site_j < n_sites_local_ghosted; site_j++) {
+    for (unsigned site_j = 0; site_j < n_sites_local_ghosted; site_j++)
+    {
 
-      if (idx_ptr[site_i] != idx_ptr[site_j]) {
+      if (idx_ptr[site_i] != idx_ptr[site_j])
+      {
 
         //! Get mean position and specie of site j in the periodic box
         Eigen::Vector3d mean_q_j = mean_q.block<1, 3>(site_j, 0);
@@ -97,12 +111,14 @@ PetscErrorCode DMSwarmCreateNeighborsBlobs(Simulation &simulation,
         double norm_r_ij = (mean_q_i - mean_q_j).norm();
 
         //!
-        if ((norm_r_ij <= r_cutoff) && (num_neigh_i < maxneigh)) {
+        if ((norm_r_ij <= r_cutoff) && (num_neigh_i < maxneigh))
+        {
 
           mech_neighs_idx_i_ptr[num_neigh_i] = site_j;
           num_neigh_i += 1;
-
-        } else if ((norm_r_ij <= r_cutoff) && (num_neigh_i == maxneigh)) {
+        }
+        else if ((norm_r_ij <= r_cutoff) && (num_neigh_i == maxneigh))
+        {
 
           PetscCall(PetscError(
               PETSC_COMM_SELF, __LINE__, "DMSwarmCreateNeighborsBlobs",
@@ -113,7 +129,8 @@ PetscErrorCode DMSwarmCreateNeighborsBlobs(Simulation &simulation,
       }
     }
 
-    if ((ghost_ptr[site_i] == 0) && (num_neigh_i == 1)) {
+    if ((ghost_ptr[site_i] == 0) && (num_neigh_i == 1))
+    {
       PetscCall(PetscPrintf(PETSC_COMM_SELF,
                             "No neighbors where finded for particle %i at "
                             "(%f, %f, %f). Increase the search radius.\n",
@@ -142,6 +159,12 @@ PetscErrorCode DMSwarmCreateNeighborsBlobs(Simulation &simulation,
                                 (void **)&mean_q_ptr));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    Restore thermal Lagrange Multiplier (beta) data
+   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+  PetscCall(DMSwarmRestoreField(simulation.dm(), "beta", NULL, NULL,
+                                (void **)&beta_ptr));
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Restore idx data
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   PetscCall(DMSwarmRestoreField(simulation.dm(), "idx", NULL, NULL,
@@ -158,7 +181,8 @@ PetscErrorCode DMSwarmCreateNeighborsBlobs(Simulation &simulation,
 
 /********************************************************************************/
 
-PetscErrorCode DMSwarmDestroyNeighborsBlobs(Simulation &simulation) {
+PetscErrorCode DMSwarmDestroyNeighborsBlobs(Simulation &simulation)
+{
   PetscFunctionBeginUser;
   PetscCall(simulation.topology().clear());
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -167,14 +191,16 @@ PetscErrorCode DMSwarmDestroyNeighborsBlobs(Simulation &simulation) {
 /********************************************************************************/
 
 PetscErrorCode DMSwarmGetParticleNeighbors(ParticleTopology *particle_topology,
-                                           IS mechanical_neighs_idx) {
+                                           IS mechanical_neighs_idx)
+{
 
   PetscFunctionBeginUser;
 
   PetscCall(ISGetSize(mechanical_neighs_idx, &particle_topology->size));
 
   //! Get the indices of the mechanical neighbors
-  if (particle_topology->size > 0) {
+  if (particle_topology->size > 0)
+  {
     PetscCall(ISGetIndices(mechanical_neighs_idx, &particle_topology->list));
   }
 
@@ -185,11 +211,13 @@ PetscErrorCode DMSwarmGetParticleNeighbors(ParticleTopology *particle_topology,
 
 PetscErrorCode
 DMSwarmRestoreParticleNeighbors(ParticleTopology *particle_topology,
-                                IS mechanical_neighs_idx) {
+                                IS mechanical_neighs_idx)
+{
 
   PetscFunctionBeginUser;
 
-  if (particle_topology->size > 0) {
+  if (particle_topology->size > 0)
+  {
     PetscCall(
         ISRestoreIndices(mechanical_neighs_idx, &particle_topology->list));
   }

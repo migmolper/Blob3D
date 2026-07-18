@@ -247,7 +247,7 @@ PetscErrorCode Simulation::generate_topology(double buffer_width)
   PetscCall(DMSwarmCreateGhostBlobs(*this, buffer_width));
 
   //! 5: Compute list of mechanical neighs
-  PetscCall(DMSwarmCreateNeighborsBlobs(*this, buffer_width));
+  PetscCall(DMSwarmCreateNeighborsBlobs(*this));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
@@ -304,7 +304,7 @@ PetscErrorCode Simulation::regenerate_topology(double buffer_width)
   PetscCall(DMSwarmCreateGhostBlobs(*this, buffer_width));
 
   //! 9: Update topology
-  PetscCall(DMSwarmCreateNeighborsBlobs(*this, buffer_width));
+  PetscCall(DMSwarmCreateNeighborsBlobs(*this));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }

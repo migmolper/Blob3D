@@ -25,7 +25,8 @@ extern PetscMPIInt rank_MPI;
 
 PetscErrorCode BC_Sphere::add_barrier_potential(PetscScalar *JKO_system,
                                                 const Vec x_k1,
-                                                const Vec mass) {
+                                                const Vec mass)
+{
   PetscFunctionBeginUser;
 
   unsigned int dim = NumberDimensions;
@@ -59,9 +60,10 @@ PetscErrorCode BC_Sphere::add_barrier_potential(PetscScalar *JKO_system,
   double barrier_potential_local = 0.0;
   double barrier_potential = 0.0;
 
-#pragma omp parallel for reduction(+ : barrier_potential_local)                \
+#pragma omp parallel for reduction(+ : barrier_potential_local) \
     schedule(runtime)
-  for (int site_u = 0; site_u < n_sites; site_u++) {
+  for (int site_u = 0; site_u < n_sites; site_u++)
+  {
 
     //! @brief Get particle information of site i
     Eigen::Map<const Eigen::Vector3d> x_u_k1(&x_k1_ptr[dim * site_u]);
@@ -72,9 +74,7 @@ PetscErrorCode BC_Sphere::add_barrier_potential(PetscScalar *JKO_system,
     PetscScalar distance = radius_sphere - (x_u_k1 - center_sphere).norm();
 
     //! @brief Add the barrier potential to the JKO system
-    if (distance <= buffer) {
-      barrier_potential_local += penalty * distance * distance * mass_u;
-    }
+    barrier_potential_local += penalty * distance * distance * mass_u;
   }
 
   //! Perform partial sum reduction of each MPI process
@@ -82,7 +82,8 @@ PetscErrorCode BC_Sphere::add_barrier_potential(PetscScalar *JKO_system,
                            MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
 
   //! Check if the barrier potential is a NAN
-  if (PetscIsNanReal(barrier_potential) == PETSC_TRUE) {
+  if (PetscIsNanReal(barrier_potential) == PETSC_TRUE)
+  {
     PetscCall(PetscError(PETSC_COMM_SELF, __LINE__,
                          "BC_Sphere::add_barrier_potential", __FILE__,
                          PETSC_ERR_RETURN, PETSC_ERROR_INITIAL,
@@ -91,7 +92,8 @@ PetscErrorCode BC_Sphere::add_barrier_potential(PetscScalar *JKO_system,
   }
 
   //! Check if the barrier potential is infinity
-  if (PetscIsInfReal(barrier_potential) == PETSC_TRUE) {
+  if (PetscIsInfReal(barrier_potential) == PETSC_TRUE)
+  {
     PetscCall(PetscError(PETSC_COMM_SELF, __LINE__,
                          "BC_Sphere::add_barrier_potential", __FILE__,
                          PETSC_ERR_RETURN, PETSC_ERROR_INITIAL,
@@ -120,7 +122,8 @@ PetscErrorCode BC_Sphere::add_barrier_potential(PetscScalar *JKO_system,
 /************************************************************************/
 
 PetscErrorCode BC_Sphere::add_barrier_forces(Vec D_JKO_Dq, const Vec x_k1,
-                                             const Vec mass) {
+                                             const Vec mass)
+{
 
   PetscFunctionBeginUser;
 
@@ -157,7 +160,8 @@ PetscErrorCode BC_Sphere::add_barrier_forces(Vec D_JKO_Dq, const Vec x_k1,
    Evaluate the barrier forces
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 #pragma omp parallel for schedule(runtime)
-  for (int site_u = 0; site_u < n_sites; site_u++) {
+  for (int site_u = 0; site_u < n_sites; site_u++)
+  {
 
     //! @brief Get particle information of site i
     Eigen::Map<const Eigen::Vector3d> x_u_k1(&x_k1_ptr[dim * site_u]);
@@ -168,13 +172,12 @@ PetscErrorCode BC_Sphere::add_barrier_forces(Vec D_JKO_Dq, const Vec x_k1,
     PetscScalar distance = radius_sphere - (x_u_k1 - center_sphere).norm();
 
     //! @brief Compute the barrier forceforce_u
-    if (distance <= buffer) {
-      Eigen::Vector3d force_u =
-          penalty * distance * (x_u_k1 - center_sphere).normalized() * mass_u;
-      //! Fill residual vector
-      for (PetscInt alpha = 0; alpha < dim; alpha++) {
-        D_JKO_Dq_ptr[site_u * dim + alpha] += force_u(alpha);
-      }
+    Eigen::Vector3d force_u =
+        penalty * distance * (x_u_k1 - center_sphere).normalized() * mass_u;
+    //! Fill residual vector
+    for (PetscInt alpha = 0; alpha < dim; alpha++)
+    {
+      D_JKO_Dq_ptr[site_u * dim + alpha] += force_u(alpha);
     }
   }
 

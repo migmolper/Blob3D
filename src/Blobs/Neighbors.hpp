@@ -10,8 +10,7 @@
 #include "Simulation.hpp"
 #include <Eigen/Dense>
 
-PetscErrorCode DMSwarmCreateNeighborsBlobs(Simulation &simulation,
-                                           double r_cutoff);
+PetscErrorCode DMSwarmCreateNeighborsBlobs(Simulation &simulation);
 
 PetscErrorCode DMSwarmDestroyNeighborsBlobs(Simulation &simulation);
 

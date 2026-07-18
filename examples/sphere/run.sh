@@ -29,17 +29,22 @@ SIZE_MPI_X=2
 SIZE_MPI_Y=2
 SIZE_MPI_Z=2
 
-NUMBER_STEPS=120
+NUMBER_STEPS=30
+TOTAL_MASS=1
+RADIUS_DOMAIN=40.0
 KAPPA=1
+PENALTY=0.0001
+Delta_r=12.0
 ${MPI_RUN} -np ${MPI_P} ./exe \
-${SIZE_MPI_X} ${SIZE_MPI_Y} ${SIZE_MPI_Z} ${NUMBER_STEPS} ${KAPPA} \
--minJKO_dx_tao_gatol 1.e-5 \
+${SIZE_MPI_X} ${SIZE_MPI_Y} ${SIZE_MPI_Z} ${NUMBER_STEPS} \
+${TOTAL_MASS} ${RADIUS_DOMAIN} ${KAPPA} ${PENALTY} ${Delta_r} \
+-minJKO_dx_tao_gatol 1.e-4 \
 -minJKO_dx_tao_gttol 1.e-6 \
 -minJKO_dx_tao_max_it 100 \
 -minJKO_dx_tao_type cg \
 -minJKO_dx_tao_cg_type prp \
 -minJKO_dx_tao_cg_eta 0.01 \
--minJKO_dx_tao_max_funcs 100 \
+-minJKO_dx_tao_max_funcs 1000 \
 -minJKO_dx_tao_monitor_globalization \
 -minJKO_dx_tao_converged_reason \
 -log_view
