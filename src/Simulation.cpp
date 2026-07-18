@@ -275,8 +275,6 @@ PetscErrorCode Simulation::regenerate_topology(double buffer_width)
   PetscCall(DMSwarmSetMigrateType(dm(), DMSWARM_MIGRATE_DMCELLNSCATTER));
   PetscCall(DMSwarmMigrate(dm(), PETSC_TRUE));
 
-  //! 5: Add source term
-
   //! 5: Update number of particles and check consistency
   PetscCall(DMSwarmGetSize(dm(), &n_sites_global));
   PetscCall(DMSwarmGetLocalSize(dm(), &n_sites_local()));
@@ -287,6 +285,8 @@ PetscErrorCode Simulation::regenerate_topology(double buffer_width)
             " (new), %" PetscInt_FMT " (old)",
             n_sites_global, this->n_sites_global());
   }
+
+  //! 5: Add source term
 
   //! 6: Update "MPI-rank"
   PetscInt *rank_ptr;
