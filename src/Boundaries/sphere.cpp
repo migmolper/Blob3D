@@ -71,10 +71,10 @@ PetscErrorCode BC_Sphere::add_barrier_potential(PetscScalar *JKO_system,
 
     //! @brief Compute the distance between the particle and the center of the
     //! sphere
-    PetscScalar distance = radius_sphere - (x_u_k1 - center_sphere).norm();
+    PetscScalar distance = (x_u_k1 - center_sphere).norm() - radius_sphere;
 
     //! @brief Add the barrier potential to the JKO system
-    barrier_potential_local += penalty * distance * distance * mass_u;
+    barrier_potential_local += 0.5 * penalty * DSQR(distance) * mass_u;
   }
 
   //! Perform partial sum reduction of each MPI process
@@ -169,11 +169,10 @@ PetscErrorCode BC_Sphere::add_barrier_forces(Vec D_JKO_Dq, const Vec x_k1,
 
     //! @brief Compute the distance between the particle and the center of the
     //! sphere
-    PetscScalar distance = radius_sphere - (x_u_k1 - center_sphere).norm();
+    PetscScalar distance = (x_u_k1 - center_sphere).norm() - radius_sphere;
 
     //! @brief Compute the barrier forceforce_u
-    Eigen::Vector3d force_u =
-        penalty * distance * (x_u_k1 - center_sphere).normalized() * mass_u;
+    Eigen::Vector3d force_u = - penalty * distance * (x_u_k1 - center_sphere).normalized() * mass_u;
     //! Fill residual vector
     for (PetscInt alpha = 0; alpha < dim; alpha++)
     {
