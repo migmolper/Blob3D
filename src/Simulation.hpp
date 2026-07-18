@@ -21,7 +21,8 @@
  * @brief Thermodynamic environment driving the simulation
  *
  */
-struct Environment {
+struct Environment
+{
 
   //! @param pressure: Environmental value of the pressure
   double pressure{0.0};
@@ -42,15 +43,16 @@ struct Environment {
  * Move-only. The background FE mesh attached via DMSwarmSetCellDM is destroyed
  * together with the swarm.
  */
-class ParticleSwarm {
- public:
+class ParticleSwarm
+{
+public:
   ParticleSwarm() = default;
   ~ParticleSwarm();
 
-  ParticleSwarm(ParticleSwarm&& other) noexcept;
-  ParticleSwarm& operator=(ParticleSwarm&& other) noexcept;
-  ParticleSwarm(const ParticleSwarm&) = delete;
-  ParticleSwarm& operator=(const ParticleSwarm&) = delete;
+  ParticleSwarm(ParticleSwarm &&other) noexcept;
+  ParticleSwarm &operator=(ParticleSwarm &&other) noexcept;
+  ParticleSwarm(const ParticleSwarm &) = delete;
+  ParticleSwarm &operator=(const ParticleSwarm &) = delete;
 
   /**
    * @brief Access the owned DMSwarm
@@ -70,19 +72,19 @@ class ParticleSwarm {
    * @brief Number of particles in the global domain
    */
   PetscInt n_global() const { return n_global_; }
-  PetscInt& n_global() { return n_global_; }
+  PetscInt &n_global() { return n_global_; }
 
   /**
    * @brief Number of particles in the local domain (without ghost)
    */
   PetscInt n_local() const { return n_local_; }
-  PetscInt& n_local() { return n_local_; }
+  PetscInt &n_local() { return n_local_; }
 
   /**
    * @brief Number of ghost particles in the local domain
    */
   PetscInt n_ghost() const { return n_ghost_; }
-  PetscInt& n_ghost() { return n_ghost_; }
+  PetscInt &n_ghost() { return n_ghost_; }
 
   /**
    * @brief Destroy owned PETSc objects and reset counts
@@ -99,7 +101,7 @@ class ParticleSwarm {
    */
   void adopt(DM dm, AO dump2petsc, PetscInt n_global, PetscInt n_local);
 
- private:
+private:
   /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    @brief System information
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !*/
@@ -129,15 +131,16 @@ class ParticleSwarm {
  * Each entry is an IS listing the mechanical neighbors of a local (ghosted)
  * particle. Ownership of the IS array is transferred via adopt().
  */
-class NeighborTopology {
- public:
+class NeighborTopology
+{
+public:
   NeighborTopology() = default;
   ~NeighborTopology();
 
-  NeighborTopology(NeighborTopology&& other) noexcept;
-  NeighborTopology& operator=(NeighborTopology&& other) noexcept;
-  NeighborTopology(const NeighborTopology&) = delete;
-  NeighborTopology& operator=(const NeighborTopology&) = delete;
+  NeighborTopology(NeighborTopology &&other) noexcept;
+  NeighborTopology &operator=(NeighborTopology &&other) noexcept;
+  NeighborTopology(const NeighborTopology &) = delete;
+  NeighborTopology &operator=(const NeighborTopology &) = delete;
 
   /**
    * @brief Take ownership of an array of IS objects of length @p n
@@ -145,7 +148,7 @@ class NeighborTopology {
    * @param neighs Array of IS (mechanical neighbors per site)
    * @param n Length of the array (typically local ghosted size)
    */
-  void adopt(IS* neighs, PetscInt n);
+  void adopt(IS *neighs, PetscInt n);
 
   /**
    * @brief Destroy all IS objects and free the array
@@ -157,8 +160,8 @@ class NeighborTopology {
   /**
    * @brief Raw pointer to the IS array (may be nullptr)
    */
-  IS* data() const { return neighs_; }
-  IS*& data() { return neighs_; }
+  IS *data() const { return neighs_; }
+  IS *&data() { return neighs_; }
 
   /**
    * @brief Number of IS entries currently owned
@@ -170,13 +173,13 @@ class NeighborTopology {
    */
   bool empty() const { return neighs_ == nullptr; }
 
- private:
+private:
   /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    @brief Topological variables of each site
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !*/
 
   //! @param neighs_: Local indices of mechanical neighbors per site
-  IS* neighs_{nullptr};
+  IS *neighs_{nullptr};
 
   //! @param n_: Length of neighs_
   PetscInt n_{0};
@@ -191,15 +194,16 @@ class NeighborTopology {
  * call initialize() (PETSc error-code style). Topology helpers mirror the
  * former DMSwarm*BlobsTopology API.
  */
-class Simulation {
- public:
+class Simulation
+{
+public:
   Simulation() = default;
   ~Simulation();
 
-  Simulation(Simulation&&) noexcept = default;
-  Simulation& operator=(Simulation&&) noexcept = default;
-  Simulation(const Simulation&) = delete;
-  Simulation& operator=(const Simulation&) = delete;
+  Simulation(Simulation &&) noexcept = default;
+  Simulation &operator=(Simulation &&) noexcept = default;
+  Simulation(const Simulation &) = delete;
+  Simulation &operator=(const Simulation &) = delete;
 
   /**
    * @brief Create the background mesh, DMSwarm fields and dump→PETSc mapping
@@ -209,7 +213,7 @@ class Simulation {
    * @param r_cutoff Cutoff radius used to size the background mesh
    * @return PetscErrorCode
    */
-  PetscErrorCode initialize(const dump_file& dump, BackgroundMeshType mesh_type,
+  PetscErrorCode initialize(const dump_file &dump, BackgroundMeshType mesh_type,
                             double r_cutoff);
 
   /**
@@ -227,6 +231,14 @@ class Simulation {
    * @return PetscErrorCode
    */
   PetscErrorCode regenerate_topology(double buffer_width);
+
+  /**
+   * @brief Inject particles from a dump_file into the simulation
+   *
+   * @param dump Input dump_file with particle data
+   * @return PetscErrorCode
+   */
+  PetscErrorCode inject_particles();
 
   /**
    * @brief Assign owned `local-idx` = rstart + i for VecCreateGhostWithArray.
@@ -248,20 +260,20 @@ class Simulation {
   /**
    * @brief Access the particle swarm sub-object
    */
-  ParticleSwarm& particles() { return particles_; }
-  const ParticleSwarm& particles() const { return particles_; }
+  ParticleSwarm &particles() { return particles_; }
+  const ParticleSwarm &particles() const { return particles_; }
 
   /**
    * @brief Access the neighbor topology sub-object
    */
-  NeighborTopology& topology() { return topology_; }
-  const NeighborTopology& topology() const { return topology_; }
+  NeighborTopology &topology() { return topology_; }
+  const NeighborTopology &topology() const { return topology_; }
 
   /**
    * @brief Access the thermodynamic environment
    */
-  Environment& env() { return env_; }
-  const Environment& env() const { return env_; }
+  Environment &env() { return env_; }
+  const Environment &env() const { return env_; }
 
   /*! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    @brief Convenience accessors used throughout the solvers
@@ -274,21 +286,21 @@ class Simulation {
 
   //! @param n_sites_global: Number of particles in the global domain
   PetscInt n_sites_global() const { return particles_.n_global(); }
-  PetscInt& n_sites_global() { return particles_.n_global(); }
+  PetscInt &n_sites_global() { return particles_.n_global(); }
 
   //! @param n_sites_local: Number of particles in the local domain (without ghost)
   PetscInt n_sites_local() const { return particles_.n_local(); }
-  PetscInt& n_sites_local() { return particles_.n_local(); }
+  PetscInt &n_sites_local() { return particles_.n_local(); }
 
   //! @param n_ghost: Number of ghost particles in the local domain
   PetscInt n_ghost() const { return particles_.n_ghost(); }
-  PetscInt& n_ghost() { return particles_.n_ghost(); }
+  PetscInt &n_ghost() { return particles_.n_ghost(); }
 
   //! @param mechanical_neighs_idx: Local indices of mechanical neighbors
-  IS* mechanical_neighs_idx() const { return topology_.data(); }
-  IS*& mechanical_neighs_idx() { return topology_.data(); }
+  IS *mechanical_neighs_idx() const { return topology_.data(); }
+  IS *&mechanical_neighs_idx() { return topology_.data(); }
 
- private:
+private:
   //! @param particles_: Particle swarm and site counts
   ParticleSwarm particles_;
 
