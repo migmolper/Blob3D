@@ -127,11 +127,6 @@ int main(int argc, char **argv) {
   Simulation simulation;
   PetscCall(simulation.initialize(Simulation_dump_data,
                                   BackgroundMeshType::DMDA_mesh, Delta_r));
-  PetscCall(
-      DMSwarmSetMigrateType(simulation.dm(), DMSWARM_MIGRATE_DMCELLNSCATTER));
-  PetscCall(DMSwarmMigrate(simulation.dm(), PETSC_TRUE));
-  PetscCall(DMSwarmGetLocalSize(simulation.dm(), &simulation.n_sites_local()));
-  PetscCall(simulation.renumber_local_indices());
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Free dump data

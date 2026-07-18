@@ -29,7 +29,8 @@ ParticleSwarm::~ParticleSwarm() { release(); }
 ParticleSwarm::ParticleSwarm(ParticleSwarm &&other) noexcept
     : dm_(other.dm_), dump2petsc_(other.dump2petsc_),
       n_global_(other.n_global_), n_local_(other.n_local_),
-      n_ghost_(other.n_ghost_) {
+      n_ghost_(other.n_ghost_)
+{
   other.dm_ = nullptr;
   other.dump2petsc_ = nullptr;
   other.n_global_ = 0;
@@ -37,8 +38,10 @@ ParticleSwarm::ParticleSwarm(ParticleSwarm &&other) noexcept
   other.n_ghost_ = 0;
 }
 
-ParticleSwarm &ParticleSwarm::operator=(ParticleSwarm &&other) noexcept {
-  if (this != &other) {
+ParticleSwarm &ParticleSwarm::operator=(ParticleSwarm &&other) noexcept
+{
+  if (this != &other)
+  {
     release();
     dm_ = other.dm_;
     dump2petsc_ = other.dump2petsc_;
@@ -54,10 +57,12 @@ ParticleSwarm &ParticleSwarm::operator=(ParticleSwarm &&other) noexcept {
   return *this;
 }
 
-void ParticleSwarm::release() noexcept {
+void ParticleSwarm::release() noexcept
+{
   PetscBool petsc_alive = PETSC_FALSE;
   PetscInitialized(&petsc_alive);
-  if (!petsc_alive) {
+  if (!petsc_alive)
+  {
     /* PetscFinalize / MPI_Finalize already ran: drop handles without MPI. */
     dm_ = nullptr;
     dump2petsc_ = nullptr;
@@ -70,9 +75,11 @@ void ParticleSwarm::release() noexcept {
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Destroy the background mesh attached to the swarm
   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  if (dm_) {
+  if (dm_)
+  {
     DM fe_mesh = nullptr;
-    if (DMSwarmGetCellDM(dm_, &fe_mesh) == PETSC_SUCCESS && fe_mesh) {
+    if (DMSwarmGetCellDM(dm_, &fe_mesh) == PETSC_SUCCESS && fe_mesh)
+    {
       DMDestroy(&fe_mesh);
     }
     DMDestroy(&dm_);
@@ -82,7 +89,8 @@ void ParticleSwarm::release() noexcept {
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Destroy dump ? PETSc mapping
   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  if (dump2petsc_) {
+  if (dump2petsc_)
+  {
     AODestroy(&dump2petsc_);
     dump2petsc_ = nullptr;
   }
@@ -93,7 +101,8 @@ void ParticleSwarm::release() noexcept {
 }
 
 void ParticleSwarm::adopt(DM dm, AO dump2petsc, PetscInt n_global,
-                          PetscInt n_local) {
+                          PetscInt n_local)
+{
   release();
   dm_ = dm;
   dump2petsc_ = dump2petsc;
@@ -108,17 +117,22 @@ void ParticleSwarm::adopt(DM dm, AO dump2petsc, PetscInt n_global,
 
 /********************************************************************************/
 
-NeighborTopology::~NeighborTopology() {
+NeighborTopology::~NeighborTopology()
+{
   PetscBool petsc_alive = PETSC_FALSE;
   PetscInitialized(&petsc_alive);
-  if (!petsc_alive) {
+  if (!petsc_alive)
+  {
     neighs_ = nullptr;
     n_ = 0;
     return;
   }
-  if (neighs_) {
-    for (PetscInt i = 0; i < n_; ++i) {
-      if (neighs_[i]) {
+  if (neighs_)
+  {
+    for (PetscInt i = 0; i < n_; ++i)
+    {
+      if (neighs_[i])
+      {
         ISDestroy(&neighs_[i]);
       }
     }
@@ -129,14 +143,17 @@ NeighborTopology::~NeighborTopology() {
 }
 
 NeighborTopology::NeighborTopology(NeighborTopology &&other) noexcept
-    : neighs_(other.neighs_), n_(other.n_) {
+    : neighs_(other.neighs_), n_(other.n_)
+{
   other.neighs_ = nullptr;
   other.n_ = 0;
 }
 
 NeighborTopology &
-NeighborTopology::operator=(NeighborTopology &&other) noexcept {
-  if (this != &other) {
+NeighborTopology::operator=(NeighborTopology &&other) noexcept
+{
+  if (this != &other)
+  {
     clear();
     neighs_ = other.neighs_;
     n_ = other.n_;
@@ -146,16 +163,19 @@ NeighborTopology::operator=(NeighborTopology &&other) noexcept {
   return *this;
 }
 
-void NeighborTopology::adopt(IS *neighs, PetscInt n) {
+void NeighborTopology::adopt(IS *neighs, PetscInt n)
+{
   clear();
   neighs_ = neighs;
   n_ = n;
 }
 
-PetscErrorCode NeighborTopology::clear() {
+PetscErrorCode NeighborTopology::clear()
+{
   PetscFunctionBeginUser;
 
-  if (!neighs_) {
+  if (!neighs_)
+  {
     n_ = 0;
     PetscFunctionReturn(PETSC_SUCCESS);
   }
@@ -163,7 +183,8 @@ PetscErrorCode NeighborTopology::clear() {
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    Destroy mechanical neighs
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  for (PetscInt i = 0; i < n_; ++i) {
+  for (PetscInt i = 0; i < n_; ++i)
+  {
     PetscCall(ISDestroy(&neighs_[i]));
   }
   PetscCall(PetscFree(neighs_));
@@ -179,32 +200,42 @@ PetscErrorCode NeighborTopology::clear() {
 
 /********************************************************************************/
 
-Simulation::~Simulation() {
+Simulation::~Simulation()
+{
   PetscBool petsc_alive = PETSC_FALSE;
   PetscInitialized(&petsc_alive);
-  if (!petsc_alive) {
+  if (!petsc_alive)
+  {
     return;
   }
   //! Destroy topology while the DM is still alive, then release particles
-  if (dm()) {
+  if (dm())
+  {
     (void)destroy_topology();
   }
 }
 
 /********************************************************************************/
 
-PetscErrorCode Simulation::generate_topology(double buffer_width) {
+PetscErrorCode Simulation::generate_topology(double buffer_width)
+{
 
   PetscFunctionBeginUser;
 
-  //! 1: Contiguous local-idx for VecCreateGhostWithArray (before ghosts)
+  //! 1: Migrate particles to the correct MPI rank (DMCELLNSCATTER)
+  PetscCall(
+      DMSwarmSetMigrateType(dm(), DMSWARM_MIGRATE_DMCELLNSCATTER));
+  PetscCall(DMSwarmMigrate(dm(), PETSC_TRUE));
+  PetscCall(DMSwarmGetLocalSize(dm(), &n_sites_local()));
+
+  //! 2: Contiguous local-idx for VecCreateGhostWithArray (before ghosts)
   PetscCall(renumber_local_indices());
 
-  //! 2: Create ghost blobs
+  //! 3: Create ghost blobs
   PetscCall(DMSwarmSetMigrateType(dm(), DMSWARM_MIGRATE_BASIC));
   PetscCall(DMSwarmCreateGhostBlobs(*this, buffer_width));
 
-  //! 3: Compute list of mechanical neighs
+  //! 4: Compute list of mechanical neighs
   PetscCall(DMSwarmCreateNeighborsBlobs(*this, buffer_width));
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -212,7 +243,8 @@ PetscErrorCode Simulation::generate_topology(double buffer_width) {
 
 /********************************************************************************/
 
-PetscErrorCode Simulation::regenerate_topology(double buffer_width) {
+PetscErrorCode Simulation::regenerate_topology(double buffer_width)
+{
 
   PetscFunctionBeginUser;
 
@@ -235,7 +267,8 @@ PetscErrorCode Simulation::regenerate_topology(double buffer_width) {
   //! 5: Update number of particles and check consistency
   PetscCall(DMSwarmGetSize(dm(), &n_sites_global));
   PetscCall(DMSwarmGetLocalSize(dm(), &n_sites_local()));
-  if (n_sites_global != this->n_sites_global()) {
+  if (n_sites_global != this->n_sites_global())
+  {
     SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_RETURN,
             "Number of particles is not consistent: %" PetscInt_FMT
             " (new), %" PetscInt_FMT " (old)",
@@ -245,7 +278,8 @@ PetscErrorCode Simulation::regenerate_topology(double buffer_width) {
   //! 6: Update "MPI-rank"
   PetscInt *rank_ptr;
   PetscCall(DMSwarmGetField(dm(), "MPI-rank", NULL, NULL, (void **)&rank_ptr));
-  for (PetscInt site_u = 0; site_u < n_sites_local(); site_u++) {
+  for (PetscInt site_u = 0; site_u < n_sites_local(); site_u++)
+  {
     rank_ptr[site_u] = rank_MPI;
   }
   PetscCall(
@@ -266,7 +300,8 @@ PetscErrorCode Simulation::regenerate_topology(double buffer_width) {
 
 /********************************************************************************/
 
-PetscErrorCode Simulation::renumber_local_indices() {
+PetscErrorCode Simulation::renumber_local_indices()
+{
 
   PetscFunctionBeginUser;
 
@@ -274,14 +309,16 @@ PetscErrorCode Simulation::renumber_local_indices() {
   PetscInt rstart = 0;
   PetscCallMPI(MPI_Exscan(&n_local, &rstart, 1, MPIU_INT, MPI_SUM,
                           PETSC_COMM_WORLD));
-  if (rank_MPI == 0) {
+  if (rank_MPI == 0)
+  {
     rstart = 0;
   }
 
   PetscInt *local_idx_ptr = nullptr;
   PetscCall(DMSwarmGetField(dm(), "local-idx", NULL, NULL,
                             (void **)&local_idx_ptr));
-  for (PetscInt site_u = 0; site_u < n_local; site_u++) {
+  for (PetscInt site_u = 0; site_u < n_local; site_u++)
+  {
     local_idx_ptr[site_u] = rstart + site_u;
   }
   PetscCall(DMSwarmRestoreField(dm(), "local-idx", NULL, NULL,
@@ -292,7 +329,8 @@ PetscErrorCode Simulation::renumber_local_indices() {
 
 /********************************************************************************/
 
-PetscErrorCode Simulation::destroy_topology() {
+PetscErrorCode Simulation::destroy_topology()
+{
 
   PetscFunctionBeginUser;
 
