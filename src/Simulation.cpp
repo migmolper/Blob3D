@@ -222,20 +222,32 @@ PetscErrorCode Simulation::generate_topology(double buffer_width)
 
   PetscFunctionBeginUser;
 
-  //! 1: Migrate particles to the correct MPI rank (DMCELLNSCATTER)
-  PetscCall(
-      DMSwarmSetMigrateType(dm(), DMSWARM_MIGRATE_DMCELLNSCATTER));
+  //! 1: Rebin particles to the owning MPI rank (same path as regenerate)
+  PetscCall(DMSwarmSyncCoorFromMeanQ(*this));
+  PetscCall(DMSwarmSetMigrateType(dm(), DMSWARM_MIGRATE_DMCELLNSCATTER));
   PetscCall(DMSwarmMigrate(dm(), PETSC_TRUE));
   PetscCall(DMSwarmGetLocalSize(dm(), &n_sites_local()));
 
-  //! 2: Contiguous local-idx for VecCreateGhostWithArray (before ghosts)
+  //! 2: Keep custom MPI-rank in sync (DestroyGhostBlobs relies on it)
+  {
+    PetscInt *rank_ptr;
+    PetscCall(DMSwarmGetField(dm(), "MPI-rank", NULL, NULL, (void **)&rank_ptr));
+    for (PetscInt site_u = 0; site_u < n_sites_local(); site_u++)
+    {
+      rank_ptr[site_u] = rank_MPI;
+    }
+    PetscCall(
+        DMSwarmRestoreField(dm(), "MPI-rank", NULL, NULL, (void **)&rank_ptr));
+  }
+
+  //! 3: Contiguous local-idx for VecCreateGhostWithArray (before ghosts)
   PetscCall(renumber_local_indices());
 
-  //! 3: Create ghost blobs
+  //! 4: Create ghost blobs
   PetscCall(DMSwarmSetMigrateType(dm(), DMSWARM_MIGRATE_BASIC));
   PetscCall(DMSwarmCreateGhostBlobs(*this, buffer_width));
 
-  //! 4: Compute list of mechanical neighs
+  //! 5: Compute list of mechanical neighs
   PetscCall(DMSwarmCreateNeighborsBlobs(*this, buffer_width));
 
   PetscFunctionReturn(PETSC_SUCCESS);
