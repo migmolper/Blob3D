@@ -22,23 +22,23 @@ else
 MPI_RUN=~/petsc/arch-darwin-c-debug/bin/mpirun
 fi
 
-export OMP_NUM_THREADS=1
+export OMP_NUM_THREADS=10
 
-MPI_P=8
-SIZE_MPI_X=2
-SIZE_MPI_Y=2
-SIZE_MPI_Z=2
+MPI_P=1
+SIZE_MPI_X=1
+SIZE_MPI_Y=1
+SIZE_MPI_Z=1
 
-NUMBER_STEPS=30
+NUMBER_STEPS=40
 TOTAL_MASS=1
 RADIUS_DOMAIN=40.0
 KAPPA=1
-PENALTY=0.0001
+PENALTY=0.001
 Delta_r=12.0
 ${MPI_RUN} -np ${MPI_P} ./exe \
 ${SIZE_MPI_X} ${SIZE_MPI_Y} ${SIZE_MPI_Z} ${NUMBER_STEPS} \
 ${TOTAL_MASS} ${RADIUS_DOMAIN} ${KAPPA} ${PENALTY} ${Delta_r} \
--minJKO_dx_tao_gatol 1.e-4 \
+-minJKO_dx_tao_gatol 1.e-5 \
 -minJKO_dx_tao_gttol 1.e-6 \
 -minJKO_dx_tao_max_it 100 \
 -minJKO_dx_tao_type cg \

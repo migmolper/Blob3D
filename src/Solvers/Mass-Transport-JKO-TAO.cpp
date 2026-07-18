@@ -216,8 +216,8 @@ static PetscErrorCode Advection(PetscReal dt, Simulation &simulation,
 #pragma omp parallel for schedule(runtime)
   for (int site_i = 0; site_i < n_sites_local; site_i++) {
     for (int alpha = 0; alpha < dim; alpha++) {
-      mean_p_ptr[site_i * dim + alpha] +=
-          (mean_q_ptr[site_i * dim + alpha] / mass_ptr[site_i]) * dt;
+      mean_q_ptr[site_i * dim + alpha] +=
+          (mean_p_ptr[site_i * dim + alpha] / mass_ptr[site_i]) * dt;
     }
   }
 
