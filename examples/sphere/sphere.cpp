@@ -1,6 +1,6 @@
 
 /**
- * @file Mesh/test/test-Boundary-Conditions.cpp
+ * @file Sphere.cpp
  * @author Miguel Molinos (migmolper)
  * @brief
  * @version 0.1
@@ -14,12 +14,12 @@
 #include "Blobs/IO/dump-inputs.hpp"
 #include "Blobs/IO/vtk-outputs.hpp"
 #include "Blobs/Neighbors.hpp"
-#include "Boundaries/sphere.hpp"
 #include "Macros.hpp"
 #include "Potentials/Advection-Diff-OpenMP.hpp"
 #include "Solvers/Mass-Transport-JKO-TAO.hpp"
 #include "Variables.hpp"
 #include <Eigen/Dense>
+#include "sphere.hpp"
 #include <cmath>
 #include <iostream> //std::cout//std::cin
 #include <limits>

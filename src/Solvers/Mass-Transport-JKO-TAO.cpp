@@ -94,13 +94,19 @@ static PetscErrorCode compute_F0_and_RHS(Tao tao, Vec X_k1, PetscReal *F0,
 
 static PetscErrorCode compute_RHS(Tao tao, Vec X_k1, Vec D_JKO_Dx, void *ctx);
 
+static PetscErrorCode
+add_barrier_potential(PetscScalar *JKO_system, const Vec x_k1, const Vec mass,
+                      boundaryCondition &boundary_conditions);
+
+static PetscErrorCode
+add_barrier_forces(Vec D_JKO_Dq, const Vec x_k1, const Vec mass,
+                   boundaryCondition &boundary_conditions);
+
 /************************************************************************/
 
-PetscErrorCode
-Mass_Trasport_Advection_Diffusion(PetscReal dt, Simulation &simulation,
-                                  GoverningEquations &system_equations,
-                                  boundaryCondition &boundary_conditions,
-                                  PetscReal buffer_width) {
+PetscErrorCode Mass_Trasport_Advection_Diffusion(
+    PetscReal dt, Simulation &simulation, GoverningEquations &system_equations,
+    boundaryCondition &boundary_conditions, PetscReal buffer_width) {
 
   PetscFunctionBeginUser;
 
@@ -701,7 +707,7 @@ static PetscErrorCode compute_F0_and_RHS(Tao tao, Vec X_k1,
   PetscCall(system_equations.evaluate_JKO(JKO_system, Delta_t, rho_k1, X_k1,
                                           X_k, beta_k1, beta_k, mass,
                                           blob_topology));
-  PetscCall(boundary_conditions.add_barrier_potential(JKO_system, X_k1, mass));
+  PetscCall(add_barrier_potential(JKO_system, X_k1, mass, boundary_conditions));
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Set the RHS to {mean_q_ref - mean_q}. This allow us to enforce the
@@ -712,7 +718,7 @@ static PetscErrorCode compute_F0_and_RHS(Tao tao, Vec X_k1,
   PetscCall(system_equations.evaluate_D_JKO_Dq(
       D_JKO_Dx, Delta_t, rho_k1, X_k1, X_k, beta_k1, mass, blob_topology));
   //! Add the barrier forces to the JKO system
-  PetscCall(boundary_conditions.add_barrier_forces(D_JKO_Dx, X_k1, mass));
+  PetscCall(add_barrier_forces(D_JKO_Dx, X_k1, mass, boundary_conditions));
 
   //! Update the ghost values of the RHS vector
   PetscCall(VecGhostUpdateBegin(D_JKO_Dx, INSERT_VALUES, SCATTER_FORWARD));
@@ -799,7 +805,7 @@ PetscErrorCode compute_RHS(Tao tao, Vec X_k1, Vec D_JKO_Dq, void *ctx) {
       D_JKO_Dq, Delta_t, rho_k1, X_k1, X_k, beta_k1, mass, blob_topology));
 
   //! Add the barrier forces to the JKO system
-  PetscCall(boundary_conditions.add_barrier_forces(D_JKO_Dq, X_k1, mass));
+  PetscCall(add_barrier_forces(D_JKO_Dq, X_k1, mass, boundary_conditions));
 
   PetscCall(VecGhostUpdateBegin(D_JKO_Dq, INSERT_VALUES, SCATTER_FORWARD));
   PetscCall(VecGhostUpdateEnd(D_JKO_Dq, INSERT_VALUES, SCATTER_FORWARD));
@@ -810,6 +816,183 @@ PetscErrorCode compute_RHS(Tao tao, Vec X_k1, Vec D_JKO_Dq, void *ctx) {
 #ifdef DEBUG_MODE
   PetscCall(VecView(D_JKO_Dq, PETSC_VIEWER_STDOUT_WORLD));
 #endif
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+/************************************************************************/
+
+/**
+ * @brief Add the barrier potential to the JKO system
+ * @param JKO_system JKO system
+ * @param x_k1 Position of the particles at the previous time step
+ * @param mass Mass of the particles
+ * @return PetscErrorCode
+ */
+static PetscErrorCode
+add_barrier_potential(PetscScalar *JKO_system, const Vec x_k1, const Vec mass,
+                      boundaryCondition &boundary_conditions) {
+
+  PetscFunctionBeginUser;
+
+  unsigned int dim = NumberDimensions;
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  Get local size
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+  PetscInt n_dof;
+  PetscCall(VecGetLocalSize(x_k1, &n_dof));
+  PetscInt n_sites = n_dof / dim;
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  Acces to the local version of the vectors
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+  Vec x_k1_loc, mass_loc;
+  PetscCall(VecGhostGetLocalForm(mass, &mass_loc));
+  PetscCall(VecGhostGetLocalForm(x_k1, &x_k1_loc));
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  Acces to raw data from PETSc local (ghosted) vectors
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+  const PetscScalar *x_k1_ptr;
+  PetscCall(VecGetArrayRead(x_k1_loc, &x_k1_ptr));
+
+  const PetscScalar *mass_ptr;
+  PetscCall(VecGetArrayRead(mass_loc, &mass_ptr));
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  Evaluate the barrier potential
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+  double barrier_potential_local = 0.0;
+  double barrier_potential = 0.0;
+
+#pragma omp parallel for reduction(+ : barrier_potential_local)                \
+    schedule(runtime)
+  for (int site_u = 0; site_u < n_sites; site_u++) {
+
+    //! @brief Get particle information of site i
+    Eigen::Map<const Eigen::Vector3d> x_u_k1(&x_k1_ptr[dim * site_u]);
+    PetscScalar mass_u = mass_ptr[site_u];
+
+    //! @brief Add the barrier potential to the JKO system
+    barrier_potential_local += boundary_conditions.potential(x_u_k1) * mass_u;
+  }
+
+  //! Perform partial sum reduction of each MPI process
+  PetscCall(MPIU_Allreduce(&barrier_potential_local, &barrier_potential, 1,
+                           MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
+
+  //! Check if the barrier potential is a NAN
+  if (PetscIsNanReal(barrier_potential) == PETSC_TRUE) {
+    PetscCall(PetscError(PETSC_COMM_SELF, __LINE__, "add_barrier_potential",
+                         __FILE__, PETSC_ERR_RETURN, PETSC_ERROR_INITIAL,
+                         "The barrier potential takes a NaN value"));
+    PetscFunctionReturn(PETSC_ERR_RETURN);
+  }
+
+  //! Check if the barrier potential is infinity
+  if (PetscIsInfReal(barrier_potential) == PETSC_TRUE) {
+    PetscCall(PetscError(PETSC_COMM_SELF, __LINE__, "add_barrier_potential",
+                         __FILE__, PETSC_ERR_RETURN, PETSC_ERROR_INITIAL,
+                         "The barrier potential takes a infinity value"));
+    PetscFunctionReturn(PETSC_ERR_RETURN);
+  }
+
+  //! Update the barrier potential
+  *JKO_system += barrier_potential;
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  Restore raw data from PETSc local vector
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+  PetscCall(VecRestoreArrayRead(x_k1_loc, &x_k1_ptr));
+  PetscCall(VecRestoreArrayRead(mass_loc, &mass_ptr));
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  Restore local version of the vectors
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+  PetscCall(VecGhostRestoreLocalForm(x_k1, &x_k1_loc));
+  PetscCall(VecGhostRestoreLocalForm(mass, &mass_loc));
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+/************************************************************************/
+
+/**
+ * @brief Add the barrier forces to the JKO system
+ * @param D_JKO_Dq Derivative of the JKO system
+ * @param x_k1 Position of the particles at the previous time step
+ * @param mass Mass of the particles
+ * @return PetscErrorCode
+ */
+static PetscErrorCode
+add_barrier_forces(Vec D_JKO_Dq, const Vec x_k1, const Vec mass,
+                   boundaryCondition &boundary_conditions) {
+
+  PetscFunctionBeginUser;
+
+  unsigned int dim = NumberDimensions;
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  Get local size
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+  PetscInt n_dof;
+  PetscCall(VecGetLocalSize(x_k1, &n_dof));
+  PetscInt n_sites = n_dof / dim;
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  Acces to the local version of the vectors
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+  Vec D_JKO_Dq_loc, mass_loc, x_k1_loc;
+  PetscCall(VecGhostGetLocalForm(D_JKO_Dq, &D_JKO_Dq_loc));
+  PetscCall(VecGhostGetLocalForm(mass, &mass_loc));
+  PetscCall(VecGhostGetLocalForm(x_k1, &x_k1_loc));
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  Acces to raw data from PETSc local (ghosted) vectors
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+  PetscScalar *D_JKO_Dq_ptr;
+  PetscCall(VecGetArray(D_JKO_Dq_loc, &D_JKO_Dq_ptr));
+
+  const PetscScalar *x_k1_ptr;
+  PetscCall(VecGetArrayRead(x_k1_loc, &x_k1_ptr));
+
+  const PetscScalar *mass_ptr;
+  PetscCall(VecGetArrayRead(mass_loc, &mass_ptr));
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Evaluate the barrier forces
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+#pragma omp parallel for schedule(runtime)
+  for (int site_u = 0; site_u < n_sites; site_u++) {
+
+    //! @brief Get particle information of site i
+    Eigen::Map<const Eigen::Vector3d> x_u_k1(&x_k1_ptr[dim * site_u]);
+    PetscScalar mass_u = mass_ptr[site_u];
+
+    //! @brief Compute the barrier forceforce_u
+    Eigen::Vector3d force_u =
+        boundary_conditions.gradient_potential(x_u_k1) * mass_u;
+
+    //! Fill residual vector
+    for (PetscInt alpha = 0; alpha < dim; alpha++) {
+      D_JKO_Dq_ptr[site_u * dim + alpha] += force_u(alpha);
+    }
+  }
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  Restore raw data from PETSc local vector
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+  PetscCall(VecRestoreArray(D_JKO_Dq_loc, &D_JKO_Dq_ptr));
+  PetscCall(VecRestoreArrayRead(x_k1_loc, &x_k1_ptr));
+  PetscCall(VecRestoreArrayRead(mass_loc, &mass_ptr));
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  Restore local version of the vectors
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+  PetscCall(VecGhostRestoreLocalForm(D_JKO_Dq, &D_JKO_Dq_loc));
+  PetscCall(VecGhostRestoreLocalForm(x_k1, &x_k1_loc));
+  PetscCall(VecGhostRestoreLocalForm(mass, &mass_loc));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }

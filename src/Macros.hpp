@@ -236,20 +236,20 @@ public:
   virtual ~boundaryCondition() {}
 
   /**
-   * @brief Add the barrier potential
+   * @brief Calculate the potential between the particle and the boundary.
+   * @param x The particle position.
+   * @return The potential between the particle and the boundary.
    */
-  virtual PetscErrorCode add_barrier_potential(PetscScalar *JKO_system,
-                                               const Vec x_k1,
-                                               const Vec mass) = 0;
+  virtual PetscScalar potential(const Eigen::Vector3d &x) const = 0;
 
   /**
-   * @brief Add the barrier forces to the JKO system.
+   * @brief Calculate the gradient of the potential between the particle and the boundary.
+   * @param x The particle position.
+   * @return The gradient of the potential between the particle and the boundary.
    */
-  virtual PetscErrorCode add_barrier_forces(Vec D_JKO_Dq, const Vec x_k1,
-                                            const Vec mass) = 0;
-};
+  virtual Eigen::Vector3d gradient_potential(const Eigen::Vector3d &x) const = 0;
 
-/*******************************************************/
+};
 
 /**
  * @brief Abstract base class for Shape Functions and Potential Components.
