@@ -41,7 +41,6 @@ logs
 *.aux
 *.bbl
 *.blg
-*.pdf
 *.synctex.gz  
 *.fls
 *.fdb_latexmk
