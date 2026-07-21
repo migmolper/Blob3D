@@ -1,0 +1,338 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{bm}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{physics}
+\usepackage{microtype}
+\usepackage[numbers,sort&compress]{natbib}
+
+\geometry{margin=2.5cm}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  citecolor=blue,
+  pdftitle={Notes on the blob methodology in Blob3D},
+  pdfauthor={Miguel Molinos}
+}
+
+\title{Notes on the blob methodology\\[0.3em]\large A \texttt{Blob3D}-oriented reading}
+\author{}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Purpose}
+These notes summarize the \emph{blob} methodology---finite-width particle methods for mass transport---and serve as a bridge between the theoretical formulation and the current implementation in \texttt{Blob3D}. The text is based mainly on \citet{pandolfi2023} and \citet{pandolfi2025}, both available in \texttt{doc/papers}.
+
+The central idea is to reformulate diffusion not as an evolution on functions over a fixed mesh, but as a problem of measure transport. In this framework, mobility between consecutive states is measured by the Wasserstein distance, while the diffusive tendency appears through a Kullback--Leibler-type entropic energy. Spatial discretization uses smoothed particles, or \emph{blobs}, so that the density field is represented by a superposition of Gaussian kernels.
+
+\section{From the continuous problem to the variational scheme}
+\subsection{Governing equation}
+The prototype problem considered in the papers is the advection--diffusion equation
+\begin{equation}
+\partial_t \rho + \nabla \cdot (\rho u) = \kappa \Delta \rho + \rho s
+\qquad \text{in } \Omega \times [0,T],
+\end{equation}
+where $\rho$ is the density, $u$ is a prescribed transport velocity, $\kappa$ is the diffusion coefficient, and $s$ denotes volumetric sources.
+
+The mobility law can be written as
+\begin{equation}
+\rho v = \rho u - \kappa \nabla \rho,
+\end{equation}
+so that diffusion is absorbed into an effective velocity $v$. This reinterpretation is important because it allows the problem to be treated within the optimal-transport framework.
+
+\subsection{Fractional-step splitting}
+The numerical strategy decouples the evolution into three steps:
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Advection}: particle positions are updated according to the prescribed velocity.
+  \item \textbf{Sources/sinks}: the total mass is corrected if there is production or consumption.
+  \item \textbf{Diffusion}: a purely diffusive subproblem is solved through an incremental variational principle.
+\end{enumerate}
+
+In \texttt{Blob3D}, this structure appears explicitly in the routine \texttt{Mass\_Trasport\_Advection\_Diffusion()}, which first performs advection, then rebuilds neighborhoods, and finally solves the JKO diffusion step.
+
+\subsection{Jordan--Kinderlehrer--Otto functional}
+The diffusive step is formulated through the incremental functional \citep{jordan1998,fedeli2017,pandolfi2023}
+\begin{equation}
+F(\rho_{k+1}) =
+\frac{1}{2\Delta t} d_W^2(\rho_k,\rho_{k+1})
++
+\int_{\Omega}
+\kappa \rho_{k+1}
+\log\!\left(\frac{\rho_{k+1}}{\rho_\infty}\right)\,dx,
+\end{equation}
+where $d_W$ is the Wasserstein distance and $\rho_\infty$ is a reference density, typically the uniform equilibrium density. The first term penalizes transport between consecutive time steps; the second favors entropic spreading.
+
+This competition is the essence of the method:
+\begin{itemize}[leftmargin=*]
+  \item the transport cost tries to keep particles where they are;
+  \item entropy tries to spread mass and homogenize the density.
+\end{itemize}
+
+\section{Blob discretization}
+\subsection{From point masses to finite-width particles}
+A purely atomic discretization
+\begin{equation}
+\rho(x,t) \approx \sum_{p=1}^{n} m_p \delta(x-x_p(t))
+\end{equation}
+is not suitable for evaluating the entropic term directly. Following \citet{carrillo2019,carrillo2017}, the solution adopted in the literature is to \emph{fatten} each point mass through a regularized profile:
+\begin{equation}
+\rho(x,t) \approx \sum_{p=1}^{n} m_p \varphi_p(x-x_p(t),t).
+\end{equation}
+
+In the reference works, and also in the current implementation, the profile is Gaussian:
+\begin{equation}
+\varphi_p(x-x_p,t)
+=
+\left(\frac{\beta_p(t)}{\pi}\right)^{d/2}
+\exp\!\left(-\beta_p(t)\norm{x-x_p(t)}^2\right).
+\end{equation}
+
+Here, $\beta_p$ controls the blob width:
+\begin{equation}
+\ell_p \sim \frac{1}{\sqrt{\beta_p}}.
+\end{equation}
+Large values of $\beta_p$ produce highly concentrated particles; small values produce more extended particles.
+
+\subsection{Correct interpretation}
+\citet{pandolfi2025} emphasize an important conceptual point: the reconstructed density should not be understood as a classical finite-element-style interpolation, but as a \emph{mollification} of a discrete measure. Consequently:
+\begin{itemize}[leftmargin=*]
+  \item the natural notion of convergence is \emph{weak}, i.e.\ in the sense of local averages;
+  \item the most reliable quantities for validating the method are integrals, moments, and smooth observables;
+  \item pointwise evaluation of $\rho(x)$ has limited meaning if interpreted outside this regularization.
+\end{itemize}
+
+\subsection{Wasserstein distance between Gaussians}
+If the mass of each particle remains fixed, the Wasserstein cost between two consecutive Gaussian blobs admits a closed-form expression. In the approximation used by \citet{pandolfi2023}:
+\begin{equation}
+d_W^2\!\left(m_p N_{p,k},m_p N_{p,k+1}\right)
+\approx
+m_p \left(
+\norm{x_{p,k+1}-x_{p,k}}^2 +
+\left(\beta_{p,k+1}^{-1/2} - \beta_{p,k}^{-1/2}\right)^2
+\right).
+\end{equation}
+
+This is notable because the mobility cost penalizes not only the displacement of particle centers, but also changes in particle width.
+
+\subsection{Discrete functional}
+Substituting the blob representation into the JKO functional and approximating the entropic integral by Hermitian quadrature (see Section~\ref{sec:hermite}) yields a discrete functional of the form
+\begin{equation}
+F_h \approx
+\sum_{p=1}^{n}
+\frac{m_p}{2\Delta t}
+\left(
+\norm{x_{p,k+1}-x_{p,k}}^2 +
+\left(\beta_{p,k+1}^{-1/2}-\beta_{p,k}^{-1/2}\right)^2
+\right)
++
+\sum_{p=1}^{n}
+\kappa \log\!\left(\frac{\rho_{k+1}(x_{p,k+1})}{\rho_\infty}\right)m_p,
+\end{equation}
+with
+\begin{equation}
+\rho_{k+1}(x)=
+\sum_{p=1}^{n}
+m_p
+\left(\frac{\beta_{p,k+1}}{\pi}\right)^{d/2}
+e^{-\beta_{p,k+1}\norm{x-x_{p,k+1}}^2}.
+\end{equation}
+
+Setting the derivatives of $F_h$ with respect to positions and widths to zero yields the Euler--Lagrange equations of the scheme.
+
+\section{Numerical integration of blobs}
+\label{sec:hermite}
+Gaussian blob profiles are chosen not only for regularity, but also because they make the entropic integrals amenable to exact or highly accurate numerical quadrature. Both \citet{pandolfi2023} and \citet{pandolfi2025} emphasize this point: the Gaussian weight induced by each particle suggests Hermitian (Gauss--Hermite) quadrature \citep{hildebrand2013}.
+
+\subsection{Entropic integral and one-point Hermitian rule}
+After inserting the superposition of Gaussians into the relative-entropy term, one obtains
+\begin{equation}
+\int_{\Omega}
+\kappa \rho_{k+1}\log\!\left(\frac{\rho_{k+1}}{\rho_\infty}\right)\,dx
+=
+\sum_{p=1}^{n}
+\int_{\Omega}
+\kappa \log\!\left(\frac{\rho_{k+1}(x)}{\rho_\infty}\right)
+\left(\frac{\beta_{p,k+1}}{\pi}\right)^{d/2}
+e^{-\beta_{p,k+1}\norm{x-x_{p,k+1}}^2}
+m_p\,dx.
+\end{equation}
+Each summand is an integral against a normalized Gaussian centered at $x_{p,k+1}$. This structure is precisely what Hermitian quadrature is designed for.
+
+The simplest and most widely used choice is the \emph{one-point} Hermitian rule, which collocates the slowly varying factor $\log(\rho/\rho_\infty)$ at the particle center:
+\begin{equation}
+\int_{\Omega}
+\kappa \rho_{k+1}\log\!\left(\frac{\rho_{k+1}}{\rho_\infty}\right)\,dx
+\sim
+\sum_{p=1}^{n}
+\kappa \log\!\left(\frac{\rho_{k+1}(x_{p,k+1})}{\rho_\infty}\right)m_p.
+\end{equation}
+In other words, the continuous entropy integral collapses to a discrete sum over particle centers, with weights equal to the particle masses. Higher-order Hermitian rules can improve accuracy at the cost of evaluating the density at additional quadrature nodes around each blob.
+
+\subsection{Consistency with the discrete density evaluation}
+The same Gaussian structure is used to reconstruct the density itself. At a query location $x$,
+\begin{equation}
+\rho(x)=\sum_{p=1}^{n} m_p N(x-x_p,\beta_p),
+\qquad
+N(y,\beta)=\left(\frac{\beta}{\pi}\right)^{d/2}e^{-\beta\norm{y}^2},
+\end{equation}
+and, under the one-point rule, only the values $\rho(x_p)$ enter the discrete energy. The gradient of the kernel,
+\begin{equation}
+\nabla_x N(x-x_p,\beta_p)=-2\beta_p\,N(x-x_p,\beta_p)\,(x-x_p),
+\end{equation}
+then supplies the ingredients needed for the Euler--Lagrange equations.
+
+\subsection{Consequence for the diffusive forces}
+Within the accuracy of the one-point Hermitian rule, the position derivative of the discrete entropy simplifies dramatically. Writing the variation of the collocated entropy and discarding terms that vanish upon integration against the Gaussian weight, \citet{pandolfi2023} show that
+\begin{equation}
+\frac{\partial}{\partial x_{r,k+1}}
+\sum_{p=1}^{n}
+\kappa \log\!\left(\frac{\rho_{k+1}(x_{p,k+1})}{\rho_\infty}\right)m_p
+\sim
+\kappa \nabla\rho_{k+1}(x_{r,k+1})\,m_r.
+\end{equation}
+Thus the entropic force on particle $r$ reduces to a multiple of the density gradient evaluated at the particle center. This is the expression used in calculations: diffusion becomes an explicit particle interaction driven by $\nabla\rho$ reconstructed from neighboring Gaussians.
+
+\subsection{Practical remarks}
+\begin{itemize}[leftmargin=*]
+  \item The one-point rule is exact for integrands that are constant on the scale of each blob; its accuracy improves as $\beta$ grows and the kernels concentrate.
+  \item Domain clipping of Gaussian tails is neglected in the basic quadrature, and is later corrected by barrier potentials or boundary layers when needed.
+  \item Because the kernels decay exponentially, sums for $\rho$ and $\nabla\rho$ may be restricted to a neighborhood of radius $\sim\beta^{-1/2}$ without appreciable loss relative to the quadrature error itself.
+\end{itemize}
+
+\section{Diffusive forces and interaction length}
+Once the energy has been discretized by Hermitian quadrature, diffusion becomes a particle--particle interaction problem. The approximate force $\kappa\nabla\rho\,m_r$ pushes particles from high-density regions toward lower-density regions.
+
+In practice, the interaction is local because of Gaussian decay. If the characteristic blob radius is
+\begin{equation}
+\ell \sim \frac{1}{\sqrt{\beta}},
+\end{equation}
+then only neighbors at distances comparable to $\ell$ need to be considered.
+
+This idea appears directly in \texttt{Blob3D}: neighborhood construction uses a cutoff radius proportional to $1/\sqrt{\beta_i}$. This reduces the cost of a naive $O(n^2)$ evaluation and justifies periodic regeneration of the neighbor topology before the diffusive step.
+
+\section{Choice of blob width}
+\subsection{Role of $\beta$}
+The parameter $\beta$ is one of the most delicate aspects of the method:
+\begin{itemize}[leftmargin=*]
+  \item if $\beta$ is too large, regularization is insufficient and the density becomes too irregular;
+  \item if $\beta$ is too small, the solution is over-smoothed and spatial features are lost.
+\end{itemize}
+
+\subsection{Optimal scaling}
+\citet{pandolfi2023} obtain a variational scaling for the optimal width at equilibrium. For regular domains and uniform blobs:
+\begin{equation}
+\beta \sim R^{-2} N^{4/(3d)}
+\end{equation}
+up to multiplicative constants, where $R$ is an effective domain length, $N$ is the number of particles, and $d$ is the spatial dimension.
+
+\citet{pandolfi2025} rephrase this idea in a more operational form as
+\begin{equation}
+\beta \sim \Delta r^{-2},
+\qquad
+\Delta r \sim \left(\frac{|\Omega|}{N}\right)^{1/d},
+\end{equation}
+where $\Delta r$ is the mean particle separation.
+
+The practical reading is simple: the blob width should lie on an intermediate scale between the inter-particle distance and the global domain size. This is why the method converges in a local-average sense without requiring a mesh.
+
+\subsection{Current status in the code}
+In the \texttt{Blob3D} implementation, there is a per-particle \texttt{beta} field, and the abstract governing-equations formulation admits dependencies on both position and $\beta$. From a design standpoint, this leaves two interpretations open:
+\begin{enumerate}[label=\arabic*.]
+  \item use $\beta$ as a variable actually evolved by the incremental functional;
+  \item fix or recalibrate $\beta$ externally, while keeping it as a dynamic field for future extensions.
+\end{enumerate}
+
+The literature explores both possibilities. For large problems, fixing a uniform or quasi-uniform $\beta$ often greatly reduces computational cost.
+
+\section{Boundary conditions}
+\subsection{Neumann and no-flux conditions}
+In \citet{pandolfi2023}, prescribed-flux conditions are handled by inserting or removing particles. No-flux conditions are represented by a barrier potential
+\begin{equation}
+V(x)=\frac{C}{2}\,\mathrm{dist}(x,\Omega)^2,
+\end{equation}
+where $\mathrm{dist}(x,\Omega)$ is the distance to the domain. This potential vanishes inside $\Omega$ and grows outside, returning to the interior any particles that attempt to leave.
+
+This idea is powerful because it decouples geometry from the diffusive algorithm: it is enough to evaluate the distance to the domain, which is natural when geometry comes from CAD or a background mesh.
+
+\subsection{Dirichlet and mixed conditions}
+\citet{pandolfi2025} extend the method to mixed conditions through an \emph{adsorption/depletion layer} near the boundary. After an unconstrained predictor diffusion step, a corrector projection is executed that:
+\begin{itemize}[leftmargin=*]
+  \item adds or removes particles in an internal/external layer to enforce equilibrium densities on Dirichlet boundaries;
+  \item adds or removes particles in a boundary layer to enforce Neumann-type fluxes.
+\end{itemize}
+
+The advantage of this formulation is that it avoids imposing strong pointwise constraints on an intrinsically regularized, Lagrangian representation.
+
+\section{Relation to \texttt{Blob3D}}
+\subsection{Main fields}
+The current implementation exposes the ingredients of the method quite transparently:
+\begin{itemize}[leftmargin=*]
+  \item \texttt{mean-q}: mean particle positions;
+  \item \texttt{mean-p}: mean momentum, used in the advective step;
+  \item \texttt{mass}: mass assigned to each blob;
+  \item \texttt{rho}: reconstructed density or scalar state variable;
+  \item \texttt{beta}: multiplier or thermal parameter controlling blob width.
+\end{itemize}
+
+\subsection{Time-step structure}
+The routine \texttt{Mass\_Trasport\_Advection\_Diffusion()} organizes the time advance as follows:
+\begin{enumerate}[label=\arabic*.]
+  \item update positions by advection;
+  \item regenerate the neighbor topology;
+  \item call \texttt{JKO\_Diffusion()} to solve the variational subproblem.
+\end{enumerate}
+
+Inside \texttt{JKO\_Diffusion()}:
+\begin{itemize}[leftmargin=*]
+  \item PETSc views are created for position, density, mass, and $\beta$;
+  \item a context is built with all functional information;
+  \item the incremental functional is minimized with TAO, using position as the primary variable;
+  \item periodic and boundary corrections are applied through the neighbor and potential infrastructure.
+\end{itemize}
+
+\subsection{Governing-equations-oriented design}
+The \texttt{GoverningEquations} interface abstracts three key operations:
+\begin{enumerate}[label=\arabic*.]
+  \item reconstruct the discrete measure;
+  \item evaluate the discrete JKO functional;
+  \item evaluate the functional gradient with respect to position.
+\end{enumerate}
+
+This design faithfully reproduces the theoretical structure of the method: first define an energy/dissipation on regularized measures, then derive the associated minimization problem.
+
+\section{What to measure numerically}
+The literature makes clear that the most natural validation of the method is not through nodal values, but through integrated observables. Among the most suitable quantities are:
+\begin{itemize}[leftmargin=*]
+  \item total mass in the domain;
+  \item moments of inertia or second moments;
+  \item spatial averages over subdomains;
+  \item temporal norms of smooth observables;
+  \item weak convergence rates as the number of particles increases.
+\end{itemize}
+
+This fits especially well with the spirit of \texttt{Blob3D}: the code represents mass transport in a regularized Lagrangian description, not a classical Eulerian nodal field.
+
+\section{Conceptual summary}
+The blob methodology can be summarized in four ideas:
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Measure transport}: the primary variable is a mass measure, not a nodal field on a fixed mesh.
+  \item \textbf{Gaussian regularization}: each particle carries mass distributed over a finite neighborhood controlled by $\beta$.
+  \item \textbf{Wasserstein gradient flow} \citep{jordan1998}: the time step arises from minimizing an incremental energy that combines transport cost and entropy.
+  \item \textbf{Local interactions}: Gaussian decay allows neighborhood truncation and efficient algorithms without losing the meshfree character.
+\end{enumerate}
+
+From this viewpoint, \texttt{Blob3D} implements a computationally pragmatic version of the theory: it integrates advection geometrically, solves diffusion through a discrete JKO problem, uses Gaussian blobs to regularize density, and exploits local searches to scale to large particle sets.
+
+\bibliographystyle{plainnat}
+\bibliography{blob-methodology}
+
+\end{document}

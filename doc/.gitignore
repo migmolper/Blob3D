@@ -1,0 +1,68 @@
+# LaTeX auxiliary and build files
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.brf
+*.dvi
+*.fdb_latexmk
+*.fls
+*.glg
+*.glo
+*.gls
+*.idx
+*.ilg
+*.ind
+*.ist
+*.lof
+*.log
+*.lot
+*.nav
+*.out
+*.run.xml
+*.snm
+*.synctex.gz
+*.toc
+*.xdv
+
+# LaTeX intermediate formats
+*.auxlock
+
+# BibTeX / biber
+*.bib.bak
+
+# latexmk
+*.latexmk
+
+# minted / pygments
+_minted*/
+*.pyg
+
+# beamer
+*.vrb
+
+# glossaries
+*.acn
+*.acr
+*.alg
+
+# nomencl
+*.nlo
+*.nls
+
+# makeindex
+*.glg
+*.gls
+*.idx
+*.ilg
+*.ind
+
+# hyperref / pdfTeX
+*.out.ps
+
+# editor/tooling
+*.swp
+*~
+
+# Optional: uncomment to keep generated PDFs out of git
+# *.pdf
