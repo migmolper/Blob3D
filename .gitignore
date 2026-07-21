@@ -6,7 +6,6 @@ core.*
 # Ignore configure 
 configure.sh
 run-test.sh
-CMakeLists.txt  
 
 # Ignore DS_Store file
 **/.DS_Store
